@@ -7,12 +7,10 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
-import { Navbar } from './components/navbar/navbar';
 
 @NgModule({
   declarations: [
-    App,
-    Navbar
+    App
   ],
   imports: [
     AppRoutingModule,
