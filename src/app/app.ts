@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+
+import { ContentLayout } from './components/content-layout/content-layout';
 
 @Component({
   selector: 'app-root',
@@ -8,4 +10,10 @@ import { Component } from '@angular/core';
 })
 export class App {
   protected title = 'arena-set-cracker';
+
+  @ViewChild(ContentLayout) contentLayout!: ContentLayout;
+
+  toggleSidenav() {
+    this.contentLayout.toggleSidenav();
+  }
 }
