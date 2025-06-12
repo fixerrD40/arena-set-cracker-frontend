@@ -6,9 +6,21 @@ import { MatListModule } from '@angular/material/list';
 import { RouterOutlet } from '@angular/router';
 import { MatToolbar } from '@angular/material/toolbar';
 
+import { Navbar } from './components/navbar/navbar';
+
 @Component({
   selector: 'app-root',
-  standalone: false,
+  standalone: true,
+  imports: [
+    MatSidenav,
+    MatSidenavModule,
+    MatIconModule,
+    MatButtonModule,
+    MatListModule,
+    RouterOutlet,
+    MatToolbar,
+    Navbar
+  ],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
