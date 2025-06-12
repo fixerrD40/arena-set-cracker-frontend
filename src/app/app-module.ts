@@ -10,7 +10,6 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing-module';
 import { App } from './app';
-import { ContentLayout } from './components/content-layout/content-layout';
 import { Navbar } from "./components/navbar/navbar";
 
 @NgModule({
@@ -27,7 +26,6 @@ import { Navbar } from "./components/navbar/navbar";
     MatToolbarModule,
     BrowserModule,
     AppRoutingModule,
-    ContentLayout,
     Navbar
 ],
   providers: [

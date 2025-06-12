@@ -1,2 +1,33 @@
 <app-navbar (menuToggle)="toggleSidenav()"></app-navbar>
-<app-content-layout></app-content-layout>
+<mat-sidenav-container> 
+  <mat-sidenav mode="side" [opened]="isShowing">
+
+    <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
+      <span>My Sets</span>
+      <button mat-icon-button aria-label="Add set">
+        <mat-icon>add</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    @for (entry of setsDeckEntries; track entry.name) {
+      <div class="sets">
+        <div (click)="toggleSet(entry.name)">
+          <span>{{ entry.name }}</span>
+          <mat-icon>{{ isExpanded(entry.name) ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </div>
+
+        @if (isExpanded(entry.name)) {
+          <ul>
+            @for (deck of entry.decks; track deck) {
+              <li>{{ deck }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
