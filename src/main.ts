@@ -1,16 +1,22 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { App } from './app/app';
 import { routes } from './app/routes';
 import { NgZone } from '@angular/core';
+import { TokenInterceptor } from './app/interceptors/token-interceptor';
 
 fetch('/assets/config.json')
   .then(response => response.json())
   .then(config => {
     bootstrapApplication(App, {
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptorsFromDi()),
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: TokenInterceptor,
+          multi: true
+        },
         provideRouter(routes),
         {
           provide: 'APP_CONFIG',
