@@ -1,0 +1,31 @@
+<div class="wrapper">
+  <mat-card>
+    <h2 class="card-title">Register</h2>
+    <form [formGroup]="form" (ngSubmit)="register()">
+      <mat-form-field appearance="fill">
+        <mat-label>Username</mat-label>
+        <input matInput formControlName="username" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" />
+      </mat-form-field>
+
+      <div *ngIf="errorMessage" class="error">
+        {{ errorMessage }}
+      </div>
+
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isLoading">
+        <mat-progress-spinner
+          *ngIf="isLoading"
+          diameter="20"
+          mode="indeterminate"
+          color="accent"
+          class="inline-spinner"
+        ></mat-progress-spinner>
+        <span *ngIf="!isLoading">Register</span>
+      </button>
+    </form>
+  </mat-card>
+</div>

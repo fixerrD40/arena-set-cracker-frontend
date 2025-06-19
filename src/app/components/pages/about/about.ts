@@ -8,6 +8,6 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   imports: [MatCardModule, MatIconModule, MatButtonModule],
   templateUrl: './about.html',
-  styleUrls: ['./about.css', '../pages.css']
+  styleUrls: ['./about.css', '../../components.css']
 })
 export class About {}
