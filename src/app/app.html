@@ -4,7 +4,7 @@
   <mat-sidenav mode="side" [opened]="isShowing">
     <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
       <span>My Sets</span>
-      <button mat-icon-button aria-label="Add set">
+      <button mat-icon-button aria-label="Add set" [routerLink]="['/add-set']">
         <mat-icon>add</mat-icon>
       </button>
     </mat-toolbar>

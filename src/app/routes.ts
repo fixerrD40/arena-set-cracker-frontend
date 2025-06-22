@@ -11,7 +11,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/auth/login/login').then(m => m.Login)
   },
-  { 
+  {
     path: 'register',
     loadComponent: () =>
       import('./components/auth/register/register').then(m => m.Register)
@@ -20,5 +20,10 @@ export const routes: Routes = [
     path: 'about',
     loadComponent: () =>
       import('./components/pages/about/about').then(m => m.About)
-  }
+  },
+  {
+    path: 'add-set',
+    loadComponent: () =>
+      import('./components/operations/add-set/add-set').then(m => m.AddSet)
+}
 ];

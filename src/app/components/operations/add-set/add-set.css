@@ -1,0 +1,23 @@
+.add-set-card {
+  padding: 24px;
+}
+
+.add-set-form {
+  max-width: 400px;
+  margin: 32px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+button[type="submit"] {
+  align-self: flex-end;
+}
+
+.spinner {
+  margin-right: 8px;
+}
