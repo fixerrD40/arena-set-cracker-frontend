@@ -1,7 +1,7 @@
 <app-navbar (menuToggle)="toggleSidenav()"></app-navbar>
-<mat-sidenav-container> 
-  <mat-sidenav mode="side" [opened]="isShowing">
 
+<mat-sidenav-container>
+  <mat-sidenav mode="side" [opened]="isShowing">
     <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
       <span>My Sets</span>
       <button mat-icon-button aria-label="Add set">
@@ -9,22 +9,29 @@
       </button>
     </mat-toolbar>
 
-    @for (entry of setsDeckEntries; track entry.name) {
-      <div class="sets">
-        <div (click)="toggleSet(entry.name)">
-          <span>{{ entry.name }}</span>
-          <mat-icon>{{ isExpanded(entry.name) ? 'expand_less' : 'expand_more' }}</mat-icon>
+    <ng-container *ngIf="sets$ | async as sets">
+      <div class="sets" *ngFor="let entry of sets">
+        <div (click)="toggleSet(entry.set.code)" class="set-header">
+          <span>{{ entry.set.name }} ({{ entry.set.code.toLowerCase() }})</span>
+          <span class="spacer"></span>
+          <button
+            mat-icon-button
+            (click)="deleteSet(entry.id); $event.stopPropagation()"
+            aria-label="Delete set"
+          >
+            <mat-icon color="warn">delete</mat-icon>
+          </button>
+          <button mat-icon-button aria-label="Expand/Collapse">
+            <mat-icon>{{ isExpanded(entry.set.code) ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
         </div>
 
-        @if (isExpanded(entry.name)) {
-          <ul>
-            @for (deck of entry.decks; track deck) {
-              <li>{{ deck }}</li>
-            }
-          </ul>
-        }
+        <ul *ngIf="isExpanded(entry.set.code)">
+          <li *ngIf="decks.length === 0" class="no-decks">No decks yet</li>
+          <li *ngFor="let deck of decks">{{ deck }}</li>
+        </ul>
       </div>
-    }
+    </ng-container>
 
   </mat-sidenav>
   <mat-sidenav-content>

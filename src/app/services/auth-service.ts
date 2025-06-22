@@ -4,6 +4,8 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { jwtDecode } from 'jwt-decode';
 
+import { SetStoreService } from './set-store-service';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -20,7 +22,8 @@ export class AuthService {
 
   constructor(
     protected http: HttpClient,
-    @Inject('APP_CONFIG') appConfig: any
+    @Inject('APP_CONFIG') appConfig: any,
+    private setStore: SetStoreService
   ) {
     this.registrationUrl = new URL('/register', appConfig.baseUrl).toString();
     this.authenticationUrl = new URL('/authenticate', appConfig.baseUrl).toString();
@@ -32,6 +35,7 @@ export class AuthService {
       .pipe(
         tap((token) => {
         this.saveToken(token);
+        this.setStore.loadSets();
         }),
         catchError(this.handleError)
       );
@@ -43,6 +47,7 @@ export class AuthService {
       .pipe(
         tap((token) => {
         this.saveToken(token);
+        this.setStore.loadSets();
         }),
         catchError(this.handleError)
       );
@@ -78,6 +83,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.jwtKey);
     localStorage.removeItem(this.usernameKey);
+    this.setStore.clear;
     this.usernameSubject.next(null);
   }
 

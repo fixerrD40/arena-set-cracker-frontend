@@ -1,56 +1,61 @@
-import { Component, ViewChild } from '@angular/core';
-import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
-import { RouterOutlet } from '@angular/router';
-import { MatToolbar } from '@angular/material/toolbar';
-
+import { RouterModule } from '@angular/router';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { Navbar } from './components/navbar/navbar';
+import { map, Observable } from 'rxjs';
+
+import { SetStoreService } from './services/set-store-service';
+import { ScryfallSet } from './models/scryfall-set';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
-    MatSidenav,
+    CommonModule,
     MatSidenavModule,
     MatIconModule,
     MatButtonModule,
     MatListModule,
-    RouterOutlet,
-    MatToolbar,
-    Navbar
+    RouterModule,
+    MatToolbarModule,
+    Navbar,
   ],
   templateUrl: './app.html',
-  styleUrls: ['./app.css']
+  styleUrls: ['./app.css'],
 })
 export class App {
-  protected title = 'arena-set-cracker';
-  isShowing: boolean = false;
-  sets: string[] = ['The Lord of the Rings: Tales of Middle-earth', 'Final Fantasy'];
-  setsDecks = new Map<string, string[]>([
-    ['The Lord of the Rings: Tales of Middle-earth', ['Frodo Deck', 'Gandalf Deck']],
-    ['Final Fantasy', ['Cloud Deck', 'Sephiroth Deck']]
-  ]);
+  title = 'arena-set-cracker';
+  isShowing = false;
 
+  sets$: Observable<{ id: number; set: ScryfallSet }[]>;
+  decks: string[] = [];
   expandedSet: string | null = null;
 
-  get setsDeckEntries() {
-    return Array.from(this.setsDecks.entries()).map(([name, decks]) => ({
-      name,
-      decks
-    }));
+  constructor(private setStore: SetStoreService) {
+    this.sets$ = this.setStore.sets$;
   }
 
-  toggleSet(name: string): void {
-    this.expandedSet = this.expandedSet === name ? null : name;
+  toggleSet(setCode: string): void {
+    const isExpanding = this.expandedSet !== setCode;
+    this.expandedSet = isExpanding ? setCode : null;
+
+    this.decks = ['Frodo Deck', 'Gandalf Deck'];
   }
 
-  isExpanded(name: string): boolean {
-    return this.expandedSet === name;
+  deleteSet(id: number): void {
+    this.setStore.deleteSet(id);
   }
 
-  toggleSidenav() {
+  isExpanded(setCode: string): boolean {
+    return this.expandedSet === setCode;
+  }
+
+  toggleSidenav(): void {
     this.isShowing = !this.isShowing;
   }
 }
