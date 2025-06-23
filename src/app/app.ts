@@ -11,6 +11,7 @@ import { map, Observable } from 'rxjs';
 
 import { SetStoreService } from './services/set-store-service';
 import { ScryfallSet } from './models/scryfall-set';
+import { DeckStoreService } from './services/deck-store-service';
 
 @Component({
   selector: 'app-root',
@@ -36,15 +37,23 @@ export class App {
   decks: string[] = [];
   expandedSet: string | null = null;
 
-  constructor(private setStore: SetStoreService) {
+  constructor(
+    private setStore: SetStoreService,
+    private deckStore: DeckStoreService
+  ) {
     this.sets$ = this.setStore.sets$;
+    this.deckStore.decks$.subscribe(decks => {
+      this.decks = decks.map(d => d.name);
+    });
   }
 
   toggleSet(setCode: string): void {
     const isExpanding = this.expandedSet !== setCode;
     this.expandedSet = isExpanding ? setCode : null;
 
-    this.decks = ['Frodo Deck', 'Gandalf Deck'];
+    if (isExpanding) {
+      this.deckStore.loadForSet(setCode);
+    }
   }
 
   deleteSet(id: number): void {
