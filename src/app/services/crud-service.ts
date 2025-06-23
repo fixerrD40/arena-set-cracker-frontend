@@ -14,13 +14,15 @@ export class CrudService<T> {
     this.apiUrl = `${appConfig.baseUrl}/api/${entityName}`;
   }
 
-  create(entity: T): Observable<T> {
-    return this.http.post<T>(this.apiUrl, entity, this.getHttpOptions())
+  create(entity: T, extraHeaders?: { [key: string]: string }): Observable<T> {
+    const options = this.getHttpOptions(extraHeaders);
+
+    return this.http.post<T>(this.apiUrl, entity, options)
       .pipe(catchError(this.handleError));
   }
 
-  getAll(): Observable<T[]> {
-    return this.http.get<T[]>(this.apiUrl, this.getHttpOptions())
+  getAll(extraHeaders?: { [key: string]: string }): Observable<T[]> {
+    return this.http.get<T[]>(this.apiUrl, this.getHttpOptions(extraHeaders))
       .pipe(catchError(this.handleError));
   }
 
@@ -29,8 +31,8 @@ export class CrudService<T> {
       .pipe(catchError(this.handleError));
   }
 
-  update(id: string | number, entity: T): Observable<T> {
-    return this.http.put<T>(`${this.apiUrl}/${id}`, entity, this.getHttpOptions())
+  update(id: string | number, entity: T, extraHeaders?: { [key: string]: string }): Observable<T> {
+    return this.http.put<T>(`${this.apiUrl}/${id}`, entity, this.getHttpOptions(extraHeaders))
       .pipe(catchError(this.handleError));
   }
 
@@ -39,13 +41,14 @@ export class CrudService<T> {
       .pipe(catchError(this.handleError));
   }
 
-  private getHttpOptions() {
-    return {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-      })
-    };
-  }
+  private getHttpOptions(extraHeaders?: { [header: string]: string }): { headers: HttpHeaders } {
+  let headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    ...extraHeaders,
+  });
+
+  return { headers };
+}
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = '';
