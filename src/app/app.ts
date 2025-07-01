@@ -4,7 +4,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Navbar } from './components/navbar/navbar';
 import { map, Observable } from 'rxjs';
@@ -35,11 +35,12 @@ export class App {
 
   sets$: Observable<{ id: number; set: ScryfallSet }[]>;
   decks: string[] = [];
-  expandedSet: string | null = null;
+  expandedSet: number | null = null;
 
   constructor(
     private setStore: SetStoreService,
-    private deckStore: DeckStoreService
+    private deckStore: DeckStoreService,
+    private router: Router
   ) {
     this.sets$ = this.setStore.sets$;
     this.deckStore.decks$.subscribe(decks => {
@@ -47,12 +48,12 @@ export class App {
     });
   }
 
-  toggleSet(setCode: string): void {
-    const isExpanding = this.expandedSet !== setCode;
-    this.expandedSet = isExpanding ? setCode : null;
+  toggleSet(id: number): void {
+    const isExpanding = this.expandedSet !== id;
+    this.expandedSet = isExpanding ? id : null;
 
     if (isExpanding) {
-      this.deckStore.loadForSet(setCode);
+      this.deckStore.loadForSet(id);
     }
   }
 
@@ -60,8 +61,18 @@ export class App {
     this.setStore.deleteSet(id);
   }
 
-  isExpanded(setCode: string): boolean {
-    return this.expandedSet === setCode;
+  addSet() {
+    this.router.navigate(['/add-set']);
+  }
+
+  addDeck(entry: { id: number; set: ScryfallSet }) {
+    this.router.navigate(['/add-deck'], {
+      state: { entry }
+    });
+  }
+
+  isExpanded(id: number): boolean {
+    return this.expandedSet === id;
   }
 
   toggleSidenav(): void {

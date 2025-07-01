@@ -1,0 +1,33 @@
+<mat-card class="add-deck-card">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="add-deck-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Deck Name</mat-label>
+      <input matInput formControlName="name" placeholder="Enter deck name" required />
+      <mat-error *ngIf="form.controls.name.invalid && form.controls.name.touched">
+        Name is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Arena Deck Code</mat-label>
+      <textarea
+        matInput
+        formControlName="arenaDeck"
+        placeholder="Enter arena deck code"
+        rows="6"
+        required
+      ></textarea>
+      <mat-error *ngIf="form.controls.arenaDeck.invalid && form.controls.arenaDeck.touched">
+        Arena deck code is required
+      </mat-error>
+    </mat-form-field>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+      Add Deck
+    </button>
+  </form>
+</mat-card>

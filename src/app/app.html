@@ -4,14 +4,14 @@
   <mat-sidenav mode="side" [opened]="isShowing">
     <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
       <span>My Sets</span>
-      <button mat-icon-button aria-label="Add set" [routerLink]="['/add-set']">
-        <mat-icon>add</mat-icon>
-      </button>
+      <button mat-icon-button aria-label="Add set" (click)="addSet()" matTooltip="Add Set">
+    <mat-icon>add</mat-icon>
+  </button>
     </mat-toolbar>
 
     <ng-container *ngIf="sets$ | async as sets">
       <div class="sets" *ngFor="let entry of sets">
-        <div (click)="toggleSet(entry.set.code)" class="set-header">
+        <div (click)="toggleSet(entry.id)" class="set-header">
           <span>{{ entry.set.name }} ({{ entry.set.code.toLowerCase() }})</span>
           <span class="spacer"></span>
           <button
@@ -22,11 +22,17 @@
             <mat-icon color="warn">delete</mat-icon>
           </button>
           <button mat-icon-button aria-label="Expand/Collapse">
-            <mat-icon>{{ isExpanded(entry.set.code) ? 'expand_less' : 'expand_more' }}</mat-icon>
+            <mat-icon>{{ isExpanded(entry.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
         </div>
 
-        <ul *ngIf="isExpanded(entry.set.code)">
+        <ul *ngIf="isExpanded(entry.id)">
+          <li class="add-deck-item">
+            <button mat-button color="primary" (click)="addDeck(entry)">
+              + Add New Deck
+            </button>
+          </li>
+
           <li *ngIf="decks.length === 0" class="no-decks">No decks yet</li>
           <li *ngFor="let deck of decks">{{ deck }}</li>
         </ul>
