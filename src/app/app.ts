@@ -8,6 +8,7 @@ import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Observable } from 'rxjs';
 
+import { AuthService } from './services/auth-service';
 import { SetStoreService } from './services/set-store-service';
 import { ScryfallSet } from './models/scryfall-set';
 import { DeckStoreService } from './services/deck-store-service';
@@ -39,6 +40,7 @@ export class App {
   expandedSet: number | null = null;
 
   constructor(
+    private authService: AuthService,
     private setStore: SetStoreService,
     private deckStore: DeckStoreService,
     private router: Router
@@ -46,6 +48,15 @@ export class App {
     this.sets$ = this.setStore.sets$;
     this.deckStore.decks$.subscribe(decks => {
       this.decks = decks;
+    });
+
+    this.authService.username$.subscribe((username: any) => {
+      if (username) {
+        this.setStore.loadSets();
+      } else {
+        this.setStore.clear();
+        this.deckStore.clear();
+      }
     });
   }
 
@@ -67,9 +78,9 @@ export class App {
     this.router.navigate(['/add-set']);
   }
 
-  addDeck(entry: { id: number; set: ScryfallSet }) {
+  addDeck(set: { id: number; set: ScryfallSet }) {
     this.router.navigate(['/add-deck'], {
-      state: { entry }
+      state: { set }
     });
   }
 

@@ -37,11 +37,12 @@ export class DeckStoreService {
     });
   }
 
-  addDeck(set: number, deck: Deck) {
-    return this.deckService.createWithSet(deck, set).pipe(
-      tap(createdDeck => {
+  addDeck(set: { id: number; scryfallSet: ScryfallSet }, deck: Deck) {
+    return this.deckService.createWithSet(deck, set.id).pipe(
+      tap(rawDeck => {
+        const deckInstance = new Deck(rawDeck, set.scryfallSet);
         const current = this.decksSubject.value;
-        this.decksSubject.next([...current, createdDeck]);
+        this.decksSubject.next([...current, deckInstance]);
       })
     );
   }
@@ -73,5 +74,9 @@ export class DeckStoreService {
 
   getDeckById(id: number): Deck | undefined {
     return this.decksSubject.value.find(d => d.id === id);
+  }
+
+  clear() {
+    this.decksSubject.next([]);
   }
 }

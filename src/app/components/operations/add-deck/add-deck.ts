@@ -17,8 +17,7 @@ import { ScryfallSet } from '../../../models/scryfall-set';
   imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule]
 })
 export class AddDeck implements OnInit {
-  set!: number;
-  scryfallSet!: ScryfallSet;
+  set!: { id: number; scryfallSet: ScryfallSet };
 
   form = new FormGroup({
     name: new FormControl('', Validators.required),
@@ -33,15 +32,14 @@ export class AddDeck implements OnInit {
   ) {}
 
   ngOnInit() {
-    const state = history.state as { entry?: { id: number; set: ScryfallSet } };
+    const state = history.state as { set?: { id: number; scryfallSet: ScryfallSet } };
 
-    if (!state.entry || !state.entry.set) {
+    if (!state.set || !state.set.scryfallSet) {
       this.router.navigate(['/']);
       return;
     }
 
-    this.set = state.entry.id;
-    this.scryfallSet = state.entry.set;
+    this.set = state.set;
   }
 
   submit() {
@@ -55,7 +53,7 @@ export class AddDeck implements OnInit {
           name: this.form.value.name!,
           raw: this.form.value.arenaDeck!,
         },
-        this.scryfallSet
+        this.set.scryfallSet
       );
 
       this.deckStore.addDeck(this.set, deck).subscribe({

@@ -83,7 +83,6 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.jwtKey);
     localStorage.removeItem(this.usernameKey);
-    this.setStore.clear;
     this.usernameSubject.next(null);
   }
 
