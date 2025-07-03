@@ -6,12 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Navbar } from './components/navbar/navbar';
-import { map, Observable } from 'rxjs';
+import { filter, Observable } from 'rxjs';
 
 import { SetStoreService } from './services/set-store-service';
 import { ScryfallSet } from './models/scryfall-set';
 import { DeckStoreService } from './services/deck-store-service';
+import { Navbar } from './components/layout/navbar/navbar';
 
 @Component({
   selector: 'app-root',
