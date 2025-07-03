@@ -1,0 +1,66 @@
+.deck-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.deck-meta {
+  flex: 1;
+  font-size: 0.9rem;
+  padding-right: 1rem;
+  color: #444;
+}
+
+.deck-tags ul {
+  padding-left: 1rem;
+  margin: 0;
+}
+
+.deck-tags li {
+  list-style-type: disc;
+  margin-bottom: 4px;
+}
+
+.deck-notes {
+  margin-top: 1rem;
+  white-space: pre-wrap;
+}
+
+.deck-list {
+  padding: 1rem;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cards {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.card-box {
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: default;
+  user-select: none;
+  transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.card-box:hover {
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  transform: translateX(5px);
+}

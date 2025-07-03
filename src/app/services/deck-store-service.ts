@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 
 import { Deck } from '../models/deck';
 import { DeckService } from './deck-service';
+import { ScryfallSet } from '../models/scryfall-set';
 
 @Injectable({
   providedIn: 'root',
@@ -13,11 +14,24 @@ export class DeckStoreService {
 
   constructor(private deckService: DeckService) {}
 
-  loadForSet(id: number) {
-    this.deckService.getDecksBySet(id).subscribe({
-      next: decks => this.decksSubject.next(decks),
+  loadForSet(entry: { id: number; set: ScryfallSet }) {
+    this.deckService.getDecksBySet(entry.id).subscribe({
+      next: rawDecks => {
+        const parsedDecks: Deck[] = [];
+
+        for (const raw of rawDecks) {
+          try {
+            const deck = new Deck(raw, entry.set);
+            parsedDecks.push(deck);
+          } catch (e) {
+            console.warn(`Skipping invalid deck "${raw.name}":`, e);
+          }
+        }
+
+        this.decksSubject.next(parsedDecks);
+      },
       error: err => {
-        console.error('Failed to load decks for set', id, err);
+        console.error('Failed to load decks for set', entry.id, err);
         this.decksSubject.next([]);
       }
     });

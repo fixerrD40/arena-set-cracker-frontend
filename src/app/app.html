@@ -5,13 +5,13 @@
     <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
       <span>My Sets</span>
       <button mat-icon-button aria-label="Add set" (click)="addSet()" matTooltip="Add Set">
-    <mat-icon>add</mat-icon>
-  </button>
+        <mat-icon>add</mat-icon>
+      </button>
     </mat-toolbar>
 
     <ng-container *ngIf="sets$ | async as sets">
       <div class="sets" *ngFor="let entry of sets">
-        <div (click)="toggleSet(entry.id)" class="set-header">
+        <div (click)="toggleSet(entry)" class="set-header">
           <span>{{ entry.set.name }} ({{ entry.set.code.toLowerCase() }})</span>
           <span class="spacer"></span>
           <button
@@ -34,11 +34,14 @@
           </li>
 
           <li *ngIf="decks.length === 0" class="no-decks">No decks yet</li>
-          <li *ngFor="let deck of decks">{{ deck }}</li>
+          <li *ngFor="let deck of decks">
+            <button mat-button [routerLink]="['/deck', deck.id]">
+              {{ deck.name }}
+            </button>
+          </li>
         </ul>
       </div>
     </ng-container>
-
   </mat-sidenav>
   <mat-sidenav-content>
     <router-outlet></router-outlet>

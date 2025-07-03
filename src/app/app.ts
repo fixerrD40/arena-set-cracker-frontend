@@ -6,12 +6,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { filter, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { SetStoreService } from './services/set-store-service';
 import { ScryfallSet } from './models/scryfall-set';
 import { DeckStoreService } from './services/deck-store-service';
 import { Navbar } from './components/layout/navbar/navbar';
+import { Deck } from './models/deck';
 
 @Component({
   selector: 'app-root',
@@ -24,8 +25,8 @@ import { Navbar } from './components/layout/navbar/navbar';
     MatListModule,
     RouterModule,
     MatToolbarModule,
-    Navbar,
-  ],
+    Navbar
+],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
 })
@@ -34,7 +35,7 @@ export class App {
   isShowing = false;
 
   sets$: Observable<{ id: number; set: ScryfallSet }[]>;
-  decks: string[] = [];
+  decks: Deck[] = [];
   expandedSet: number | null = null;
 
   constructor(
@@ -44,16 +45,17 @@ export class App {
   ) {
     this.sets$ = this.setStore.sets$;
     this.deckStore.decks$.subscribe(decks => {
-      this.decks = decks.map(d => d.name);
+      this.decks = decks;
     });
   }
 
-  toggleSet(id: number): void {
-    const isExpanding = this.expandedSet !== id;
-    this.expandedSet = isExpanding ? id : null;
+  toggleSet(entry: { id: number; set: ScryfallSet }): void {
+    const isExpanding = this.expandedSet !== entry.id;
+    this.expandedSet = isExpanding ? entry.id : null;
 
     if (isExpanding) {
-      this.deckStore.loadForSet(id);
+      this.deckStore.loadForSet(entry);
+      
     }
   }
 

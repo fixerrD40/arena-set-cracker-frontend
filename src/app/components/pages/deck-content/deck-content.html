@@ -1,0 +1,35 @@
+<div class="deck-wrapper" *ngIf="deck">
+  <div class="deck-meta">
+    <div class="deck-tags">
+      <h3>Tags:</h3>
+      <ul *ngIf="deck.tags?.length; else noTags">
+        <li *ngFor="let tag of deck.tags">{{ tag }}</li>
+      </ul>
+      <ng-template #noTags>
+        <p>[blank]</p>
+      </ng-template>
+    </div>
+
+    <div class="deck-notes">
+      <h3>Notes:</h3>
+      <p *ngIf="deck.notes; else noNotes">{{ deck.notes }}</p>
+      <ng-template #noNotes>
+        <p>[blank]</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="deck-list">
+    <h2>{{ deck.name }}</h2>
+
+    <div class="cards">
+      <div
+        class="card-box"
+        *ngFor="let card of deck.cards"
+        matTooltip="{{ card.quantity }}x {{ card.name }}"
+      >
+        <span>{{ card.quantity }}x</span> {{ card.name }}
+      </div>
+    </div>
+  </div>
+</div>

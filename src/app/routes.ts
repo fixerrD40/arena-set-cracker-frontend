@@ -31,4 +31,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./components/operations/add-deck/add-deck').then(m => m.AddDeck)
   },
+  {
+    path: 'deck/:id',
+    loadComponent: () =>
+      import('./components/pages/deck-content/deck-content').then(m => m.DeckContent)
+  },
 ];
