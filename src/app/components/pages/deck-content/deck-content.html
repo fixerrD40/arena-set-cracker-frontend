@@ -17,6 +17,22 @@
         <p>[blank]</p>
       </ng-template>
     </div>
+
+    <div class="deck-recommendations">
+      <h3>Recommended Cards:</h3>
+
+      <p *ngIf="loadingRecommendations">Loading recommendations...</p>
+
+      <ul *ngIf="!loadingRecommendations && recommendedCards.length; else noRecs">
+        <li *ngFor="let card of recommendedCards">
+          {{ card }}
+        </li>
+      </ul>
+
+      <ng-template #noRecs>
+        <p>[blank]</p>
+      </ng-template>
+    </div>
   </div>
 
   <div class="deck-list">
@@ -26,9 +42,9 @@
       <div
         class="card-box"
         *ngFor="let card of deck.cards"
-        matTooltip="{{ card.quantity }}x {{ card.name }}"
+        matTooltip="{{ card.name }}"
       >
-        <span>{{ card.quantity }}x</span> {{ card.name }}
+        {{ card.name }}
       </div>
     </div>
   </div>
