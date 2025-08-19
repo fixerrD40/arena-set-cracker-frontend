@@ -4,7 +4,7 @@ import { catchError } from 'rxjs/operators';
 
 export class CrudService<T> {
 
-  private apiUrl: string;
+  protected apiUrl: string;
 
   constructor(
     protected http: HttpClient,
@@ -41,7 +41,7 @@ export class CrudService<T> {
       .pipe(catchError(this.handleError));
   }
 
-  private getHttpOptions(extraHeaders?: { [header: string]: string }): { headers: HttpHeaders } {
+  protected getHttpOptions(extraHeaders?: { [header: string]: string }): { headers: HttpHeaders } {
   let headers = new HttpHeaders({
     'Content-Type': 'application/json',
     ...extraHeaders,
@@ -50,7 +50,7 @@ export class CrudService<T> {
   return { headers };
 }
 
-  private handleError(error: HttpErrorResponse) {
+  protected handleError(error: HttpErrorResponse) {
     let errorMessage = '';
     if (error.error instanceof ErrorEvent) {
       errorMessage = `Client-side error: ${error.error.message}`;

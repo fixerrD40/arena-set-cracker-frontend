@@ -38,7 +38,7 @@ export class DeckStoreService {
   }
 
   addDeck(set: { id: number; scryfallSet: ScryfallSet }, deck: Deck) {
-    return this.deckService.createWithSet(deck, set.id).pipe(
+    return this.deckService.createWithSet(set.id, deck).pipe(
       tap(rawDeck => {
         const deckInstance = new Deck(rawDeck, set.scryfallSet);
         const current = this.decksSubject.value;
@@ -47,10 +47,10 @@ export class DeckStoreService {
     );
   }
 
-  updateDeck(set: number, deck: Deck,) {
+  updateDeck(deck: Deck,) {
     if (!deck.id) throw new Error('Deck ID is required to update');
 
-    return this.deckService.updateWithSet(deck, set).pipe(
+    return this.deckService.update(deck.id, deck).pipe(
       tap(updatedDeck => {
         const current = this.decksSubject.value;
         const index = current.findIndex(d => d.id === updatedDeck.id);

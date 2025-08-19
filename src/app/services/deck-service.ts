@@ -13,19 +13,15 @@ export class DeckService extends CrudService<Deck> {
     super(http, config, 'decks');
   }
 
-  getDecksBySet(set: number): Observable<Deck[]> {
-    return this.getAll({ 'X-Set': set.toString() });
+  getDecksBySet(setId: number): Observable<Deck[]> {
+    const url = `${this.apiUrl}/${setId}`;
+    return this.http.get<Deck[]>(url, this.getHttpOptions())
+      .pipe(catchError(this.handleError));
   }
 
-  createWithSet(deck: Deck, setId: number): Observable<Deck> {
-    return this.create(deck, { 'X-Set': setId.toString() });
+  createWithSet(setId: number, deck: Deck): Observable<Deck> {
+    const url = `${this.apiUrl}/${setId}`;
+    return this.http.post<Deck>(url, deck, this.getHttpOptions())
+      .pipe(catchError(this.handleError));
   }
-
-  updateWithSet(deck: Deck, setId: number): Observable<Deck> {
-    if (!deck.id) {
-      throw new Error('Deck must have an ID to be updated.');
-    }
-    return this.update(deck.id, deck, { 'X-Set': setId.toString() });
-  }
-
 }

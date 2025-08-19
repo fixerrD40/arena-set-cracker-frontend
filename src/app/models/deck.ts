@@ -1,3 +1,4 @@
+import { ColorIdentity } from "./color";
 import { ScryfallSet } from "./scryfall-set";
 
 export interface CardEntry {
@@ -11,6 +12,7 @@ export interface CardEntry {
 export class Deck {
   id?: number;
   name: string;
+  identity: ColorIdentity;
   raw: string;
   tags?: string[];
   notes?: string;
@@ -18,12 +20,14 @@ export class Deck {
 
   constructor(init: {
     name: string;
+    identity: ColorIdentity;
     raw: string;
     id?: number;
     tags?: string[];
     notes?: string;
   }, set: ScryfallSet) {
     this.name = init.name;
+    this.identity = init.identity
     this.raw = init.raw;
     this.id = init.id;
     this.tags = init.tags;

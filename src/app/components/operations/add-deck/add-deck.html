@@ -22,6 +22,30 @@
       </mat-error>
     </mat-form-field>
 
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Primary Color</mat-label>
+      <mat-select formControlName="primaryColor" required>
+        <mat-option *ngFor="let color of allColors" [value]="color">
+          {{ getColorName(color) }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="form.controls.primaryColor.invalid && form.controls.primaryColor.touched">
+        Primary color is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Colors in Identity</mat-label>
+      <mat-select formControlName="colors" multiple required>
+        <mat-option *ngFor="let color of allColors" [value]="color">
+          {{ getColorName(color) }}
+        </mat-option>
+      </mat-select>
+      <mat-error *ngIf="form.controls.colors.invalid && form.controls.colors.touched">
+        Select at least one color
+      </mat-error>
+    </mat-form-field>
+
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
