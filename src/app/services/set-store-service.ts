@@ -14,7 +14,7 @@ export class SetStoreService {
   private setsSubject = new BehaviorSubject<Map<number, ScryfallSet>>(new Map());
   sets$ = this.setsSubject.asObservable().pipe(
     map(setMap =>
-      Array.from(setMap.entries()).map(([id, set]) => ({ id, set }))
+      Array.from(setMap.entries()).map(([id, scryfallSet]) => ({ id, scryfallSet }))
     )
   );
 

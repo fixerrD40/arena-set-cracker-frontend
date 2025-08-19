@@ -12,7 +12,7 @@
     <ng-container *ngIf="sets$ | async as sets">
       <div class="sets" *ngFor="let entry of sets">
         <div (click)="toggleSet(entry)" class="set-header">
-          <span>{{ entry.set.name }} ({{ entry.set.code.toLowerCase() }})</span>
+          <span>{{ entry.scryfallSet.name }} ({{ entry.scryfallSet.code.toLowerCase() }})</span>
           <span class="spacer"></span>
           <button
             mat-icon-button

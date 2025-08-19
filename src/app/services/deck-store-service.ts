@@ -14,14 +14,14 @@ export class DeckStoreService {
 
   constructor(private deckService: DeckService) {}
 
-  loadForSet(entry: { id: number; set: ScryfallSet }) {
+  loadForSet(entry: { id: number; scryfallSet: ScryfallSet }) {
     this.deckService.getDecksBySet(entry.id).subscribe({
       next: rawDecks => {
         const parsedDecks: Deck[] = [];
 
         for (const raw of rawDecks) {
           try {
-            const deck = new Deck(raw, entry.set);
+            const deck = new Deck(raw, entry.scryfallSet);
             parsedDecks.push(deck);
           } catch (e) {
             console.warn(`Skipping invalid deck "${raw.name}":`, e);

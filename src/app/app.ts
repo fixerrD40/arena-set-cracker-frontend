@@ -35,7 +35,7 @@ export class App {
   title = 'arena-set-cracker';
   isShowing = false;
 
-  sets$: Observable<{ id: number; set: ScryfallSet }[]>;
+  sets$: Observable<{ id: number; scryfallSet: ScryfallSet }[]>;
   decks: Deck[] = [];
   expandedSet: number | null = null;
 
@@ -60,7 +60,7 @@ export class App {
     });
   }
 
-  toggleSet(entry: { id: number; set: ScryfallSet }): void {
+  toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
     const isExpanding = this.expandedSet !== entry.id;
     this.expandedSet = isExpanding ? entry.id : null;
 
@@ -78,7 +78,7 @@ export class App {
     this.router.navigate(['/add-set']);
   }
 
-  addDeck(set: { id: number; set: ScryfallSet }) {
+  addDeck(set: { id: number; scryfallSet: ScryfallSet }) {
     this.router.navigate(['/add-deck'], {
       state: { set }
     });
