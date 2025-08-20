@@ -20,12 +20,8 @@ export class DeckStoreService {
         const parsedDecks: Deck[] = [];
 
         for (const raw of rawDecks) {
-          try {
-            const deck = new Deck(raw, entry.scryfallSet);
-            parsedDecks.push(deck);
-          } catch (e) {
-            console.warn(`Skipping invalid deck "${raw.name}":`, e);
-          }
+          const deck = new Deck(raw);
+          parsedDecks.push(deck);
         }
 
         this.decksSubject.next(parsedDecks);
@@ -40,7 +36,7 @@ export class DeckStoreService {
   addDeck(set: { id: number; scryfallSet: ScryfallSet }, deck: Deck) {
     return this.deckService.createWithSet(set.id, deck).pipe(
       tap(rawDeck => {
-        const deckInstance = new Deck(rawDeck, set.scryfallSet);
+        const deckInstance = new Deck(rawDeck);
         const current = this.decksSubject.value;
         this.decksSubject.next([...current, deckInstance]);
       })

@@ -25,22 +25,43 @@ export class Deck {
     id?: number;
     tags?: string[];
     notes?: string;
-  }, set: ScryfallSet) {
+  }) {
     this.name = init.name;
-    this.identity = init.identity
+    this.identity = init.identity;
     this.raw = init.raw;
     this.id = init.id;
     this.tags = init.tags;
     this.notes = init.notes;
 
-    const { valid, errors, parsed } = validateDeck(this.raw, set);
-    if (!valid) {
-      throw new Error(`Invalid deck "${this.name}":\n - ${errors.join('\n - ')}`);
-    }
-
-    this.cards = parsed;
+    this.cards = this.raw?.trim() ? parseRaw(this.raw) : [];
   }
-  
+
+  /**
+   * Run validation against the given set.
+   */
+  validate(set: ScryfallSet): {
+    valid: boolean;
+    errors: string[];
+    parsed: CardEntry[];
+  } {
+    return validateDeck(this.raw, set);
+  }
+
+  /**
+   * Boolean helper for convenience
+   */
+  isValid(set: ScryfallSet): boolean {
+    return this.validate(set).valid;
+  }
+
+  /**
+   * Optional: re-parse raw string if it's changed
+   */
+  updateRaw(raw: string) {
+    this.raw = raw;
+    this.cards = parseRaw(raw);
+  }
+
   toJSON() {
     const { cards, ...rest } = this;
     return rest;

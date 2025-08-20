@@ -24,7 +24,7 @@ export class AddDeck implements OnInit {
 
   form = new FormGroup({
     name: new FormControl('', Validators.required),
-    arenaDeck: new FormControl('', Validators.required),
+    arenaDeck: new FormControl(''),
     primaryColor: new FormControl<Color | null>(null, Validators.required),
     colors: new FormControl<Color[]>([], Validators.required),
   });
@@ -58,30 +58,25 @@ export class AddDeck implements OnInit {
 
     if (!this.form.valid) return;
 
-    try {
-      const identity = {
-        primary: this.form.value.primaryColor!,
-        colors: this.form.value.colors!,
-      };
+    const identity = {
+      primary: this.form.value.primaryColor!,
+      colors: this.form.value.colors!,
+    };
 
-      const deck = new Deck(
-        {
-          name: this.form.value.name!,
-          raw: this.form.value.arenaDeck!,
-          identity
-        },
-        this.set.scryfallSet
-      );
+    const deck = new Deck(
+      {
+        name: this.form.value.name!,
+        raw: this.form.value.arenaDeck!,
+        identity
+      }
+    );
 
-      this.deckStore.addDeck(this.set, deck).subscribe({
-        next: () => this.router.navigate(['/']),
-        error: err => {
-          console.error('Failed to add deck', err);
-          this.errorMessage = 'An error occurred while saving the deck.';
-        },
-      });
-    } catch (err: any) {
-      this.errorMessage = err?.message ?? 'Deck validation failed.';
-    }
+    this.deckStore.addDeck(this.set, deck).subscribe({
+      next: () => this.router.navigate(['/']),
+      error: err => {
+        console.error('Failed to add deck', err);
+        this.errorMessage = 'An error occurred while saving the deck.';
+      },
+    });
   }
 }
