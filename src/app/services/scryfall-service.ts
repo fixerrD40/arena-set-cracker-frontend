@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { ScryfallCard } from '../models/scryfall-card.model';
 
 @Injectable({
   providedIn: 'root',
@@ -27,5 +28,21 @@ export class ScryfallService {
 
   getAllSets(): Observable<any> {
     return this.http.get(`${this.baseUrl}/sets`);
+  }
+
+  getCardsBySet(code: string): Observable<ScryfallCard[]> {
+    const url = `${this.baseUrl}/cards/search?q=set:${code.toLowerCase()}`;
+    return this.fetchAllPages(url);
+  }
+
+  private fetchAllPages(url: string, accumulated: ScryfallCard[] = []): Observable<ScryfallCard[]> {
+    return this.http.get<any>(url).pipe(
+      switchMap(response => {
+        const combined = [...accumulated, ...response.data as ScryfallCard[]];
+        return response.has_more
+          ? this.fetchAllPages(response.next_page, combined)
+          : of(combined);
+      })
+    );
   }
 }

@@ -23,9 +23,15 @@
 
       <p *ngIf="loadingRecommendations">Loading recommendations...</p>
 
-      <ul *ngIf="!loadingRecommendations && recommendedCards.length; else noRecs">
-        <li *ngFor="let card of recommendedCards">
-          {{ card }}
+      <ul *ngIf="!loadingRecommendations && recommendedCardDetails.length; else noRecs" class="recommended-cards-list">
+        <li *ngFor="let card of recommendedCardDetails" class="recommended-card">
+          <img 
+            *ngIf="card.image_uris?.small" 
+            [src]="card.image_uris?.small" 
+            [alt]="card.name" 
+            class="recommended-card-image"
+          />
+          <span class="recommended-card-name">{{ card.name }}</span>
         </li>
       </ul>
 

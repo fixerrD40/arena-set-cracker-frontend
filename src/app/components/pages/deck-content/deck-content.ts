@@ -1,27 +1,31 @@
 import { Component, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subject, takeUntil, filter, switchMap, of } from 'rxjs';
+import { Subject, takeUntil, filter, switchMap, of, tap, map } from 'rxjs';
 
 import { Deck } from '../../../models/deck';
 import { DeckStoreService } from '../../../services/deck-store-service';
 import { RecommendationService } from '../../../services/recommendation-service';
 import { MatTooltip } from '@angular/material/tooltip';
+import { CardStoreService } from '../../../services/card-store-service';
+import { ScryfallCard } from '../../../models/scryfall-card.model';
 
 @Component({
   selector: 'app-deck-list',
   standalone: true,
   imports: [CommonModule, MatTooltip],
   templateUrl: './deck-content.html',
-  styleUrl: './deck-content.css'
+  styleUrls: ['./deck-content.css']
 })
 export class DeckContent implements OnDestroy {
   private deckStore = inject(DeckStoreService);
   private route = inject(ActivatedRoute);
   private recommendationService = inject(RecommendationService);
+  private cardStore = inject(CardStoreService);
 
   deck: Deck | undefined;
   recommendedCards: string[] = [];
+  recommendedCardDetails: ScryfallCard[] = [];
   loadingRecommendations = false;
 
   private destroy$ = new Subject<void>();
@@ -37,17 +41,31 @@ export class DeckContent implements OnDestroy {
 
           if (!this.deck) {
             console.warn(`Deck with ID ${id} not found.`);
-            return of([]); // no deck, no recommendations
+            return of([]);
           }
 
           this.loadingRecommendations = true;
-          return this.recommendationService.getRecommendations(id);
+
+          // Get recommended card names from recommendation service
+          return this.recommendationService.getRecommendations(id).pipe(
+            tap((names: string[]) => {
+              this.recommendedCards = names;
+            }),
+            // Now get the current cached cards observable (no loadSet call here)
+            switchMap(() => this.cardStore.getCurrentSetCards()),
+            map((cards: ScryfallCard[]) => {
+              const cardMap = new Map(cards.map(card => [card.name, card]));
+              return this.recommendedCards
+                .map(name => cardMap.get(name))
+                .filter((card): card is ScryfallCard => !!card);
+            })
+          );
         })
       )
       .subscribe({
-        next: (cards: string[]) => {
+        next: (cards: ScryfallCard[]) => {
+          this.recommendedCardDetails = cards;
           this.loadingRecommendations = false;
-          this.recommendedCards = cards;
         },
         error: err => {
           this.loadingRecommendations = false;
@@ -60,7 +78,6 @@ export class DeckContent implements OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
 
-    // Cancel backend recommendation job if active
     this.recommendationService.cancelRecommendations().subscribe({
       next: msg => console.log('Cancelled recommendation job:', msg),
       error: err => console.warn('Failed to cancel job:', err)

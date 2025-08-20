@@ -14,6 +14,7 @@ import { ScryfallSet } from './models/scryfall-set';
 import { DeckStoreService } from './services/deck-store-service';
 import { Navbar } from './components/layout/navbar/navbar';
 import { Deck } from './models/deck';
+import { CardStoreService } from './services/card-store-service';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +44,7 @@ export class App {
     private authService: AuthService,
     private setStore: SetStoreService,
     private deckStore: DeckStoreService,
+    private cardStore: CardStoreService,
     private router: Router
   ) {
     this.sets$ = this.setStore.sets$;
@@ -66,7 +68,7 @@ export class App {
 
     if (isExpanding) {
       this.deckStore.loadForSet(entry);
-      
+      this.cardStore.loadSet(entry.scryfallSet.code).subscribe()
     }
   }
 
