@@ -62,15 +62,17 @@ export class App {
     });
   }
 
-  toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
-    const isExpanding = this.expandedSet !== entry.id;
-    this.expandedSet = isExpanding ? entry.id : null;
-
-    if (isExpanding) {
-      this.deckStore.loadForSet(entry);
-      this.cardStore.loadSet(entry.scryfallSet.code).subscribe()
-    }
+toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
+  if (this.expandedSet === entry.id) {
+    this.router.navigate(['/set', entry.id]);
+    return;
   }
+
+  this.expandedSet = entry.id;
+  this.deckStore.loadForSet(entry);
+  this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
+  this.router.navigate(['/set', entry.id]);
+}
 
   deleteSet(id: number): void {
     this.setStore.deleteSet(id);

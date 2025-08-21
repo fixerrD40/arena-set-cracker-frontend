@@ -21,9 +21,6 @@
           >
             <mat-icon color="warn">delete</mat-icon>
           </button>
-          <button mat-icon-button aria-label="Expand/Collapse">
-            <mat-icon>{{ isExpanded(entry.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </button>
         </div>
 
         <ul *ngIf="isExpanded(entry.id)">

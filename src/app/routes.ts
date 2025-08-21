@@ -27,6 +27,11 @@ export const routes: Routes = [
       import('./components/operations/add-set/add-set').then(m => m.AddSet)
   },
   {
+    path: 'set/:id',
+    loadComponent: () =>
+      import('./components/pages/set-detail/set-detail').then(m => m.SetDetail)
+  },
+  {
     path: 'add-deck',
     loadComponent: () =>
       import('./components/operations/add-deck/add-deck').then(m => m.AddDeck)
