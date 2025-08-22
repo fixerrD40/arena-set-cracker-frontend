@@ -37,22 +37,78 @@
   padding-bottom: 4px;
 }
 
-/* Tags */
-.deck-tags ul {
-  padding-left: 1.2rem;
-  margin: 0;
+/* Tags using Angular Material chips */
+.deck-tags {
+  margin-bottom: 1.5rem;
 }
 
-.deck-tags li {
-  list-style-type: disc;
-  margin-bottom: 4px;
+mat-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-height: 40px;
+}
+
+mat-chip {
+  background-color: #e0e0e0;
+  font-size: 0.85rem;
+  border-radius: 16px;
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+mat-chip:hover {
+  background-color: #d5d5d5;
+}
+
+mat-chip button[matChipRemove] {
+  margin-left: 6px;
+  font-size: 14px;
+  color: #666;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+mat-chip button[matChipRemove]:hover {
+  color: #c00;
+}
+
+input[matChipInputFor] {
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  min-width: 120px;
 }
 
 /* Notes */
 .deck-notes {
   margin-top: 1.5rem;
-  white-space: pre-wrap;
-  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-notes textarea {
+  resize: vertical;
+  padding: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-height: 100px;
+  background: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.deck-notes textarea:focus {
+  border-color: #3f51b5;
+  outline: none;
 }
 
 /* Recommendations section */
@@ -79,7 +135,7 @@
 .recommended-card-image {
   width: 100%;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease;
 }
 
@@ -103,7 +159,7 @@
   padding: 1rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.05);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
   max-height: 600px;
   overflow-y: auto;
 }
@@ -113,6 +169,9 @@
   margin-bottom: 1rem;
   border-bottom: 1px solid #ccc;
   padding-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* Deck card list */
@@ -127,8 +186,9 @@
   border-radius: 4px;
   padding: 8px;
   font-size: 0.9rem;
-  box-shadow: inset 0 0 2px rgba(0,0,0,0.05);
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.05);
   transition: background 0.2s ease;
+  cursor: default;
 }
 
 .card-box:hover {
@@ -142,7 +202,8 @@
     align-items: stretch;
   }
 
-  .deck-meta, .deck-list {
+  .deck-meta,
+  .deck-list {
     max-width: 100%;
   }
 

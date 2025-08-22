@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil, filter, switchMap, of, tap, map } from 'rxjs';
@@ -9,15 +9,28 @@ import { RecommendationService } from '../../../services/recommendation-service'
 import { MatTooltip } from '@angular/material/tooltip';
 import { CardStoreService } from '../../../services/card-store-service';
 import { ScryfallCard } from '../../../models/scryfall-card.model';
+import { MatChipInputEvent, MatChipsModule } from '@angular/material/chips';
+import { Color } from '../../../models/color';
+import { COMMA, ENTER } from '@angular/cdk/keycodes';
+import { MatIcon } from '@angular/material/icon';
+import { DeckFormComponent } from '../../shared/deck-form/deck-form';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-deck-list',
   standalone: true,
-  imports: [CommonModule, MatTooltip],
+  imports: [
+    CommonModule,
+    DeckFormComponent,
+    FormsModule,
+    MatTooltip,
+    MatIcon,
+    MatChipsModule
+  ],
   templateUrl: './deck-content.html',
   styleUrls: ['./deck-content.css']
 })
-export class DeckContent implements OnDestroy {
+export class DeckContent implements OnInit, OnDestroy {
   private deckStore = inject(DeckStoreService);
   private route = inject(ActivatedRoute);
   private recommendationService = inject(RecommendationService);
@@ -27,43 +40,44 @@ export class DeckContent implements OnDestroy {
   recommendedCards: string[] = [];
   recommendedCardDetails: ScryfallCard[] = [];
   loadingRecommendations = false;
+  editing = false;
 
+  readonly separatorKeysCodes: number[] = [ENTER, COMMA];
   private destroy$ = new Subject<void>();
 
-  constructor() {
+  ngOnInit(): void {
     this.route.paramMap
       .pipe(
         takeUntil(this.destroy$),
         filter(paramMap => paramMap.has('id')),
-        switchMap(paramMap => {
-          const id = Number(paramMap.get('id'));
-          this.deck = this.deckStore.getDeckById(id);
-
-          if (!this.deck) {
-            console.warn(`Deck with ID ${id} not found.`);
-            return of([]);
-          }
-
-          this.loadingRecommendations = true;
-
-          // Get recommended card names from recommendation service
-          return this.recommendationService.getRecommendations(id).pipe(
-            tap((names: string[]) => {
-              this.recommendedCards = names;
+        map(paramMap => Number(paramMap.get('id'))),
+        switchMap(deckId =>
+          this.deckStore.decks$.pipe(
+            map(decks => decks.find(d => d.id === deckId)),
+            filter((deck): deck is Deck => !!deck),
+            tap(deck => {
+              this.deck = deck;
+              this.loadingRecommendations = true;
             }),
-            // Now get the current cached cards observable (no loadSet call here)
-            switchMap(() => this.cardStore.getCurrentSetCards()),
-            map((cards: ScryfallCard[]) => {
-              const cardMap = new Map(cards.map(card => [card.name, card]));
-              return this.recommendedCards
-                .map(name => cardMap.get(name))
-                .filter((card): card is ScryfallCard => !!card);
-            })
-          );
-        })
+            switchMap(deck =>
+              this.recommendationService.getRecommendations(deck.id!).pipe(
+                tap(names => {
+                  this.recommendedCards = names;
+                }),
+                switchMap(() => this.cardStore.getCurrentSetCards()),
+                map(cards => {
+                  const cardMap = new Map(cards.map(card => [card.name, card]));
+                  return this.recommendedCards
+                    .map(name => cardMap.get(name))
+                    .filter((card): card is ScryfallCard => !!card);
+                })
+              )
+            )
+          )
+        )
       )
       .subscribe({
-        next: (cards: ScryfallCard[]) => {
+        next: cards => {
           this.recommendedCardDetails = cards;
           this.loadingRecommendations = false;
         },
@@ -81,6 +95,102 @@ export class DeckContent implements OnDestroy {
     this.recommendationService.cancelRecommendations().subscribe({
       next: msg => console.log('Cancelled recommendation job:', msg),
       error: err => console.warn('Failed to cancel job:', err)
+    });
+  }
+
+  toggleEdit() {
+    this.editing = !this.editing;
+  }
+
+  saveDeck(updated: {
+    name: string;
+    arenaDeck: string | null;
+    primaryColor: Color;
+    colors: Color[];
+  }) {
+    if (!this.deck) return;
+
+    const updatedDeck = new Deck({
+      ...this.deck,
+      name: updated.name,
+      raw: updated.arenaDeck ?? '',
+      identity: {
+        primary: updated.primaryColor,
+        colors: updated.colors,
+      },
+    });
+
+    this.deckStore.updateDeck(updatedDeck).subscribe({
+      next: deck => {
+        this.deck = deck;
+        this.editing = false;
+      },
+      error: err => {
+        console.error('Failed to update deck', err);
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.editing = false;
+  }
+
+  saveNotes() {
+    if (!this.deck) return;
+
+    const updatedDeck = new Deck({
+      ...this.deck,
+      notes: this.deck.notes,
+    });
+
+    this.deckStore.updateDeck(updatedDeck).subscribe({
+      next: deck => {
+        this.deck = deck;
+      },
+      error: err => {
+        console.error('Failed to update notes', err);
+      }
+    });
+  }
+
+  addTag(event: MatChipInputEvent): void {
+    const value = (event.value || '').trim();
+    if (!value || !this.deck) return;
+
+    const updatedTags = [...(this.deck.tags ?? []), value];
+    const updatedDeck = new Deck({
+      ...this.deck,
+      tags: updatedTags,
+    });
+
+    this.deckStore.updateDeck(updatedDeck).subscribe({
+      next: deck => {
+        this.deck = new Deck(deck);
+      },
+      error: err => {
+        console.error('Failed to add tag', err);
+      }
+    });
+
+    event.chipInput?.clear();
+  }
+
+  removeTag(tag: string): void {
+    if (!this.deck) return;
+
+    const updatedTags = (this.deck.tags ?? []).filter(t => t !== tag);
+    const updatedDeck = new Deck({
+      ...this.deck,
+      tags: updatedTags,
+    });
+
+    this.deckStore.updateDeck(updatedDeck).subscribe({
+      next: deck => {
+        this.deck = deck;
+      },
+      error: err => {
+        console.error('Failed to remove tag', err);
+      }
     });
   }
 }

@@ -32,7 +32,7 @@ export class CrudService<T> {
   }
 
   update(id: string | number, entity: T, extraHeaders?: { [key: string]: string }): Observable<T> {
-    return this.http.put<T>(`${this.apiUrl}/${id}`, entity, this.getHttpOptions(extraHeaders))
+    return this.http.patch<T>(this.apiUrl, entity, this.getHttpOptions(extraHeaders))
       .pipe(catchError(this.handleError));
   }
 
