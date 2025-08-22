@@ -12,24 +12,29 @@ import { ScryfallSet } from '../../../models/scryfall-set';
 import { Color, ColorUtils } from '../../../models/color';
 import { MatOption } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
+import { DeckFormComponent } from '../../shared/deck-form/deck-form';
 
 @Component({
   selector: 'app-add-deck',
   templateUrl: './add-deck.html',
   styleUrls: ['./add-deck.css'],
-  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule, MatSelectModule ,MatOption]
+  standalone: true,
+  imports: [
+    CommonModule,
+    DeckFormComponent,
+    MatCardModule
+  ]
 })
 export class AddDeck implements OnInit {
   set!: { id: number; scryfallSet: ScryfallSet };
-
-  form = new FormGroup({
-    name: new FormControl('', Validators.required),
-    arenaDeck: new FormControl(''),
-    primaryColor: new FormControl<Color | null>(null, Validators.required),
-    colors: new FormControl<Color[]>([], Validators.required),
-  });
-
   errorMessage: string | null = null;
+
+  defaultValues = {
+    name: '',
+    arenaDeck: '',
+    primaryColor: null,
+    colors: [] as Color[],
+  };
 
   constructor(
     private router: Router,
@@ -47,29 +52,24 @@ export class AddDeck implements OnInit {
     this.set = state.set;
   }
 
-  readonly allColors: (keyof typeof Color)[] = Object.keys(Color) as (keyof typeof Color)[];
-
-  getColorName(code: keyof typeof Color): string {
-    return Color[code];
-  }
-
-  submit() {
+  handleSubmit(values: {
+    name: string;
+    arenaDeck: string | null;
+    primaryColor: Color;
+    colors: Color[];
+  }) {
     this.errorMessage = null;
 
-    if (!this.form.valid) return;
-
     const identity = {
-      primary: this.form.value.primaryColor!,
-      colors: this.form.value.colors!,
+      primary: values.primaryColor,
+      colors: values.colors
     };
 
-    const deck = new Deck(
-      {
-        name: this.form.value.name!,
-        raw: this.form.value.arenaDeck!,
-        identity
-      }
-    );
+    const deck = new Deck({
+      name: values.name,
+      raw: values.arenaDeck ?? '',
+      identity
+    });
 
     this.deckStore.addDeck(this.set, deck).subscribe({
       next: () => this.router.navigate(['/']),

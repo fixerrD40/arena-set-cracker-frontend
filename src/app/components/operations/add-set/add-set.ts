@@ -40,30 +40,28 @@ export class AddSet implements OnInit {
   constructor(private scryfall: ScryfallService, private setStore: SetStoreService, private router: Router) {}
 
   ngOnInit() {
-  this.isLoading = true;
-  this.scryfall.getAllSets().subscribe({
-    next: (response: { data: ScryfallSet[] }) => {
-      const setsWithArenaCode = (response.data || []).filter((set: ScryfallSet) => !!set.arena_code);
+    this.isLoading = true;
+    this.scryfall.getAllSets().subscribe({
+      next: (response: { data: ScryfallSet[] }) => {
+        this.allSets = response.data;
+        this.isLoading = false;
 
-      this.allSets = setsWithArenaCode;
-      this.isLoading = false;
-
-      this.filteredSets$ = this.form.controls.search.valueChanges.pipe(
-        startWith(''),
-        map(value => {
-          const input = typeof value === 'string' ? value.toLowerCase() : '';
-          return this.allSets.filter(set =>
-            set.name.toLowerCase().includes(input) ||
-            set.code.toLowerCase().includes(input)
-          );
-        })
-      );
-    },
-    error: () => {
-      this.isLoading = false;
-    }
-  });
-}
+        this.filteredSets$ = this.form.controls.search.valueChanges.pipe(
+          startWith(''),
+          map(value => {
+            const input = typeof value === 'string' ? value.toLowerCase() : '';
+            return this.allSets.filter(set =>
+              set.name.toLowerCase().includes(input) ||
+              set.code.toLowerCase().includes(input)
+            );
+          })
+        );
+      },
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
 
   displaySet = (set: any) => set ? `${set.name} (${set.code})` : '';
 
