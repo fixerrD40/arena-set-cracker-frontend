@@ -54,6 +54,7 @@ export class App {
 
     this.authService.username$.subscribe((username: any) => {
       if (username) {
+        this.expandedSet = null;
         this.setStore.loadSets();
       } else {
         this.setStore.clear();
