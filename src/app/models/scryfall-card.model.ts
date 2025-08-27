@@ -9,7 +9,6 @@ export interface ScryfallCard {
   oracle_text?: string;
   colors?: string[];
   image_uris?: ImageUris;
-  legalities: Legalities;
 }
 
 export interface ImageUris {
@@ -19,11 +18,4 @@ export interface ImageUris {
   png: string;
   art_crop: string;
   border_crop: string;
-}
-
-export interface Legalities {
-  standard: string;
-  modern: string;
-  commander: string;
-  [format: string]: string;
 }

@@ -1,1 +1,137 @@
-<p>set-detail works!</p>
+<div class="set-detail-container" style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
+
+  <!-- Top section: Filters and Chart side-by-side -->
+  <div style="display: flex; gap: 1rem; flex-grow: 0;">
+
+    <aside class="filters-sidebar" style="flex: 0 0 300px; max-width: 300px;">
+      <div class="filters">
+
+        <!-- Colors Filter -->
+        <div>
+          <strong>Colors:</strong>
+          <button *ngFor="let color of filters.colors.options"
+                  (click)="toggleFilter('colors', color)"
+                  [ngClass]="{
+                    'include': filters.colors.states.get(color) === 1,
+                    'exclude': filters.colors.states.get(color) === 2
+                  }">
+            {{ color }}
+          </button>
+        </div>
+
+        <!-- Types Filter -->
+        <div>
+          <strong>Types:</strong>
+          <button *ngFor="let type of filters.types.options"
+                  (click)="toggleFilter('types', type)"
+                  [ngClass]="{
+                    'include': filters.types.states.get(type) === 1,
+                    'exclude': filters.types.states.get(type) === 2
+                  }">
+            {{ type }}
+          </button>
+        </div>
+
+        <!-- Rarities Filter -->
+        <div>
+          <strong>Rarities:</strong>
+          <button *ngFor="let rarity of filters.rarities.options"
+                  (click)="toggleFilter('rarities', rarity)"
+                  [ngClass]="{
+                    'include': filters.rarities.states.get(rarity) === 1,
+                    'exclude': filters.rarities.states.get(rarity) === 2
+                  }">
+            {{ rarity }}
+          </button>
+        </div>
+
+        <!-- Costs Filter -->
+        <div>
+          <strong>Costs (CMC):</strong>
+          <button *ngFor="let cost of filters.costs.options"
+                  (click)="toggleFilter('costs', cost)"
+                  [ngClass]="{
+                    'include': filters.costs.states.get(cost) === 1,
+                    'exclude': filters.costs.states.get(cost) === 2
+                  }">
+            {{ cost }}
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <main class="chart-main" style="flex: 1; display: flex; flex-direction: column; min-height: 500px;">
+
+      <!-- Search Input and Pagination Info -->
+      <div class="header" style="margin-bottom: 1rem;">
+        <input
+          type="text"
+          placeholder="Search cards..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          class="search-input"
+          aria-label="Search cards by name"
+          style="width: 100%; padding: 0.5rem; font-size: 1rem;"
+        />
+        <div class="pagination-info" style="margin-top: 0.5rem; font-size: 0.9rem; color: #555;">
+          Showing cards {{ currentPage * pageSize + 1 }} -
+          {{ Math.min((currentPage + 1) * pageSize, filteredCards.length) }} of
+          {{ filteredCards.length }} ({{ allAggregatedCards.length }} total)
+        </div>
+      </div>
+
+      <!-- Chart Canvas -->
+      <div class="chart-wrapper" style="flex-grow: 1;">
+        <canvas baseChart
+                [data]="barChartData"
+                [options]="barChartOptions"
+                chartType="bar"
+                style="height: 100%; width: 100%;">
+        </canvas>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-controls" style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;">
+        <button (click)="prevPage()" [disabled]="!hasPrevPage">Previous</button>
+        <span>Page {{ currentPage + 1 }} / {{ Math.ceil(filteredCards.length / pageSize) || 1 }}</span>
+        <button (click)="nextPage()" [disabled]="!hasNextPage">Next</button>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Bottom section: Underutilized cards full width -->
+  <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
+    <h3>Underutilized Cards</h3>
+    <div *ngIf="underutilizedCards.length > 0; else noUnderutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      <div *ngFor="let card of underutilizedCards" class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
+        <img *ngIf="card.image" [src]="card.image" alt="{{ card.name }}" style="width: 100%; height: auto;" />
+        <div><strong>{{ card.name }}</strong></div>
+        <div>Used: {{ card.quantity }}</div>
+        <div>{{ card.typeLine }}</div>
+      </div>
+    </div>
+    <ng-template #noUnderutilized>
+      <p>No underutilized cards found.</p>
+    </ng-template>
+  </section>
+
+  <!-- Bottom section: Overutilized cards full width -->
+  <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
+    <h3>Overutilized Cards</h3>
+    <div *ngIf="overutilizedCards.length > 0; else noOverutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      <div *ngFor="let card of overutilizedCards" class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
+        <img *ngIf="card.image" [src]="card.image" alt="{{ card.name }}" style="width: 100%; height: auto;" />
+        <div><strong>{{ card.name }}</strong></div>
+        <div>Used: {{ card.quantity }}</div>
+        <div>{{ card.typeLine }}</div>
+      </div>
+    </div>
+    <ng-template #noOverutilized>
+      <p>No overutilized cards found.</p>
+    </ng-template>
+  </section>
+
+</div>

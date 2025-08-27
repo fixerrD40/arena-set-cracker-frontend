@@ -1,0 +1,46 @@
+.filters-sidebar {
+  width: 220px;
+  border-right: 1px solid #ccc;
+  padding-right: 1rem;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.filters > div {
+  margin-bottom: 1.5rem;
+}
+
+.filters strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.filters button {
+  margin: 0 0.25rem 0.25rem 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #888;
+  background-color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.filters button.active,
+.filters button.include {
+  background-color: #4bc0c0;
+  color: white;
+  border-color: #399999;
+}
+
+.filters button.exclude {
+  background-color: #e66a6a;
+  color: white;
+  border-color: #b04141;
+}
+
+.filters button:hover:not(.active):not(.include):not(.exclude) {
+  background-color: #e0f7f7;
+}

@@ -1,14 +1,6 @@
 import { ColorIdentity } from "./color";
 import { ScryfallSet } from "./scryfall-set";
 
-export interface CardEntry {
-  quantity: number;
-  name: string;
-  set: string;
-  collectorNumber: number;
-  raw: string;
-}
-
 export class Deck {
   id?: number;
   name: string;
@@ -16,7 +8,7 @@ export class Deck {
   raw: string;
   tags?: string[];
   notes?: string;
-  cards: CardEntry[];
+  cards: Map<string, number>;
 
   constructor(init: {
     name: string;
@@ -33,33 +25,24 @@ export class Deck {
     this.tags = init.tags;
     this.notes = init.notes;
 
-    this.cards = this.raw?.trim() ? parseRaw(this.raw) : [];
+    this.cards = this.raw?.trim() ? parseRaw(this.raw) : new Map();
   }
 
-  /**
-   * Run validation against the given set.
-   */
+  updateRaw(raw: string) {
+    this.raw = raw;
+    this.cards = parseRaw(raw);
+  }
+
   validate(set: ScryfallSet): {
     valid: boolean;
     errors: string[];
-    parsed: CardEntry[];
+    parsed: Map<string, number>;
   } {
     return validateDeck(this.raw, set);
   }
 
-  /**
-   * Boolean helper for convenience
-   */
   isValid(set: ScryfallSet): boolean {
     return this.validate(set).valid;
-  }
-
-  /**
-   * Optional: re-parse raw string if it's changed
-   */
-  updateRaw(raw: string) {
-    this.raw = raw;
-    this.cards = parseRaw(raw);
   }
 
   toJSON() {
@@ -68,54 +51,39 @@ export class Deck {
   }
 }
 
-export function parseRaw(input: string): CardEntry[] {
+export function parseRaw(input: string): Map<string, number> {
   const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
-  const parsed: CardEntry[] = [];
+  const cardMap = new Map<string, number>();
   const regex = /^(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)$/;
 
   for (const line of lines) {
     const match = regex.exec(line);
     if (!match) continue;
 
-    const [_, qtyStr, name, set, numStr] = match;
-    parsed.push({
-      quantity: parseInt(qtyStr, 10),
-      name,
-      set,
-      collectorNumber: parseInt(numStr, 10),
-      raw: line
-    });
+    const [_, qtyStr, name] = match;
+    const quantity = parseInt(qtyStr, 10);
+
+    const current = cardMap.get(name) || 0;
+    cardMap.set(name, current + quantity);
   }
 
-  return parsed;
+  return cardMap;
 }
 
 export function validateDeck(raw: string, set: ScryfallSet): {
   valid: boolean;
   errors: string[];
-  parsed: CardEntry[];
+  parsed: Map<string, number>;
 } {
   const errors: string[] = [];
-
   const parsed = parseRaw(raw);
-  if (parsed.length === 0) {
+
+  const totalCards = Array.from(parsed.values()).reduce((sum, qty) => sum + qty, 0);
+
+  if (totalCards === 0) {
     errors.push('No valid deck lines were found.');
-    return { valid: false, errors, parsed: [] };
-  }
-
-  const totalCards = parsed.reduce((sum, line) => sum + line.quantity, 0);
-  if (totalCards !== 60) {
+  } else if (totalCards !== 60) {
     errors.push(`Deck must contain exactly 60 cards, but has ${totalCards}`);
-  }
-
-  const uniqueSets = new Set(parsed.map(line => line.set));
-  if (uniqueSets.size > 1) {
-    errors.push(`All cards must be from the same set. Found: ${Array.from(uniqueSets).join(', ')}`);
-  }
-
-  const firstSet = parsed[0].set;
-  if (firstSet !== set.code.toUpperCase()) {
-    errors.push(`Deck uses set "${firstSet}", but expected "${set.code.toUpperCase()}"`);
   }
 
   return {
@@ -124,3 +92,4 @@ export function validateDeck(raw: string, set: ScryfallSet): {
     parsed
   };
 }
+

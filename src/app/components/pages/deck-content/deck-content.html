@@ -56,8 +56,12 @@
     ></app-deck-form>
 
     <div class="cards">
-      <div class="card-box" *ngFor="let card of deck.cards" matTooltip="{{ card.name }}">
-        {{ card.name }}
+      <div
+        class="card-box"
+        *ngFor="let card of deck.cards | keyvalue"
+        matTooltip="{{ card.key }}"
+      >
+        {{ card.key }} (x{{ card.value }})
       </div>
     </div>
   </div>
