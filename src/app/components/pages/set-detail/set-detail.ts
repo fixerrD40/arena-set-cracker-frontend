@@ -122,6 +122,10 @@ export class SetDetail implements OnInit {
       });
   }
 
+  getColorName(code: string): string {
+    return Color[code as keyof typeof Color];
+  }
+
   private aggregateCards(decks: Deck[], cards: ScryfallCard[]): AggregatedCard[] {
     const cardUsageMap = new Map<string, AggregatedCard>();
 
@@ -234,15 +238,7 @@ export class SetDetail implements OnInit {
       const quantities = cards.map((c) => c.quantity);
       const { q1, median, q3 } = this.getQuantiles(quantities);
 
-      // For your specific logic:
-      // Mythic:
-      //   underutilized: quantity < 1 (0)
-      //   standard: 1
-      //   over: > 1
-      // Common:
-      //   underutilized: quantity < 3 (0,1,2)
-      //   standard: 3 or 4
-      //   over: > 4
+      // TODO: haha this is garbage fix it
 
       // We handle this with an override for these two rarities, else generic quartiles
 

@@ -9,13 +9,19 @@
         <!-- Colors Filter -->
         <div>
           <strong>Colors:</strong>
-          <button *ngFor="let color of filters.colors.options"
-                  (click)="toggleFilter('colors', color)"
-                  [ngClass]="{
-                    'include': filters.colors.states.get(color) === 1,
-                    'exclude': filters.colors.states.get(color) === 2
-                  }">
-            {{ color }}
+          <button
+            *ngFor="let color of filters.colors.options"
+            (click)="toggleFilter('colors', color)"
+            [ngClass]="{
+              'include': filters.colors.states.get(color) === 1,
+              'exclude': filters.colors.states.get(color) === 2
+            }"
+            class="color-button"
+          >
+            <img 
+              [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'" 
+              [alt]="color" 
+            />
           </button>
         </div>
 
@@ -102,7 +108,7 @@
 
   </div>
 
-  <!-- Bottom section: Underutilized cards full width -->
+  <!-- Bottom section: Underutilized cards -->
   <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
     <h3>Underutilized Cards</h3>
     <div *ngIf="underutilizedCards.length > 0; else noUnderutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">
@@ -118,7 +124,7 @@
     </ng-template>
   </section>
 
-  <!-- Bottom section: Overutilized cards full width -->
+  <!-- Bottom section: Overutilized cards -->
   <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
     <h3>Overutilized Cards</h3>
     <div *ngIf="overutilizedCards.length > 0; else noOverutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">

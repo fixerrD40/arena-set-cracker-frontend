@@ -15,6 +15,7 @@ import { DeckStoreService } from './services/deck-store-service';
 import { Navbar } from './components/layout/navbar/navbar';
 import { Deck } from './models/deck';
 import { CardStoreService } from './services/card-store-service';
+import { Color, ColorIdentity } from './models/color';
 
 @Component({
   selector: 'app-root',
@@ -63,17 +64,35 @@ export class App {
     });
   }
 
-toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
-  if (this.expandedSet === entry.id) {
-    this.router.navigate(['/set', entry.id]);
-    return;
+  getColorIconPaths(identity: ColorIdentity): string[] {
+    if (!identity) return [];
+
+    const colors = [...identity.colors];
+    const primaryIndex = colors.indexOf(identity.primary);
+
+    if (primaryIndex !== -1) {
+      colors.splice(primaryIndex, 1);
+      colors.unshift(identity.primary);
+    }
+
+    return colors.map((color) => {
+      const filename = color.toLowerCase();
+      return `assets/colors/${filename}.png`;
+    });
   }
 
-  this.expandedSet = entry.id;
-  this.deckStore.loadForSet(entry);
-  this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
-  this.router.navigate(['/set', entry.id]);
-}
+
+  toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
+    if (this.expandedSet === entry.id) {
+      this.router.navigate(['/set', entry.id]);
+      return;
+    }
+
+    this.expandedSet = entry.id;
+    this.deckStore.loadForSet(entry);
+    this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
+    this.router.navigate(['/set', entry.id]);
+  }
 
   deleteSet(id: number): void {
     this.setStore.deleteSet(id);

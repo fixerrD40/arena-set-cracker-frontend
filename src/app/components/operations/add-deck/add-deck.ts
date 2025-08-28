@@ -9,7 +9,7 @@ import { DeckStoreService } from '../../../services/deck-store-service';
 import { Deck } from '../../../models/deck';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ScryfallSet } from '../../../models/scryfall-set';
-import { Color, ColorUtils } from '../../../models/color';
+import { Color } from '../../../models/color';
 import { MatOption } from '@angular/material/autocomplete';
 import { MatSelectModule } from '@angular/material/select';
 import { DeckFormComponent } from '../../shared/deck-form/deck-form';

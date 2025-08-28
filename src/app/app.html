@@ -31,11 +31,21 @@
           </li>
 
           <li *ngIf="decks.length === 0" class="no-decks">No decks yet</li>
-          <li *ngFor="let deck of decks">
-            <button mat-button [routerLink]="['/deck', deck.id]">
-              {{ deck.name }}
-            </button>
-          </li>
+          <li *ngFor="let deck of decks"
+            [routerLink]="['/deck', deck.id]"
+            class="deck-item"
+            role="button"
+            tabindex="0">
+          <span class="deck-icons">
+            <img
+              *ngFor="let iconPath of getColorIconPaths(deck.identity)"
+              [src]="iconPath"
+              [alt]="iconPath"
+              style="width: 24px; height: 24px; object-fit: contain;"
+            />
+          </span>
+          <span class="deck-name">{{ deck.name }}</span>
+        </li>
         </ul>
       </div>
     </ng-container>

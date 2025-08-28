@@ -1,3 +1,4 @@
+/* === Layout === */
 .filters-sidebar {
   width: 220px;
   border-right: 1px solid #ccc;
@@ -17,30 +18,65 @@
   font-size: 1.1rem;
 }
 
-.filters button {
+/* === Standard filter buttons (Types, Rarities, Costs) === */
+.filters button:not(.color-button) {
   margin: 0 0.25rem 0.25rem 0;
   padding: 0.3rem 0.6rem;
-  border: 1px solid #888;
-  background-color: white;
-  border-radius: 4px;
-  cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  border: 1px solid #888;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.filters button.active,
-.filters button.include {
-  background-color: #4bc0c0;
+.filters button.include:not(.color-button) {
+  background: #4bc0c0;
   color: white;
   border-color: #399999;
 }
 
-.filters button.exclude {
-  background-color: #e66a6a;
+.filters button.exclude:not(.color-button) {
+  background: #e66a6a;
   color: white;
   border-color: #b04141;
 }
 
-.filters button:hover:not(.active):not(.include):not(.exclude) {
-  background-color: #e0f7f7;
+.filters button:hover:not(.color-button):not(.include):not(.exclude) {
+  background: #e0f7f7;
+}
+
+/* === Color Buttons === */
+.color-button {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  margin: 0 4px 4px 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.color-button.include {
+  background-color: #4bc0c0;
+  border-color: #399999;
+}
+
+.color-button.exclude {
+  background-color: #e66a6a;
+  border-color: #b04141;
+}
+
+.color-button:hover:not(.include):not(.exclude) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.color-button img {
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
 }

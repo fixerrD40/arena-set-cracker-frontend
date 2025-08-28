@@ -67,3 +67,30 @@ mat-sidenav-container {
   color: #888;
   cursor: default;
 }
+
+.deck-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.deck-item:hover,
+.deck-item:focus {
+  background-color: #f0f0f0;
+  outline: none;
+}
+
+.deck-icons {
+  display: flex;
+  gap: 4px;
+}
+
+.deck-icons img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
