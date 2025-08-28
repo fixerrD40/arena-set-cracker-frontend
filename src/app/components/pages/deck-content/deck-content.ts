@@ -15,6 +15,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatIcon } from '@angular/material/icon';
 import { DeckFormComponent } from '../../shared/deck-form/deck-form';
 import { FormsModule } from '@angular/forms';
+import { NgxTippyModule } from 'ngx-tippy-wrapper';
 
 @Component({
   selector: 'app-deck-list',
@@ -23,7 +24,7 @@ import { FormsModule } from '@angular/forms';
     CommonModule,
     DeckFormComponent,
     FormsModule,
-    MatTooltip,
+    NgxTippyModule,
     MatIcon,
     MatChipsModule
   ],
@@ -44,6 +45,8 @@ export class DeckContent implements OnInit, OnDestroy {
 
   readonly separatorKeysCodes: number[] = [ENTER, COMMA];
   private destroy$ = new Subject<void>();
+
+  cardMap = new Map<string, ScryfallCard>();
 
   ngOnInit(): void {
     this.route.paramMap
@@ -66,10 +69,16 @@ export class DeckContent implements OnInit, OnDestroy {
                 }),
                 switchMap(() => this.cardStore.getCurrentSetCards()),
                 map(cards => {
-                  const cardMap = new Map(cards.map(card => [card.name, card]));
+                  this.cardMap.clear();
+                  cards.forEach(card => this.cardMap.set(card.name, card));
+
                   return this.recommendedCards
-                    .map(name => cardMap.get(name))
+                    .map(name => this.cardMap.get(name))
                     .filter((card): card is ScryfallCard => !!card);
+                }),
+                tap(cards => {
+                  this.recommendedCardDetails = cards;
+                  this.loadingRecommendations = false;
                 })
               )
             )
@@ -77,10 +86,6 @@ export class DeckContent implements OnInit, OnDestroy {
         )
       )
       .subscribe({
-        next: cards => {
-          this.recommendedCardDetails = cards;
-          this.loadingRecommendations = false;
-        },
         error: err => {
           this.loadingRecommendations = false;
           console.error('Failed to fetch recommendations:', err);
@@ -193,4 +198,17 @@ export class DeckContent implements OnInit, OnDestroy {
       }
     });
   }
+
+  getCardTooltip(cardName: string): string {
+  const imageUrl = this.cardMap.get(cardName)?.image_uris?.small;
+  if (!imageUrl) return cardName;
+
+  return `
+    <img 
+      src="${imageUrl}" 
+      alt="${cardName}" 
+      style="width: 180px; height: auto; border-radius: 6px; display: block;" 
+    />
+  `;
+}
 }

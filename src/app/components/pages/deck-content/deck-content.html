@@ -59,7 +59,8 @@
       <div
         class="card-box"
         *ngFor="let card of deck.cards | keyvalue"
-        matTooltip="{{ card.key }}"
+        [ngxTippy]="getCardTooltip(card.key)"
+        [tippyProps]="{ allowHTML: true, placement: 'top', theme: 'light-border' }"
       >
         {{ card.key }} (x{{ card.value }})
       </div>
