@@ -6,7 +6,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
-import { Color } from '../../../models/color';
+import { Color, ColorDisplayNames } from '../../../models/color';
 
 @Component({
   selector: 'app-deck-form',
@@ -50,7 +50,7 @@ export class DeckFormComponent implements OnInit {
   colors: new FormControl<Color[]>([], { nonNullable: true, validators: [Validators.required] }),
 });
 
-  readonly allColors: (keyof typeof Color)[] = Object.keys(Color) as (keyof typeof Color)[];
+  readonly allColors: Color[] = Object.values(Color) as Color[];
 
   ngOnInit(): void {
     if (this.initialValues) {
@@ -58,8 +58,8 @@ export class DeckFormComponent implements OnInit {
     }
   }
 
-  getColorName(code: keyof typeof Color): string {
-    return Color[code];
+  getColorName(code: Color): string {
+    return ColorDisplayNames[code];
   }
 
   onSubmit() {

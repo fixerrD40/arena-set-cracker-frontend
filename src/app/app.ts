@@ -15,7 +15,7 @@ import { DeckStoreService } from './services/deck-store-service';
 import { Navbar } from './components/layout/navbar/navbar';
 import { Deck } from './models/deck';
 import { CardStoreService } from './services/card-store-service';
-import { Color, ColorIdentity } from './models/color';
+import { Color, ColorDisplayNames, ColorIdentity } from './models/color';
 
 @Component({
   selector: 'app-root',
@@ -76,7 +76,7 @@ export class App {
     }
 
     return colors.map((color) => {
-      const filename = color.toLowerCase();
+      const filename = ColorDisplayNames[color].toLowerCase();
       return `assets/colors/${filename}.png`;
     });
   }

@@ -6,7 +6,7 @@ import { ChartConfiguration } from 'chart.js';
 import { combineLatest, map } from 'rxjs';
 import { DeckStoreService } from '../../../services/deck-store-service';
 import { CardStoreService } from '../../../services/card-store-service';
-import { Color } from '../../../models/color';
+import { Color, ColorDisplayNames } from '../../../models/color';
 import { ScryfallCard } from '../../../models/scryfall-card.model';
 import { Deck } from '../../../models/deck';
 
@@ -63,7 +63,7 @@ export class SetDetail implements OnInit {
     rarities: FilterCategory;
     costs: FilterCategory;
   } = {
-    colors: { options: Object.keys(Color), states: new Map() },
+    colors: { options: Object.values(Color), states: new Map() },
     types: {
       options: ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Land'],
       states: new Map(),
@@ -123,7 +123,7 @@ export class SetDetail implements OnInit {
   }
 
   getColorName(code: string): string {
-    return Color[code as keyof typeof Color];
+    return ColorDisplayNames[code as Color];
   }
 
   private aggregateCards(decks: Deck[], cards: ScryfallCard[]): AggregatedCard[] {
