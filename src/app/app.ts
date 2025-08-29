@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { Observable } from 'rxjs';
+import { Observable, take } from 'rxjs';
 
 import { AuthService } from './services/auth-service';
 import { SetStoreService } from './services/set-store-service';
@@ -53,12 +53,12 @@ export class App {
       this.decks = decks;
     });
 
-    this.authService.username$.subscribe((username: any) => {
+    this.authService.isAuthenticated$.subscribe((username: any) => {
       if (username) {
         this.expandedSet = null;
         this.setStore.loadSets();
       } else {
-        this.setStore.clear();
+        this.setStore.loadPublicSets();
         this.deckStore.clear();
       }
     });
@@ -89,9 +89,19 @@ export class App {
     }
 
     this.expandedSet = entry.id;
-    this.deckStore.loadForSet(entry);
-    this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
-    this.router.navigate(['/set', entry.id]);
+
+    this.authService.isAuthenticated$
+      .pipe(take(1))
+      .subscribe(isAuth => {
+        if (isAuth) {
+          this.deckStore.loadForSet(entry);
+        } else {
+          this.deckStore.loadForPublicSet(entry);
+        }
+
+        this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
+        this.router.navigate(['/set', entry.id]);
+      });
   }
 
   deleteSet(id: number): void {

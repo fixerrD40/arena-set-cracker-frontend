@@ -14,6 +14,10 @@ export const ColorDisplayNames: Record<Color, string> = {
   [Color.G]: 'Green',
 };
 
+export function mapColorKeyToValue(key: string): Color {
+  return Color[key as keyof typeof Color];
+}
+
 export interface ColorIdentity {
   primary: Color;
   colors: Color[];

@@ -6,6 +6,7 @@ import { Set } from '../models/set';
 import { ScryfallSet } from '../models/scryfall-set';
 import { SetService } from './set-service';
 import { ScryfallService } from './scryfall-service';
+import { PublicService } from './public-service';
 
 @Injectable({
   providedIn: 'root',
@@ -20,7 +21,8 @@ export class SetStoreService {
 
   constructor(
     private setService: SetService,
-    private scryfall: ScryfallService
+    private scryfall: ScryfallService,
+    private publicService: PublicService
   ) {}
 
   loadSets(): void {
@@ -44,6 +46,32 @@ export class SetStoreService {
       tap((setMap: Map<number, ScryfallSet>) => this.setsSubject.next(setMap)),
       catchError(err => {
         console.error('Failed to load sets:', err.message);
+        return of(new Map());
+      })
+    ).subscribe();
+  }
+
+  loadPublicSets(): void {
+    this.publicService.getSets().pipe(
+      switchMap((savedSets: Set[]) =>
+        this.scryfall.getAllSets().pipe(
+          map((all: { data: ScryfallSet[] }) => {
+            const map = new Map<number, ScryfallSet>();
+            for (const saved of savedSets) {
+              const scryfallSet = all.data.find(
+                ss => ss.code.toLowerCase() === saved.code.toLowerCase()
+              );
+              if (scryfallSet && saved.id != null) {
+                map.set(saved.id, scryfallSet);
+              }
+            }
+            return map;
+          })
+        )
+      ),
+      tap((setMap: Map<number, ScryfallSet>) => this.setsSubject.next(setMap)),
+      catchError(err => {
+        console.error('Failed to load public sets:', err.message);
         return of(new Map());
       })
     ).subscribe();
@@ -84,9 +112,5 @@ export class SetStoreService {
 
   get currentSets(): ScryfallSet[] {
     return Array.from(this.setsSubject.getValue().values());
-  }
-
-  clear(): void {
-    this.setsSubject.next(new Map());
   }
 }

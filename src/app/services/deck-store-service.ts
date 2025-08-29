@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Deck } from '../models/deck';
 import { DeckService } from './deck-service';
 import { ScryfallSet } from '../models/scryfall-set';
+import { PublicService } from './public-service';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +13,7 @@ export class DeckStoreService {
   private decksSubject = new BehaviorSubject<Deck[]>([]);
   public decks$: Observable<Deck[]> = this.decksSubject.asObservable();
 
-  constructor(private deckService: DeckService) {}
+  constructor(private deckService: DeckService, private publicService: PublicService) {}
 
   loadForSet(entry: { id: number; scryfallSet: ScryfallSet }) {
     this.deckService.getDecksBySet(entry.id).subscribe({
@@ -28,6 +29,19 @@ export class DeckStoreService {
       },
       error: err => {
         console.error('Failed to load decks for set', entry.id, err);
+        this.decksSubject.next([]);
+      }
+    });
+  }
+
+  loadForPublicSet(entry: { id: number; scryfallSet: ScryfallSet }) {
+    this.publicService.getDecks(entry.id).subscribe({
+      next: rawDecks => {
+        const parsedDecks = rawDecks.map(raw => new Deck(raw));
+        this.decksSubject.next(parsedDecks);
+      },
+      error: err => {
+        console.error('Failed to load public decks for set', entry.id, err);
         this.decksSubject.next([]);
       }
     });

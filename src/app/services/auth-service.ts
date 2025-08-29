@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { jwtDecode } from 'jwt-decode';
 
 import { SetStoreService } from './set-store-service';
@@ -19,6 +19,10 @@ export class AuthService {
     localStorage.getItem(this.usernameKey)
   );
   username$ = this.usernameSubject.asObservable();
+
+  readonly isAuthenticated$ = this.username$.pipe(
+    map(username => !!username)
+  );
 
   constructor(
     protected http: HttpClient,

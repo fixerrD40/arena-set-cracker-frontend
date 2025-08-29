@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subject, takeUntil, filter, switchMap, of, tap, map } from 'rxjs';
+import { Subject, takeUntil, filter, switchMap, of, tap, map, combineLatest } from 'rxjs';
 
 import { Deck } from '../../../models/deck';
 import { DeckStoreService } from '../../../services/deck-store-service';
@@ -16,6 +16,8 @@ import { MatIcon } from '@angular/material/icon';
 import { DeckFormComponent } from '../../shared/deck-form/deck-form';
 import { FormsModule } from '@angular/forms';
 import { NgxTippyModule } from 'ngx-tippy-wrapper';
+import { AuthService } from '../../../services/auth-service';
+import { PublicService } from '../../../services/public-service';
 
 @Component({
   selector: 'app-deck-list',
@@ -32,6 +34,8 @@ import { NgxTippyModule } from 'ngx-tippy-wrapper';
   styleUrls: ['./deck-content.css']
 })
 export class DeckContent implements OnInit, OnDestroy {
+  private authService = inject(AuthService)
+  private publicService = inject(PublicService)
   private deckStore = inject(DeckStoreService);
   private route = inject(ActivatedRoute);
   private recommendationService = inject(RecommendationService);
@@ -49,12 +53,16 @@ export class DeckContent implements OnInit, OnDestroy {
   cardMap = new Map<string, ScryfallCard>();
 
   ngOnInit(): void {
-    this.route.paramMap
+    combineLatest([
+      this.route.paramMap.pipe(
+        filter(paramMap => paramMap.has('id')),
+        map(paramMap => Number(paramMap.get('id')))
+      ),
+      this.authService.isAuthenticated$
+    ])
       .pipe(
         takeUntil(this.destroy$),
-        filter(paramMap => paramMap.has('id')),
-        map(paramMap => Number(paramMap.get('id'))),
-        switchMap(deckId =>
+        switchMap(([deckId, isAuthenticated]) =>
           this.deckStore.decks$.pipe(
             map(decks => decks.find(d => d.id === deckId)),
             filter((deck): deck is Deck => !!deck),
@@ -62,8 +70,12 @@ export class DeckContent implements OnInit, OnDestroy {
               this.deck = deck;
               this.loadingRecommendations = true;
             }),
-            switchMap(deck =>
-              this.recommendationService.getRecommendations(deck.id!).pipe(
+            switchMap(deck => {
+              const recommendation$ = isAuthenticated
+                ? this.recommendationService.getRecommendations(deck.id!)
+                : this.publicService.getRecommendations(deck.id!);
+
+              return recommendation$.pipe(
                 tap(names => {
                   this.recommendedCards = names;
                 }),
@@ -80,8 +92,8 @@ export class DeckContent implements OnInit, OnDestroy {
                   this.recommendedCardDetails = cards;
                   this.loadingRecommendations = false;
                 })
-              )
-            )
+              );
+            })
           )
         )
       )

@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import { CrudService } from './crud-service';
-import { Deck } from '../models/deck';
+import { Deck, parseDeck } from '../models/deck';
 import { catchError, map, Observable } from 'rxjs';
 import { Color, ColorIdentity } from '../models/color';
 
@@ -18,7 +18,7 @@ export class DeckService extends CrudService<Deck> {
     const url = `${this.apiUrl}/${setId}`;
     return this.http.get<any[]>(url, this.getHttpOptions())
       .pipe(
-        map(rawDecks => rawDecks.map(rawDeck => this.parseDeck(rawDeck))),
+        map(rawDecks => rawDecks.map(rawDeck => parseDeck(rawDeck))),
         catchError(this.handleError)
       );
   }
@@ -28,25 +28,9 @@ export class DeckService extends CrudService<Deck> {
     const payload = this.serializeDeck(deck);
     return this.http.post<any>(url, payload, this.getHttpOptions())
       .pipe(
-        map(rawDeck => this.parseDeck(rawDeck)),
+        map(rawDeck => parseDeck(rawDeck)),
         catchError(this.handleError)
       );
-  }
-
-  private parseDeck(raw: any): Deck {
-    const identity: ColorIdentity = {
-      primary: this.mapColorKeyToValue(raw.identity.primary),
-      colors: raw.identity.colors.map((k: string) => this.mapColorKeyToValue(k)),
-    };
-
-    return new Deck({
-      id: raw.id,
-      name: raw.name,
-      identity,
-      raw: raw.raw,
-      tags: raw.tags ? Array.from(raw.tags) : undefined,
-      notes: raw.notes,
-    });
   }
 
   private serializeDeck(deck: Deck): any {
@@ -58,10 +42,6 @@ export class DeckService extends CrudService<Deck> {
       },
       cards: Object.fromEntries(deck.cards),
     };
-  }
-
-  private mapColorKeyToValue(key: string): Color {
-    return Color[key as keyof typeof Color];
   }
 
   private mapColorValueToKey(value: Color): string {

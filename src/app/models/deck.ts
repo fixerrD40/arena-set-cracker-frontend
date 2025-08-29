@@ -1,4 +1,4 @@
-import { ColorIdentity } from "./color";
+import { ColorIdentity, mapColorKeyToValue } from "./color";
 import { ScryfallSet } from "./scryfall-set";
 
 export class Deck {
@@ -49,6 +49,22 @@ export class Deck {
     const { cards, ...rest } = this;
     return rest;
   }
+}
+
+export function parseDeck(raw: any): Deck {
+  const identity: ColorIdentity = {
+    primary: mapColorKeyToValue(raw.identity.primary),
+    colors: raw.identity.colors.map((k: string) => mapColorKeyToValue(k)),
+  };
+
+  return new Deck({
+    id: raw.id,
+    name: raw.name,
+    identity,
+    raw: raw.raw,
+    tags: raw.tags ? Array.from(raw.tags) : undefined,
+    notes: raw.notes,
+  });
 }
 
 export function parseRaw(input: string): Map<string, number> {
