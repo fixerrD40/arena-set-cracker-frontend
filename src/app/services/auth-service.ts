@@ -10,10 +10,9 @@ import { SetStoreService } from './set-store-service';
   providedIn: 'root',
 })
 export class AuthService {
-  private registrationUrl: string;
-  private authenticationUrl: string;
-  private usernameKey = 'username';
+  private authUrl: string;
   private jwtKey = 'jwt';
+  private usernameKey = 'username';
 
   private usernameSubject = new BehaviorSubject<string | null>(
     localStorage.getItem(this.usernameKey)
@@ -29,36 +28,51 @@ export class AuthService {
     @Inject('APP_CONFIG') appConfig: any,
     private setStore: SetStoreService
   ) {
-    this.registrationUrl = new URL('/register', appConfig.baseUrl).toString();
-    this.authenticationUrl = new URL('/authenticate', appConfig.baseUrl).toString();
-  }
-
-  register(credentials: { username: string; password: string }): Observable<string> {
-    return this.http
-      .post(this.registrationUrl, credentials, { responseType: 'text' })
-      .pipe(
-        tap((token) => {
-        this.saveToken(token);
-        this.setStore.loadSets();
-        }),
-        catchError(this.handleError)
-      );
+    this.authUrl = new URL('/auth', appConfig.baseUrl).toString();
   }
 
   login(credentials: { username: string; password: string }): Observable<string> {
     return this.http
-      .post(this.authenticationUrl, credentials, { responseType: 'text' })
+      .post(`${this.authUrl}/login`, credentials, { responseType: 'text' })
       .pipe(
         tap((token) => {
-        this.saveToken(token);
-        this.setStore.loadSets();
+          this.saveToken(token);
+          this.setStore.loadSets();
         }),
         catchError(this.handleError)
       );
   }
 
-  private cleanToken(token: string): string {
-    return token.replace(/^"|"$/g, '');
+  register(credentials: { email?: string; username: string; password: string }): Observable<string> {
+    return this.http
+      .post(`${this.authUrl}/register`, credentials, { responseType: 'text' })
+      .pipe(
+        tap((token) => {
+          this.saveToken(token);
+          this.setStore.loadSets();
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  requestPasswordReset(email: string): Observable<void> {
+    return this.http
+      .post<void>(`${this.authUrl}/request-reset`, email, {
+        headers: { 'Content-Type': 'text/plain' },
+      })
+      .pipe(catchError(this.handleError));
+  }
+
+  resetPassword(data: { token: string; newPassword: string }): Observable<void> {
+    return this.http
+      .post<void>(`${this.authUrl}/reset-password`, data)
+      .pipe(catchError(this.handleError));
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.jwtKey);
+    localStorage.removeItem(this.usernameKey);
+    this.usernameSubject.next(null);
   }
 
   getToken(): string | null {
@@ -66,14 +80,19 @@ export class AuthService {
   }
 
   private saveToken(token: string): void {
-    localStorage.setItem(this.jwtKey, this.cleanToken(token));
-    this.extractUsernameFromToken(token);
+    const clean = this.cleanToken(token);
+    localStorage.setItem(this.jwtKey, clean);
+    this.extractUsernameFromToken(clean);
+  }
+
+  private cleanToken(token: string): string {
+    return token.replace(/^"|"$/g, '');
   }
 
   private extractUsernameFromToken(token: string) {
     try {
-      const payload = jwtDecode<JwtPayload>(token);
-      if (payload && payload.username) {
+      const payload = jwtDecode<{ username?: string }>(token);
+      if (payload?.username) {
         this.setUsername(payload.username);
       } else {
         this.setUsername(null);
@@ -84,19 +103,12 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    localStorage.removeItem(this.jwtKey);
-    localStorage.removeItem(this.usernameKey);
-    this.usernameSubject.next(null);
-  }
-
   private setUsername(username: string | null): void {
     if (username === null) {
       localStorage.removeItem(this.usernameKey);
     } else {
       localStorage.setItem(this.usernameKey, username);
     }
-
     this.usernameSubject.next(username);
   }
 

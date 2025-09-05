@@ -2,6 +2,12 @@
   <mat-card>
     <h2 class="card-title">Register</h2>
     <form [formGroup]="form" (ngSubmit)="register()">
+
+      <mat-form-field appearance="fill">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+      </mat-form-field>
+
       <mat-form-field appearance="fill">
         <mat-label>Username</mat-label>
         <input matInput formControlName="username" />

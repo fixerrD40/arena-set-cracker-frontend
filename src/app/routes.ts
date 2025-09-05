@@ -17,6 +17,16 @@ export const routes: Routes = [
       import('./components/auth/register/register').then(m => m.Register)
   },
   {
+    path: 'request-password-reset',
+    loadComponent: () =>
+      import('./components/auth/request-password-reset/request-password-reset').then(m => m.RequestPasswordReset)
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./components/auth/reset-password/reset-password').then(m => m.ResetPassword)
+  },
+  {
     path: 'about',
     loadComponent: () =>
       import('./components/pages/about/about').then(m => m.About)

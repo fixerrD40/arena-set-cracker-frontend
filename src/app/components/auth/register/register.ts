@@ -25,15 +25,18 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
   styleUrls: ['../auth.css', '../../components.css']
 })
 export class Register {
-  form = new FormGroup({
-    username: new FormControl('', Validators.required),
-    password: new FormControl('', Validators.required)
-  });
+  form: FormGroup;
 
   errorMessage: string | null = null;
   isLoading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) {
+    this.form = new FormGroup({
+      email: new FormControl('', [Validators.required, Validators.email]),
+      username: new FormControl('', Validators.required),
+      password: new FormControl('', Validators.required)
+    });
+  }
 
   register() {
     if (this.form.invalid) return;
@@ -41,21 +44,23 @@ export class Register {
     this.errorMessage = null;
     this.isLoading = true;
 
-    const { username, password } = this.form.value;
+    const { email, username, password } = this.form.value;
 
-    this.authService.register({ username: username!, password: password! }).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/']);
-      },
-      error: (err) => {
-        this.isLoading = false;
-        if (err.message === 'Username already exists.') {
-          this.errorMessage = err.message;
-        } else {
-          this.errorMessage = 'Registration failed. Please try again.';
+    this.authService
+      .register({ email: email!, username: username!, password: password! })
+      .subscribe({
+        next: () => {
+          this.isLoading = false;
+          this.router.navigate(['/']);
+        },
+        error: (err) => {
+          this.isLoading = false;
+          if (err.message === 'Username already exists.') {
+            this.errorMessage = err.message;
+          } else {
+            this.errorMessage = 'Registration failed. Please try again.';
+          }
         }
-      }
-    });
+      });
   }
 }
