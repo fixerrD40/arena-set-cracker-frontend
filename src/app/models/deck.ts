@@ -6,8 +6,8 @@ export class Deck {
   name: string;
   identity: ColorIdentity;
   raw: string;
-  tags?: string[];
-  notes?: string;
+  tags: string[];
+  notes: string;
   cards: Map<string, number>;
 
   constructor(init: {
@@ -22,8 +22,9 @@ export class Deck {
     this.identity = init.identity;
     this.raw = init.raw;
     this.id = init.id;
-    this.tags = init.tags;
-    this.notes = init.notes;
+
+    this.tags = init.tags ?? [];
+    this.notes = init.notes ?? '';
 
     this.cards = this.raw?.trim() ? parseRaw(this.raw) : new Map();
   }

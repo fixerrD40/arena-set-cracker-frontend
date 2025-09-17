@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@angular/core';
 import { Deck, parseDeck } from '../models/deck';
 import { catchError, map, Observable, throwError } from 'rxjs';
 import { Set } from '../models/set';
+import { Recommendations } from '../models/recommendations';
 
 @Injectable({
   providedIn: 'root',
@@ -27,8 +28,8 @@ export class PublicService {
     );
   }
 
-  getRecommendations(deckId: number): Observable<string[]> {
-    return this.http.post<string[]>(`${this.baseUrl}/recommend/deck/${deckId}`, {}).pipe(
+  getRecommendations(deckId: number): Observable<Recommendations> {
+    return this.http.post<Recommendations>(`${this.baseUrl}/recommend/deck/${deckId}`, {}).pipe(
       catchError(this.handleError)
     );
   }

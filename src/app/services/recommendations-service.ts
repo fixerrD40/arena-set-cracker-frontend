@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { Recommendations } from '../models/recommendations';
 
 @Injectable({ providedIn: 'root' })
-export class RecommendationService {
+export class RecommendationsService {
 
   private apiUrl: string;
 
@@ -11,8 +12,8 @@ export class RecommendationService {
     this.apiUrl = `${appConfig.baseUrl}/api/recommend`;
   }
 
-  getRecommendations(deckId: number): Observable<string[]> {
-    return this.http.post<string[]>(`${this.apiUrl}/deck/${deckId}`, null);
+  getRecommendations(deckId: number): Observable<Recommendations> {
+    return this.http.post<Recommendations>(`${this.apiUrl}/deck/${deckId}`, null);
   }
 
   cancelRecommendations(): Observable<string> {

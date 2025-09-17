@@ -1,39 +1,111 @@
 <div class="deck-wrapper" *ngIf="deck">
+
+  <!-- ======== Deck Meta Section ======== -->
   <div class="deck-meta">
+    
+    <!-- TAGS -->
     <div class="deck-tags">
       <h3>Tags:</h3>
+      <!-- Use mat-chip-grid + mat-chip-row for chips with input interaction -->
       <mat-chip-grid #chipGrid>
-        <mat-chip *ngFor="let tag of deck.tags" (removed)="removeTag(tag)">
+        <mat-chip-row
+          *ngFor="let tag of deck.tags"
+          (removed)="removeTag(tag)"
+          removable
+        >
           {{ tag }}
-          <button matChipRemove>&times;</button>
-        </mat-chip>
+          <button matChipRemove type="button" aria-label="Remove tag">&times;</button>
+        </mat-chip-row>
         <input
           placeholder="New tag..."
           [matChipInputFor]="chipGrid"
           [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
           (matChipInputTokenEnd)="addTag($event)"
+          aria-label="Add new tag"
         />
       </mat-chip-grid>
     </div>
 
+    <!-- NOTES -->
     <div class="deck-notes">
       <h3>Notes:</h3>
-      <textarea [(ngModel)]="deck.notes" (blur)="saveNotes()" rows="4" placeholder="[Add notes]"></textarea>
+      <textarea
+        [(ngModel)]="deck.notes"
+        (blur)="saveNotes(deck.notes)"
+        rows="4"
+        placeholder="[Add notes]"
+        aria-label="Deck notes"
+      ></textarea>
     </div>
 
+    <!-- RECOMMENDATIONS -->
     <div class="deck-recommendations">
       <h3>Recommended Cards:</h3>
-      <p *ngIf="loadingRecommendations">Loading recommendations...</p>
-      <ul *ngIf="!loadingRecommendations && recommendedCardDetails.length; else noRecs" class="recommended-cards-list">
-        <li *ngFor="let card of recommendedCardDetails" class="recommended-card">
-          <img *ngIf="card.image_uris?.small" [src]="card.image_uris?.small" [alt]="card.name" class="recommended-card-image" />
-          <span class="recommended-card-name">{{ card.name }}</span>
-        </li>
-      </ul>
-      <ng-template #noRecs><p>[blank]</p></ng-template>
+
+      <ng-container *ngIf="!loadingRecommendations && recommendations; else loadingOrBlank">
+
+        <div class="pill-groups">
+          <!-- Dual Emergent Pills -->
+          <div class="pill-group" *ngIf="recommendDualKeys.length > 0">
+            <h4>Dual Emergent:</h4>
+            <!-- Use mat-chip-listbox + mat-chip-option for selectable chips -->
+            <mat-chip-listbox>
+              <mat-chip-option
+                *ngFor="let key of recommendDualKeys"
+                [selected]="currentRecommendationType === 'dual_emergent' && currentElementKey === key"
+                (click)="setActiveRecommendation('dual_emergent', key)"
+                role="button"
+                tabindex="0"
+                [attr.aria-pressed]="currentRecommendationType === 'dual_emergent' && currentElementKey === key"
+              >
+                {{ key }}
+              </mat-chip-option>
+            </mat-chip-listbox>
+          </div>
+
+          <!-- Primary Emergent Pills -->
+          <div class="pill-group" *ngIf="recommendPrimaryKeys.length > 0">
+            <h4>Primary Emergent:</h4>
+            <mat-chip-listbox>
+              <mat-chip-option
+                *ngFor="let key of recommendPrimaryKeys"
+                [selected]="currentRecommendationType === 'primary_emergent' && currentElementKey === key"
+                (click)="setActiveRecommendation('primary_emergent', key)"
+                role="button"
+                tabindex="0"
+                [attr.aria-pressed]="currentRecommendationType === 'primary_emergent' && currentElementKey === key"
+              >
+                {{ key }}
+              </mat-chip-option>
+            </mat-chip-listbox>
+          </div>
+        </div>
+
+        <!-- Display Card Images -->
+        <div class="expanded-cards" *ngIf="displayedRecommendedCards.length > 0">
+          <div class="expanded-cards" *ngIf="displayedRecommendedCards.length > 0">
+            <h5>Cards:</h5>
+            <div class="card-grid">
+              <div
+                class="card-box"
+                *ngFor="let card of displayedRecommendedCards"
+              >
+                <img [src]="card.image_uris?.small" [alt]="card.name" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Loading or blank fallback -->
+      <ng-template #loadingOrBlank>
+        <p *ngIf="loadingRecommendations">Loading recommendations...</p>
+        <p *ngIf="!loadingRecommendations">[blank]</p>
+      </ng-template>
     </div>
   </div>
 
+  <!-- ======== Deck List Section ======== -->
   <div class="deck-list">
     <h2>
       {{ deck.name }}
@@ -42,7 +114,7 @@
       </button>
     </h2>
 
-    <!-- Conditionally show the edit form -->
+    <!-- Edit Form -->
     <app-deck-form
       *ngIf="editing"
       [initialValues]="{
@@ -51,13 +123,14 @@
         primaryColor: deck.identity.primary,
         colors: deck.identity.colors
       }"
-      (submitted)="saveDeck($event)"
+      (submitted)="saveDeckFromForm($event)"
       (cancel)="cancelEdit()"
     ></app-deck-form>
 
-    <div class="cards">
+    <!-- Decklist -->
+    <div class="decklist-cards">
       <div
-        class="card-box"
+        class="decklist-card"
         *ngFor="let card of deck.cards | keyvalue"
         [ngxTippy]="getCardTooltip(card.key)"
         [tippyProps]="{ allowHTML: true, placement: 'top', theme: 'light-border' }"
