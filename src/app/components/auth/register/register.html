@@ -3,10 +3,20 @@
     <h2 class="card-title">Register</h2>
     <form [formGroup]="form" (ngSubmit)="register()">
 
-      <mat-form-field appearance="fill">
-        <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" />
-      </mat-form-field>
+      <div class="form-field-with-tooltip">
+        <mat-form-field appearance="fill">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" />
+        </mat-form-field>
+
+        <span class="tooltip-container">
+          <mat-icon class="info-icon">info</mat-icon>
+          <span class="tooltip-text">
+            Your email is securely hashed in the backend.<br />
+            You will not be emailed unless you resupply your email for password reset and its hash matches.
+          </span>
+        </span>
+      </div>
 
       <mat-form-field appearance="fill">
         <mat-label>Username</mat-label>

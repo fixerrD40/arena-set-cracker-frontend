@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-register',
@@ -17,12 +18,13 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
+    MatIcon,
     MatInputModule,
     MatButtonModule,
     MatProgressSpinner
   ],
   templateUrl: './register.html',
-  styleUrls: ['../auth.css', '../../components.css']
+  styleUrls: ['register.css', '../auth.css', '../../components.css']
 })
 export class Register {
   form: FormGroup;
