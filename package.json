@@ -39,6 +39,7 @@
     "karma-edge-launcher": "^0.4.2",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "source-map-explorer": "^2.5.3",
     "typescript": "~5.8.2"
   }
 }

@@ -1,11 +1,11 @@
 import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { ChartConfiguration } from 'chart.js';
 import { combineLatest, map } from 'rxjs';
+
 import { DeckStoreService } from '../../../services/deck-store-service';
 import { CardStoreService } from '../../../services/card-store-service';
+import { SetDetailChartComponent } from './set-detail-chart.component';
 import { Color, ColorDisplayNames } from '../../../models/color';
 import { ScryfallCard } from '../../../models/scryfall-card.model';
 import { Deck } from '../../../models/deck';
@@ -34,14 +34,11 @@ interface FilterCategory {
 @Component({
   selector: 'app-set-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, BaseChartDirective],
-  providers: [provideCharts(withDefaultRegisterables())],
+  imports: [CommonModule, FormsModule, SetDetailChartComponent],
   templateUrl: './set-detail.html',
   styleUrls: ['./set-detail.css'],
 })
 export class SetDetail implements OnInit {
-  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
-
   public Math = Math;
   private deckStore = inject(DeckStoreService);
   private cardStore = inject(CardStoreService);
@@ -329,10 +326,15 @@ export class SetDetail implements OnInit {
     const end = start + this.pageSize;
     const pageCards = this.filteredCards.slice(start, end);
 
-    this.barChartData.labels = pageCards.map((c) => c.name);
-    this.barChartData.datasets[0].data = pageCards.map((c) => c.quantity);
-
-    this.chart?.update();
+    this.barChartData = {
+      labels: pageCards.map((c) => c.name),
+      datasets: [
+        {
+          ...this.barChartData.datasets[0],
+          data: pageCards.map((c) => c.quantity)
+        }
+      ]
+    };
   }
 
   nextPage(): void {

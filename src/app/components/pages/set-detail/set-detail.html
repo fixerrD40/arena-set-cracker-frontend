@@ -18,9 +18,9 @@
             }"
             class="color-button"
           >
-            <img 
-              [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'" 
-              [alt]="color" 
+            <img
+              [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'"
+              [alt]="color"
             />
           </button>
         </div>
@@ -88,13 +88,14 @@
       </div>
 
       <!-- Chart Canvas -->
-      <div class="chart-wrapper" style="flex-grow: 1;">
-        <canvas baseChart
-                [data]="barChartData"
-                [options]="barChartOptions"
-                chartType="bar"
-                style="height: 100%; width: 100%;">
-        </canvas>
+      <div class="chart-wrapper" style="flex-grow: 1; min-height: 300px;">
+        @defer (on timer(150ms)) {
+          <app-set-detail-chart [chartData]="barChartData" />
+        } @placeholder {
+          <div class="chart-loading-skeleton" style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #fafafa; border: 1px dashed #ccc; border-radius: 4px;">
+            <p style="color: #666; font-size: 0.9rem;">Assembling layout charts...</p>
+          </div>
+        }
       </div>
 
       <!-- Pagination Controls -->
