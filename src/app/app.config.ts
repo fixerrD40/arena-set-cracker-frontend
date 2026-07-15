@@ -5,7 +5,7 @@ import { routes } from './routes';
 import { TokenInterceptor } from './interceptors/token-interceptor';
 
 export function initConfigFactory() {
-  return () => fetch('/assets/config.json')
+  return () => fetch('assets/config.json')
     .then(res => res.json())
     .then(config => {
       (window as any).APP_CONFIG_DATA = config;
