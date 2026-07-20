@@ -1,47 +1,36 @@
-import { ApplicationConfig, NgZone, APP_INITIALIZER } from '@angular/core';
-import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
+// src/app/app.config.ts
+import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject, Injector, runInInjectionContext } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { routes } from './routes';
-import { TokenInterceptor } from './interceptors/token-interceptor';
 
-export function initConfigFactory() {
-  return () => fetch('assets/config.json')
-    .then(res => res.json())
-    .then(config => {
-      (window as any).APP_CONFIG_DATA = config;
-    });
-}
+import { routes } from './routes';
+import { runConfigAndStorageInitialization } from './core/config/config.initializer';
+import { AppConfigService } from './core/config/config.service';
+import { APP_CONFIG } from './core/config/config.tokens';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Core HTTP setup
-    provideHttpClient(withInterceptorsFromDi()),
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: TokenInterceptor,
-      multi: true
-    },
-
-    // Routes
+    provideZoneChangeDetection({ eventCoalescing: true, runCoalescing: true }),
+    provideHttpClient(),
     provideRouter(routes),
 
-    // Dynamic Config file injection
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initConfigFactory,
-      multi: true
-    },
-    {
-      provide: 'APP_CONFIG',
-      useFactory: () => (window as any).APP_CONFIG_DATA
-    },
+    // FIXED: Capture the global Injector context and execute your runner inside of it!
+    provideAppInitializer(() => {
+      const injector = inject(Injector);
+      return runInInjectionContext(injector, () => runConfigAndStorageInitialization());
+    }),
 
     {
-      provide: NgZone,
-      useFactory: () => new NgZone({
-        shouldCoalesceEventChangeDetection: true,
-        shouldCoalesceRunChangeDetection: true
-      })
+      provide: APP_CONFIG,
+      useFactory: () => {
+        const configService = inject(AppConfigService);
+        return {
+          baseUrl: configService.baseUrl,
+          isProduction: configService.isProduction,
+          sqliteDbName: configService.sqliteDbName,
+          scryfall: configService.scryfall
+        };
+      }
     }
   ]
 };

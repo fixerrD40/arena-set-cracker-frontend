@@ -1,0 +1,12 @@
+<mat-card class="add-deck-card">
+  <app-deck-form
+    [initialValues]="defaultValues"
+    (submitted)="handleSubmit($event)"
+  ></app-deck-form>
+
+  @if (errorMessage) {
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+  }
+</mat-card>

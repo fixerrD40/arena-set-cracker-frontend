@@ -1,0 +1,203 @@
+/* Container for layout and scroll safety */
+.deck-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Main layout wrapper */
+.deck-wrapper {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 2rem;
+  box-sizing: border-box;
+  background-color: #fafafa;
+}
+
+/* Left side: meta info */
+.deck-meta {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 600px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+/* Meta section headers */
+.deck-tags h3,
+.deck-notes h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #222;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 4px;
+}
+
+/* Tags section spacing alignment */
+.deck-tags {
+  margin-bottom: 1.5rem;
+}
+
+/*
+ * FIXED: Target Angular Material internal layouts via native class hooks.
+ * Prevents duplications by matching Material's shadow styling patterns.
+ */
+.mat-mdc-chip-grid {
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+/* Custom styled inputs inside the Material grid */
+input[matChipInputFor] {
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  min-width: 120px;
+  background: transparent;
+}
+
+/* Notes Section */
+.deck-notes {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck-notes textarea {
+  resize: vertical;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-height: 120px;
+  background: #fff;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+}
+
+.deck-notes textarea:focus {
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+  outline: none;
+}
+
+/* Right side: deck list workspace container */
+.deck-list {
+  /* FIXED: Changed to flex: 1 0 320px to allow card views or edit forms to expand naturally */
+  flex: 1 0 320px;
+  max-width: 460px; /* Binds column width gracefully on wide viewports */
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  max-height: 75vh; /* Responsive height boundary linked to viewport sizing bounds */
+  overflow-y: auto;
+}
+
+.deck-list h2 {
+  font-size: 1.2rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Layout header actions inside edit panels */
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 6px;
+}
+
+.form-header h2 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+/* Card layout list container row frames */
+.decklist-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.decklist-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9f9f9;
+  border: 1px solid #eaeaea;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  cursor: default;
+}
+
+.decklist-card:hover {
+  background: #f0f4f8; /* Soft blue color wash highlighting on cursor hover states */
+  border-color: #bfdbfe;
+}
+
+.card-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.card-quantity {
+  font-weight: 600;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Empty or Loading view structural fallbacks */
+.empty-matrix-fallback,
+.loading-workspace-spinner {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Responsive breakout rules for mobile optimization channels */
+@media (max-width: 900px) {
+  .deck-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .deck-meta,
+  .deck-list {
+    max-width: 100%;
+    flex: 1 1 auto;
+  }
+
+  .deck-list {
+    margin-top: 1.5rem;
+    max-height: none; /* Allows natural fluid document scrolling on devices */
+  }
+}

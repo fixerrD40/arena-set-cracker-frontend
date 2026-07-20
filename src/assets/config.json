@@ -1,4 +1,10 @@
 {
   "production": false,
-  "baseUrl": "http://localhost:8080"
+  "baseUrl": "http://localhost:8080",
+  "sqliteDbName": "file:mtg_vault.db",
+  "scryfall": {
+    "apiUrl": "https://api.scryfall.com",
+    "rateLimitDelayMs": 100,
+    "userAgent": "MtgVaultApp/1.0.0 (contact@yourdomain.com)"
+  }
 }

@@ -1,37 +1,58 @@
+/* ==========================================================================
+   1. GLOBAL SYSTEM LAYOUT
+   ========================================================================== */
+
 mat-sidenav-container {
-  height: 100vh;
+  height: calc(100vh - 64px); /* Fixed overflow scrolling issue */
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+/* ==========================================================================
+   2. NAVBAR STYLES (Lightweight - Overriding only structural positioning)
+   ========================================================================== */
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 64px;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.1);
+  z-index: 100; /* Keeps shadow resting cleanly on top of the sidenav layout */
+}
+
+.navbar .logo {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-left: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ==========================================================================
+   3. SIDENAV LAYOUT STYLES
+   ========================================================================== */
+
+mat-sidenav {
+  width: 280px; /* Gives the sidebar a consistent, professional desktop width */
 }
 
 .sidenav-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: 56px;
   padding: 0 16px;
-  cursor: default;
-  position: relative;
-}
-
-.sidenav-header span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-grow: 1;
-  cursor: pointer;
-}
-
-.sidenav-header button {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
 }
 
 .sets {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12); /* Standard Material divider tint */
 }
 
-.sets div {
+/* Updated selector to target your specific structural header div */
+.set-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -39,58 +60,98 @@ mat-sidenav-container {
   cursor: pointer;
   user-select: none;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 
-.sets div:hover {
-  background-color: #f5f5f5;
+.set-header:hover {
+  background-color: rgba(0, 0, 0, 0.04); /* Uniform light gray hover state */
 }
+
+/* ==========================================================================
+   4. DECKS LIST AND ITEM CONTENT
+   ========================================================================== */
 
 .sets ul {
   list-style: none;
   margin: 0;
-  padding: 0 16px 8px 32px;
+  padding: 0 16px 8px 16px; /* Balanced indentation */
 }
 
-.sets li {
+.add-deck-item {
   padding: 4px 0;
-  cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.sets li:hover {
-  background-color: #f0f0f0;
+.add-deck-item button {
+  width: 100%;
+  justify-content: flex-start; /* Aligns text cleanly inside broad button limits */
 }
 
-.sets li.no-decks {
+.no-decks {
   font-style: italic;
-  color: #888;
-  cursor: default;
+  color: var(--mat-sys-outline, #757575);
+  padding: 8px 12px;
+  font-size: 0.9rem;
 }
 
 .deck-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 8px 12px;
   border-radius: 4px;
-  transition: background-color 0.2s;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .deck-item:hover,
-.deck-item:focus {
-  background-color: #f0f0f0;
+.deck-item:focus-visible {
+  background-color: rgba(0, 0, 0, 0.04);
   outline: none;
+}
+
+/*
+ * ADDED ACTIVE SELECTION STATE STYLE HOOK:
+ * Snaps a modern, crisp primary indigo tint behind the active workspace element row.
+ */
+.deck-item.active-workspace {
+  background-color: rgba(63, 81, 181, 0.1); /* 10% theme primary tint weight */
+  color: #3f51b5; /* Theme indigo typography tint match */
+  font-weight: 500;
+}
+
+.deck-name {
+  font-size: 0.95rem;
 }
 
 .deck-icons {
   display: flex;
   gap: 4px;
+  align-items: center;
 }
 
 .deck-icons img {
   width: 20px;
   height: 20px;
   object-fit: contain;
+}
+
+/* ==========================================================================
+   5. WORKSPACE CANVAS FALLBACK LAYOUTS
+   ========================================================================== */
+
+/*
+ * ADDED WORKSPACE CANVAS EMPTY HOOK:
+ * Centers your helpful setup instructional layout block directly inside the central screen.
+ */
+.empty-dashboard-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 440px;
+  margin: 120px auto 0 auto;
+  padding: 0 24px;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.6;
 }

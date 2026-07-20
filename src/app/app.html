@@ -1,5 +1,41 @@
-<app-navbar (menuToggle)="toggleSidenav()"></app-navbar>
+<!-- 1. The Navbar Layout Shell -->
+<mat-toolbar color="primary" class="navbar">
+  <button mat-icon-button (click)="isShowing = !isShowing" aria-label="Toggle Menu">
+    <mat-icon>menu</mat-icon>
+  </button>
 
+  <span class="logo" routerLink="">Arena Set Cracker</span>
+  <span class="spacer"></span>
+
+  <nav>
+    <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
+  </nav>
+
+  @if (userProfileService.config$ | async; as profile) {
+    @if (!profile.is_cloud_synced) {
+      <a mat-button routerLink="/register" style="margin-right: 8px;">
+        <mat-icon style="margin-right: 4px; vertical-align: middle;">cloud_upload</mat-icon>
+        <span style="vertical-align: middle;">Sync to Cloud</span>
+      </a>
+    }
+
+    <button mat-icon-button [matMenuTriggerFor]="profileMenu" aria-label="User profile">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+
+    <mat-menu #profileMenu="matMenu">
+      <button mat-menu-item disabled>Hello, {{ profile.display_name }}</button>
+      @if (!profile.is_cloud_synced) {
+        <button mat-menu-item routerLink="/register">Link Cloud Credentials</button>
+      }
+      <button mat-menu-item (click)="logout()">Clear Workspace & Logout</button>
+    </mat-menu>
+  } @else {
+    <a mat-button routerLink="/login" routerLinkActive="active-link">Login</a>
+  }
+</mat-toolbar>
+
+<!-- 2. Sidenav Layout Stretches Below -->
 <mat-sidenav-container>
   <mat-sidenav mode="side" [opened]="isShowing">
     <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
@@ -9,48 +45,70 @@
       </button>
     </mat-toolbar>
 
-    <ng-container *ngIf="sets$ | async as sets">
-      <div class="sets" *ngFor="let entry of sets">
-        <div (click)="toggleSet(entry)" class="set-header">
-          <span>{{ entry.scryfallSet.name }} ({{ entry.scryfallSet.code.toLowerCase() }})</span>
-          <span class="spacer"></span>
-          <button
-            mat-icon-button
-            (click)="deleteSet(entry.id); $event.stopPropagation()"
-            aria-label="Delete set"
-          >
-            <mat-icon color="warn">delete</mat-icon>
-          </button>
-        </div>
-
-        <ul *ngIf="isExpanded(entry.id)">
-          <li class="add-deck-item">
-            <button mat-button color="primary" (click)="addDeck(entry)">
-              + Add New Deck
+    @if (sets$ | async; as sets) {
+      @for (entry of sets; track entry.id) {
+        <div class="sets">
+          <!-- Pass entry down to unified toggle method -->
+          <div (click)="toggleSet({ set: entry })" class="set-header">
+            <span>{{ entry.name }} ({{ entry.code }})</span>
+            <span class="spacer"></span>
+            <button mat-icon-button (click)="deleteSet(entry.id); $event.stopPropagation()" aria-label="Delete set">
+              <mat-icon color="warn">delete</mat-icon>
             </button>
-          </li>
+          </div>
 
-          <li *ngIf="decks.length === 0" class="no-decks">No decks yet</li>
-          <li *ngFor="let deck of decks"
-            [routerLink]="['/deck', deck.id]"
-            class="deck-item"
-            role="button"
-            tabindex="0">
-          <span class="deck-icons">
-            <img
-              *ngFor="let iconPath of getColorIconPaths(deck.identity)"
-              [src]="iconPath"
-              [alt]="iconPath"
-              style="width: 24px; height: 24px; object-fit: contain;"
-            />
-          </span>
-          <span class="deck-name">{{ deck.name }}</span>
-        </li>
-        </ul>
-      </div>
-    </ng-container>
+          <!-- FIXED: Uses clean signal comparison instead of the funky method execution loop -->
+          @if (expandedSetId() === entry.id) {
+            <ul>
+              <li class="add-deck-item">
+                <button mat-button color="primary" (click)="addDeck(entry)">
+                  + Add New Deck
+                </button>
+              </li>
+
+              <!-- FIXED MATRIX SUBSCRIPTION: Resolve the active grid array via async -->
+              @if (activeDecks$ | async; as decks) {
+                @if (decks.length === 0) {
+                  <li class="no-decks">No decks yet</li>
+                }
+                @for (deck of decks; track deck.id) {
+                  <!-- FIXED: Replaced [routerLink] with synchronous selection logic. Applies the 'active-workspace' CSS class instantly when clicked. -->
+                  <li (click)="selectDeckWorkspace(deck)"
+                      class="deck-item"
+                      [class.active-workspace]="selectedDeck?.id === deck.id"
+                      role="button"
+                      tabindex="0">
+                    <span class="deck-icons"></span>
+                    <span class="deck-name">{{ deck.name }}</span>
+                  </li>
+                }
+              } @else {
+                <li class="no-decks">Loading assignment topologies...</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
   </mat-sidenav>
+
+  <!-- 3. Dynamic Router Main Viewport Panel Container -->
   <mat-sidenav-content>
-    <router-outlet></router-outlet>
+    <!--
+      FIXED CONFIGURATION VIEWPORT SWITCH:
+      If a deck is selected, feed its reference memory block directly to the workspace view.
+      If no deck is active, display a clean dashboard fallback view state.
+    -->
+    @if (selectedDeck) {
+      <app-deck-content [deck]="selectedDeck"></app-deck-content>
+    } @else {
+      <!-- Fallback router outlet handles navigation paths like /about, /login, or /register -->
+      <router-outlet></router-outlet>
+
+      <!-- Display empty canvas message ONLY if the router is on the default root path -->
+      <div class="empty-dashboard-state">
+        Select an installed set and choose a destination deck container box from your workspace folder directory tree to view assignment allocations.
+      </div>
+    }
   </mat-sidenav-content>
 </mat-sidenav-container>

@@ -1,0 +1,23 @@
+/* Center and bound the outer card frame rather than just the internal form tag */
+.add-deck-card {
+  max-width: 440px; /* Slightly padded to allow breathing room for the form inside */
+  margin: 32px auto;
+  padding: 24px; /* Optional: Provides crisp padding inside the Material card borders */
+}
+
+.add-deck-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* Highly specific structural selector ensures consistent layout engine alignment */
+button[type="submit"] {
+  align-self: flex-end;
+  margin-top: 8px; /* Optional: Separates the action button slightly from the textarea border */
+}

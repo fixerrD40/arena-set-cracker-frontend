@@ -1,0 +1,91 @@
+@if (deck) {
+  <div class="deck-wrapper">
+
+    <!-- ======== Deck Meta Section ======== -->
+    <div class="deck-meta">
+      <div class="deck-tags">
+        <h3>Tags:</h3>
+        <mat-chip-grid #chipGrid>
+          @for (tag of deck.tags; track tag) {
+            <mat-chip-row (removed)="removeTag(tag)">
+              {{ tag }}
+              <button matChipRemove type="button" aria-label="Remove tag">&times;</button>
+            </mat-chip-row>
+          }
+          <input
+            placeholder="New tag..."
+            [matChipInputFor]="chipGrid"
+            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            (matChipInputTokenEnd)="addTag($event)"
+            aria-label="Add new tag"
+          />
+        </mat-chip-grid>
+      </div>
+
+      <div class="deck-notes">
+        <h3>Notes:</h3>
+        <textarea
+          [value]="deck.notes"
+          (blur)="saveNotes($any($event.target).value)"
+          rows="4"
+          placeholder="[Add notes...]"
+          aria-label="Deck notes"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- ======== Deck List Section ======== -->
+    <div class="deck-list">
+      @if (editing) {
+        <div class="edit-mode-container">
+          <div class="form-header">
+            <h2>Edit Deck Configuration</h2>
+            <button mat-button color="warn" (click)="cancelEdit()">Cancel</button>
+          </div>
+          <app-deck-form
+            [initialValues]="{ name: deck.name, arenaDeck: '' }"
+            (submitted)="saveDeckFromForm($event)"
+          ></app-deck-form>
+        </div>
+      } @else {
+        <h2>
+          {{ deck.name }}
+          <button mat-icon-button (click)="toggleEdit()" aria-label="Edit Deck Name">
+            <mat-icon>edit</mat-icon>
+          </button>
+        </h2>
+
+        <div class="decklist-cards">
+          <!-- 3. Bind the loop cleanly to the unified displayedCards$ stream -->
+          @for (item of displayedCards$ | async; track item.card.id) {
+            <div
+              class="decklist-card"
+              [ngxTippy]="getCardTooltip(item.card.id)"
+              [tippyProps]="{ allowHTML: true, placement: 'top', theme: 'light-border' }"
+            >
+              <span class="card-name">{{ item.card.name }}</span>
+              <span class="card-quantity">x{{ item.quantity }}</span>
+
+              <div class="card-actions-overlay">
+                <button mat-icon-button (click)="handleIncrementCard(item.card.id)" aria-label="Add copy">
+                  <mat-icon>add</mat-icon>
+                </button>
+                <button mat-icon-button (click)="handleDecrementCard(item.card.id)" aria-label="Remove copy">
+                  <mat-icon>remove</mat-icon>
+                </button>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-matrix-fallback">
+              No cards assigned to this deck container yet. Drag and drop assets from the set selection pool to begin puzzle completion metrics.
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="loading-workspace-spinner">
+    Initializing assignment profile context matrices...
+  </div>
+}

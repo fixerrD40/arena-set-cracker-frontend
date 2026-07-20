@@ -1,128 +1,127 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, DestroyRef, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatListModule } from '@angular/material/list';
 import { Router, RouterModule } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { Observable, take } from 'rxjs';
 
-import { AuthService } from './services/auth-service';
-import { SetStoreService } from './services/set-store-service';
-import { ScryfallSet } from './models/scryfall-set';
-import { DeckStoreService } from './services/deck-store-service';
-import { Navbar } from './components/layout/navbar/navbar';
-import { Deck } from './models/deck';
-import { CardStoreService } from './services/card-store-service';
-import { Color, ColorDisplayNames, ColorIdentity } from './models/color';
+// Angular Material Imports
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+// Domain Services
+import { UserProfileService } from './core/services/user-profile.service';
+import { AuthService } from './core/services/auth.service';
+import { SetService } from './core/services/set.service';
+import { DeckService } from './core/services/deck.service';
+
+// Components
+import { DeckContent } from './features/deck/deck-content/deck-content'
+
+// Models
+import { MtgSet } from './shared/models/set';
+import { MtgDeck } from './shared/models/deck';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
+  standalone: true, // Configures this as a standalone element
   imports: [
     CommonModule,
-    MatSidenavModule,
-    MatIconModule,
-    MatButtonModule,
-    MatListModule,
     RouterModule,
     MatToolbarModule,
-    Navbar
-],
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatSidenavModule,
+    MatTooltipModule,
+    DeckContent
+  ],
   templateUrl: './app.html',
-  styleUrls: ['./app.css'],
+  styleUrls: ['./app.css']
 })
 export class App {
-  title = 'arena-set-cracker';
-  isShowing = false;
+  public readonly userProfileService = inject(UserProfileService);
+  private readonly authService = inject(AuthService);
+  private readonly setService = inject(SetService);
+  private readonly deckService = inject(DeckService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
-  sets$: Observable<{ id: number; scryfallSet: ScryfallSet }[]>;
-  decks: Deck[] = [];
-  expandedSet: number | null = null;
+  readonly sets$ = this.setService.installedSets$;
 
-  constructor(
-    private authService: AuthService,
-    private setStore: SetStoreService,
-    private deckStore: DeckStoreService,
-    private cardStore: CardStoreService,
-    private router: Router
-  ) {
-    this.sets$ = this.setStore.sets$;
-    this.deckStore.decks$.subscribe(decks => {
-      this.decks = decks;
-    });
+  // 1. FIXED: Point to 'activeDecks$' which represents the multi-deck puzzle assignment matrix array
+  readonly activeDecks$ = this.deckService.activeDecks$;
 
-    this.authService.isAuthenticated$.subscribe((username: any) => {
-      if (username) {
-        this.expandedSet = null;
-        this.setStore.loadSets();
-      } else {
-        this.setStore.loadPublicSets();
-        this.deckStore.clear();
-      }
-    });
+  isShowing = true;
+
+  // Converted to a trackable signal to remove the funky template function execution loop
+  protected readonly expandedSetId = signal<string | null>(null);
+
+  // 2. CONCEPTUAL CHANGE: Active working workspace pointer initialized directly in memory
+  selectedDeck: MtgDeck | null = null;
+
+  /**
+   * Selection handler triggered synchronously whenever a user clicks a deck row in the template
+   */
+  selectDeckWorkspace(deck: MtgDeck): void {
+    this.selectedDeck = deck;
   }
 
-  getColorIconPaths(identity: ColorIdentity): string[] {
-    if (!identity) return [];
+  toggleSet(entry: { set: MtgSet }): void {
+    const targetSetId = entry.set.id;
 
-    const colors = [...identity.colors];
-    const primaryIndex = colors.indexOf(identity.primary);
+    this.selectedDeck = null;
 
-    if (primaryIndex !== -1) {
-      colors.splice(primaryIndex, 1);
-      colors.unshift(identity.primary);
+    if (this.expandedSetId() === targetSetId) {
+      this.expandedSetId.set(null);
+      this.setService.unloadSetFromMemory();
+    } else {
+      this.expandedSetId.set(targetSetId);
+      this.setService.toggleSetInMemory(entry.set);
     }
-
-    return colors.map((color) => {
-      const filename = ColorDisplayNames[color].toLowerCase();
-      return `assets/colors/${filename}.png`;
-    });
   }
 
+  addSet(): void {
+    // Navigate or display add-set prompt sequence
+    console.log('Spawning Scryfall installation download query modal');
+  }
 
-  toggleSet(entry: { id: number; scryfallSet: ScryfallSet }): void {
-    if (this.expandedSet === entry.id) {
-      this.router.navigate(['/set', entry.id]);
-      return;
+  deleteSet(setId: string): void {
+    if (confirm('Permanently purge this set and all associated decks from disk?')) {
+      this.setService.uninstall(setId);
     }
+  }
 
-    this.expandedSet = entry.id;
+  addDeck(set: MtgSet): void {
+    const deckName = prompt('Enter New Custom Deck Name:');
+    if (!deckName) return;
 
-    this.authService.isAuthenticated$
-      .pipe(take(1))
-      .subscribe(isAuth => {
-        if (isAuth) {
-          this.deckStore.loadForSet(entry);
-        } else {
-          this.deckStore.loadForPublicSet(entry);
-        }
+    // 0. Generate a client-side string UUID to fulfill your schema rules
+    const uuid = crypto.randomUUID();
 
-        this.cardStore.loadSet(entry.scryfallSet.code).subscribe();
-        this.router.navigate(['/set', entry.id]);
+    const blankDeck = new MtgDeck({
+      id: uuid, // Securely filled text string id
+      setId: set.id,
+      name: deckName,
+      tags: [],
+      notes: '',
+      cards: new Map<string, number>() // Clear, ready assignment matrix base
+    });
+
+    // 2. Persist directly down into SQLite.
+    // The service's 'tap' operator handles sliding it into activeDecks$ automatically!
+    this.deckService.create(blankDeck)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: (err) => console.error('Failed to create new deck container:', err.message)
       });
   }
 
-  deleteSet(id: number): void {
-    this.setStore.deleteSet(id);
-  }
-
-  addSet() {
-    this.router.navigate(['/add-set']);
-  }
-
-  addDeck(set: { id: number; scryfallSet: ScryfallSet }) {
-    this.router.navigate(['/add-deck'], {
-      state: { set }
-    });
-  }
-
-  isExpanded(id: number): boolean {
-    return this.expandedSet === id;
-  }
-
-  toggleSidenav(): void {
-    this.isShowing = !this.isShowing;
+  logout(): void {
+    this.setService.unloadSetFromMemory();
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

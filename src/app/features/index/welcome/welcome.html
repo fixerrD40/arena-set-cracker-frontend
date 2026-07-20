@@ -1,0 +1,31 @@
+<div class="welcome-container">
+  <mat-card class="welcome-card" appearance="raised">
+    <mat-card-header>
+      <mat-card-title>Arena Set Cracker</mat-card-title>
+      <mat-card-subtitle>Welcome! Let's personalize your offline workspace.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>What should we call you?</mat-label>
+        <input
+          matInput
+          [(ngModel)]="username"
+          placeholder="e.g., Planeswalker"
+          (keyup.enter)="username.trim() && configureApp()"
+          required>
+      </mat-form-field>
+    </mat-card-content>
+
+    <mat-card-actions class="actions-panel">
+      <!-- Button is disabled automatically until valid text is passed -->
+      <button
+        mat-raised-button
+        color="primary"
+        [disabled]="!username.trim()"
+        (click)="configureApp()">
+        Get Started
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

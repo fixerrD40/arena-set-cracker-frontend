@@ -34,11 +34,19 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "*.wasm",
+                "input": "./node_modules/sql.js/dist/",
+                "output": "assets"
               }
             ],
             "styles": [
               "@angular/material/prebuilt-themes/azure-blue.css",
               "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "sql.js"
             ]
           },
           "configurations": {

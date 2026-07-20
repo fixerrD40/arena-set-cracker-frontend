@@ -1,0 +1,31 @@
+<mat-card class="add-deck-card">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="add-deck-form">
+
+    <!-- 1. Mandatory Deck Name Container Area -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Deck Name</mat-label>
+      <input matInput formControlName="name" placeholder="Enter deck name" required />
+
+      <!-- Modernized Control Flow replaces *ngIf -->
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <mat-error>Name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- 2. Optional Arena Text Copy-Paste Arena Import Area -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Optional: Arena Deck Code</mat-label>
+      <textarea
+        matInput
+        formControlName="arenaDeck"
+        placeholder="Enter arena deck code lines (e.g. 4 Mountain)"
+        rows="6"
+      ></textarea>
+    </mat-form-field>
+
+    <!-- 3. Form Submission Trigger Area -->
+    <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+      Save Deck Configuration
+    </button>
+  </form>
+</mat-card>
