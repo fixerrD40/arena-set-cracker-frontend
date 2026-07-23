@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +11,7 @@ import { map, Observable, of, startWith } from 'rxjs';
 import { ScryfallService } from '../../../core/services/api/scryfall/scryfall.service';
 import { SetService } from '../../../core/services/set.service';
 import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scryfall';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-add-set',
@@ -18,14 +19,15 @@ import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scry
   templateUrl: './add-set.html',
   styleUrls: ['./add-set.css'],
   imports: [
-    CommonModule,
+    AsyncPipe,
     RouterModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatAutocompleteModule,
     MatButtonModule,
-    MatCardModule // Restored appropriate module injection
+    MatCardModule,
+    MatProgressSpinnerModule
   ]
 })
 export class AddSet implements OnInit {

@@ -1,33 +1,26 @@
 // src/app/core/data-wire/data-wire.contract.ts
 import { Observable } from 'rxjs';
-import { type SQLiteTable } from 'drizzle-orm/sqlite-core';
 
 /**
- * Platform Execution Boundary Data Conduit.
- *
- * Enforces zero awareness of application state, domain models, or environment targets.
- * Callers pass pure domain models on writes and receive pure domain models on reads.
+ * Platform Execution Boundary Data Conduit Contract.
+ * The generic 'TTableBase' slots your structural type validations safely.
  */
-export interface DataWire {
-  insert<TTable extends SQLiteTable<any>, TInput = any, TOutput = any>(
-    table: TTable,
+export interface DataWire<TTableBase = any> {
+  insert<TInput = any, TOutput = any>(
+    table: TTableBase, // 🌟 Bound directly to the root configuration parameter
     payload: TInput
   ): Observable<TOutput>;
 
-  insertBulk<TTable extends SQLiteTable<any>, TInput = any, TOutput = any>(
-    table: TTable,
+  insertBulk<TInput = any, TOutput = any>(
+    table: TTableBase,
     payloads: TInput[]
   ): Observable<TOutput[]>;
 
-  update<TTable extends SQLiteTable<any>>(table: TTable, id: string | number, payload: any): Observable<void>;
-  delete<TTable extends SQLiteTable<any>>(table: TTable, id: string | number): Observable<void>;
+  update(table: TTableBase, id: string | number, payload: any): Observable<void>;
+  delete(table: TTableBase, id: string | number): Observable<void>;
 
-  /**
-   * Extracts collections and utilizes internal platform-specific registries
-   * to automatically emit fully hydrated domain model arrays.
-   */
-  fetchCollection<TTable extends SQLiteTable<any>, TOutput = any>(
-    table: TTable,
+  fetchCollection<TOutput = any>(
+    table: TTableBase,
     contextId?: string | number
   ): Observable<TOutput[]>;
 

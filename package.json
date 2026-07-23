@@ -16,7 +16,8 @@
     "desktop:run": "ng build && electron . --js-flags=\"--max-old-space-size=4096\" --no-sandbox",
     "desktop:package": "ng build && npx electron-builder",
     "mobile:build-android": "ng build && npx cap sync android && npx cap open android",
-    "mobile:build-ios": "ng build && npx cap sync ios && npx cap open ios"
+    "mobile:build-ios": "ng build && npx cap sync ios && npx cap open ios",
+    "db:generate": "drizzle-kit generate --dialect=sqlite --schema=src/app/core/storage/sqlite/sqlite.schema.ts --out=public/drizzle"
   },
   "build": {
     "appId": "com.github.fixerrD40.arenasetcracker",
@@ -68,6 +69,7 @@
     "@angular/compiler-cli": "^20.0.0",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^26.1.1",
+    "drizzle-kit": "^0.31.10",
     "electron": "^43.1.1",
     "jasmine-core": "~5.7.0",
     "karma": "~6.4.0",

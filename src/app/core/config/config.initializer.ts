@@ -19,27 +19,28 @@ export async function runConfigAndStorageInitialization(): Promise<void> {
     await configService.load();
     console.log(`⚡ ConfigInitializer: Settings loaded. Base server URL identified as: ${configService.baseUrl}`);
 
-    // ENVIRONMENT CHECK: Safely determine if running inside an Electron desktop context
-    const isElectron = !!(
-      typeof window !== 'undefined' &&
-      window.navigator &&
-      window.navigator.userAgent.toLowerCase().includes('electron')
-    );
+    // PHASE 2: STORAGE CONFIGURATION INTERCEPT
+    // Safe lookup: Request the SqliteEngine singleton token using an optional fallback configuration
+    const sqliteEngine = injector.get(SqliteEngine, null);
 
-    if (isElectron) {
-      console.log('🖥️ ConfigInitializer: Electron host detected. Bootstrapping desktop storage engine...');
+    // 🌟 TYPE-SAFE ENVIRONMENT PROFILE ZONING:
+    // If our useFactory in app.config.ts mapped SqliteEngine into the token ecosystem, execute it.
+    // If running on a web/mobile node, the token resolves to null, safely skipping disk allocations!
+    if (sqliteEngine) {
+      console.log('🖥️ ConfigInitializer: Storage engine detected in active profile. Bootstrapping desktop storage schemas...');
 
-      // Look up your root-injectable SqliteEngine singleton from the injector instance
-      const sqliteEngine = injector.get(SqliteEngine);
+      // 🌟 CRITICAL FIX: Properly await the asynchronous WebAssembly compilation and physical disk check passes
       await sqliteEngine.bootstrapEngine(injector);
+
+      console.log('🖥️ ConfigInitializer: Desktop storage engine bootstrap complete.');
     } else {
-      console.log('🌐 ConfigInitializer: Web/Mobile platform detected. Skipping local file block allocations.');
+      console.log('🌐 ConfigInitializer: Web/Mobile profile verified. Skipping local file block allocations.');
     }
 
     // PHASE 3: Now that tables are safe on disk (on desktop), awaken background sync loops!
     console.log('🔄 ConfigInitializer: Awakening background data synchronization engines...');
 
-    // 🌟 FIX: Fetch the service via injector.get to bypass asynchronous inject context exceptions safely
+    // Fetch the service via injector.get to bypass asynchronous inject context exceptions safely
     const outboxService = injector.get(OutboxService);
     outboxService.initializeEngine();
 

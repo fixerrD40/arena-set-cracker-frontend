@@ -28,13 +28,13 @@ export function mapJsonToSet(payload: CloudSetPayload): MtgSet {
 }
 
 /**
- * NETWORK INPUT WIRE (SCRYFALL REST API):
- * Translates a raw incoming set chunk payload from Scryfall directly into your domain structure.
+ * 🌟 ADD THIS NEW HELPER FUNCTION:
+ * Translates a raw Scryfall REST API payload into your client app's regular MtgSet domain model.
  */
-export function mapScryfallToSet(apiSet: ScryfallSet): MtgSet {
+export function mapScryfallToDomainSet(apiSet: ScryfallSet): MtgSet {
   return {
     id: apiSet.id,
-    code: (apiSet.code || '').toUpperCase(),
+    code: (apiSet.code || '').toUpperCase().trim(), // Matches your UI uppercase layout rule!
     name: apiSet.name || 'Unknown Expansion'
   };
 }

@@ -53,14 +53,12 @@ export const deckCards = sqliteTable('deck_cards', {
 export const syncQueue = sqliteTable('sync_queue', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   entityType: text('entity_type').$type<'set' | 'deck'>().notNull(),
+  entityId: text('entity_id').notNull(),
   action: text('action').$type<'CREATE' | 'UPDATE' | 'DELETE'>().notNull(),
   payload: text('payload', { mode: 'json' }).$type<any>().notNull(),
   createdAt: text('created_at').notNull().$default(() => new Date().toISOString()),
 }, (table) => [
-  uniqueIndex('sync_queue_entity_record_idx').on(
-    table.entityType,
-    sql`json_extract(${table.payload}, '$.id')`
-  )
+  uniqueIndex('sync_queue_entity_record_idx').on(table.entityType, table.entityId)
 ]);
 
 // ==========================================

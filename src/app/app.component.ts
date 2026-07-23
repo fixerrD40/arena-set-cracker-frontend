@@ -17,7 +17,6 @@ import { AuthService } from './core/services/auth.service';
 import { SetService } from './core/services/set.service';
 
 // Components
-import { DeckContent } from './features/deck/deck-content/deck-content'
 import { DATA_WIRE_TOKEN } from './app.config';
 import { map } from 'rxjs';
 import { decks } from './core/storage/sqlite/sqlite.schema';
@@ -37,8 +36,7 @@ import { MtgSet } from './shared/models/set/set';
     MatIconModule,
     MatMenuModule,
     MatSidenavModule,
-    MatTooltipModule,
-    DeckContent
+    MatTooltipModule
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
@@ -97,6 +95,8 @@ export class App {
 
   public addSet(): void {
     console.log('Spawning Scryfall installation download query modal');
+
+    this.router.navigate(['/add-set']);
   }
 
   public deleteSet(set: MtgSet): void {
@@ -105,9 +105,13 @@ export class App {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            // Check if the purged set matches the active UI and Route context
             if (this.expandedSetId() === set.id) {
               this.expandedSetId.set(null);
               this.selectedDeck = null;
+
+              // 🌟 ROUTE MITIGATION: Navigate back to the index dashboard to avoid 404 errors
+              this.router.navigate(['/']);
             }
           }
         });
@@ -116,40 +120,43 @@ export class App {
 
   /**
    * ATOMIC NEW DECK PERSISTENCE COMMAND
-   * Assembles a pure, uninstantiated interface object signature and inserts it down the data wire.
    */
   public addDeck(set: MtgSet): void {
     const deckName = prompt('Enter New Custom Deck Name:');
     if (!deckName) return;
 
-    // Build a pure, uninstantiated data interface contract object
     const freshDomainDeck: MtgDeck = {
-      id: crypto.randomUUID(), // Secure client-side text string UUID generation
+      id: crypto.randomUUID(),
       setId: set.id,
       name: deckName,
       tags: [],
       notes: '',
-      cards: new Map<string, number>() // Clear, ready-to-fill assignment dictionary
+      cards: new Map<string, number>()
     };
 
-    // 🌟 DEFER WRITES TO THE BLIND WIRE:
-    // Pushes the deck down via DATA_WIRE_TOKEN. On desktop, ElectronDataWire handles SQLite columns
-    // serialization and background Outbox log tracking natively under the canopy!
-    this.dataWire.insert<typeof decks, MtgDeck, MtgDeck>(decks, freshDomainDeck).pipe(
+    // 🌟 FIX: Stripped legacy multi-generics down to <TInput, TOutput> matching the interface
+    this.dataWire.insert<MtgDeck, MtgDeck>(decks, freshDomainDeck).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: () => {
         console.log(`[App] New deck workspace "${deckName}" created successfully.`);
+
         // Force the SetService context manager to reload, updating activeDecks$ automatically
         this.setService.loadSetWorkspace(set.id, set.code);
+
+        // 🌟 UX OPTIMIZATION: Set the layout tracking pointer and route to the new deck detail path immediately
+        this.selectedDeck = freshDomainDeck;
+        this.router.navigate(['/deck', freshDomainDeck.id]);
       },
-      error: (err) => console.error('Failed to create new deck container:', err?.message || err)
+      error: (err: any) => console.error('Failed to create new deck container:', err?.message || err)
     });
   }
 
   public logout(): void {
     this.setService.unloadWorkspace();
     this.authService.logout();
+
+    // 🌟 CLEAN DISCONNECT: Redirect the user to the public login screen route
     this.router.navigate(['/login']);
   }
 }

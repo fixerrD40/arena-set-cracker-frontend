@@ -12,13 +12,13 @@ import { ScryfallSet } from './api/scryfall/models/set.scryfall';
 import { ScryfallCard } from './api/scryfall/models/card.scryfall';
 
 // Standalone Scryfall Extraction Mappers
-import { mapScryfallToSet } from '../../shared/models/set/set.mappers';
 import { mapScryfallToCard } from '../../shared/models/card/card.mappers';
 
 // Headless Database Schema Tokens and Behavioral Command Services
 import { sets, cards, decks } from '../storage/sqlite/sqlite.schema';
 import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
+import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';
 
 /**
  * Service-Owned Aggregate Workspace Snapshot.
@@ -60,10 +60,12 @@ export class SetService implements OnDestroy {
    * Rehydrates available extensions post-boot.
    */
   public syncInstalledCache(): void {
-    this.loadSubscription?.unsubscribe();
+    if (this.loadSubscription) {
+      this.loadSubscription.unsubscribe();
+    }
 
-    // 🌟 PERFECT DEFERRAL: The active wire automatically returns mapped domain sets!
-    this.loadSubscription = this.dataWire.fetchCollection<typeof sets, MtgSet>(sets, 'all').pipe(
+    // 🌟 FIX: Remove the 'typeof sets' generic. Only pass the single expected <TOutput> contract.
+    this.loadSubscription = this.dataWire.fetchCollection<MtgSet>(sets, 'all').pipe(
       tap((domainSets: MtgSet[]) => this.installedSetsSubject.next(domainSets)),
       catchError((err) => {
         console.error('[SetService] Failed to sync local roster cache:', err?.message || err);
@@ -78,13 +80,15 @@ export class SetService implements OnDestroy {
    * Assembles your current layout view using an online API fallback for card catalog lists.
    */
   public loadSetWorkspace(setId: string, setCode: string): void {
-    this.loadSubscription?.unsubscribe();
+    if (this.loadSubscription) {
+      this.loadSubscription.unsubscribe();
+    }
 
-    // 🌟 ZERO BRANCH CHECKS: Wires emit fully hydrated domain collections automatically
+    // 🌟 FIX: Remove the table reflection generic constraints from all three forkJoin prongs.
     this.loadSubscription = forkJoin({
-      setModels: this.dataWire.fetchCollection<typeof sets, MtgSet>(sets, 'all'),
-      deckModels: this.dataWire.fetchCollection<typeof decks, MtgDeck>(decks, setId),
-      cardModels: this.dataWire.fetchCollection<typeof cards, MtgCard>(cards, setId) // Safely emits [] in web clients
+      setModels: this.dataWire.fetchCollection<MtgSet>(sets, 'all'),
+      deckModels: this.dataWire.fetchCollection<MtgDeck>(decks, setId),
+      cardModels: this.dataWire.fetchCollection<MtgCard>(cards, setId) // Safely emits [] in web clients
     }).pipe(
       switchMap(({ setModels, deckModels, cardModels }) => {
         const setInfo = setModels.find(s => s.id === setId);
@@ -94,7 +98,7 @@ export class SetService implements OnDestroy {
         const cardSource$ = cardModels.length > 0
           ? of(cardModels)
           : this.scryfallService.getCardsBySet(setCode.toLowerCase()).pipe(
-              map(apiCards => apiCards.map(apiCard => mapScryfallToCard(apiCard, setId)))
+              map(apiCards => apiCards.map(apiCard => mapScryfallToCard(apiCard, setId, ''))) // Ensure signature matches your card mapper requirements
             );
 
         return cardSource$.pipe(
@@ -123,21 +127,26 @@ export class SetService implements OnDestroy {
    */
   public install(scryfallSet: ScryfallSet): void {
     const cleanCode = scryfallSet.code.toLowerCase();
-    const domainSet = mapScryfallToSet(scryfallSet);
+
+    // Map to a standard MtgSet UI domain model signature
+    const domainSet: MtgSet = mapScryfallToDomainSet(scryfallSet);
 
     // STEP 1: Write the primary set parent record blindly.
-    this.dataWire.insert<typeof sets, MtgSet, MtgSet>(sets, domainSet).pipe(
+    // 🌟 FIX: Stripped legacy multi-generics down to <TInput, TOutput> matching the interface
+    this.dataWire.insert<MtgSet, MtgSet>(sets, domainSet).pipe(
+
       // STEP 2: Pull down full card dataset from Scryfall REST API
       switchMap(() => this.scryfallService.getCardsBySet(cleanCode)),
+
       // STEP 3: Enqueue normal art crop binary file streaming down sequentially via concatMap
       switchMap((scryfallCards: ScryfallCard[]) => {
         const arenaOnlyCards = scryfallCards.filter(card => card.arena_id != null);
 
         return from(arenaOnlyCards).pipe(
           concatMap((apiCard: ScryfallCard) => {
-            // 🌟 FIX: Clean optional chain tracking directly through the array index element [0]
             const imageUrl = apiCard.image_uris?.normal || apiCard.card_faces?.[0]?.image_uris?.normal;
 
+            // Ensure mapScryfallToCard uses domainSet.id consistently
             if (!imageUrl) {
               return of(mapScryfallToCard(apiCard, domainSet.id, ''));
             }
@@ -147,20 +156,23 @@ export class SetService implements OnDestroy {
               catchError(() => of(mapScryfallToCard(apiCard, domainSet.id, '')))
             );
           }),
-          toArray() // Collect individual items cleanly into a strict MtgCard[] array
+          toArray()
         );
       }),
-      // STEP 4: DIRECT INSERT: Trust the dumb data wire directly with the domain array!
+
+      // STEP 4: DIRECT INSERT: Trust the data wire to serialize your domain array safely!
+      // 🌟 FIX: Stripped legacy multi-generics down to <TInput, TOutput> matching the interface
       switchMap((domainCards: MtgCard[]) => {
-        return this.dataWire.insertBulk<typeof cards, MtgCard, MtgCard>(cards, domainCards);
+        return this.dataWire.insertBulk<MtgCard, MtgCard>(cards, domainCards);
       }),
-      // STEP 5: Optimistically append our roster map and activate the loaded workspace context
+
+      // STEP 5: Optimistically append our roster map and activate workspace
       tap(() => {
         const currentList = this.installedSetsSubject.getValue();
         if (!currentList.some(s => s.id === domainSet.id)) {
           this.installedSetsSubject.next([...currentList, domainSet]);
         }
-        this.loadSetWorkspace(domainSet.id, domainSet.code);
+        this.loadSetWorkspace(domainSet.id, domainSet.code.toLowerCase());
       }),
       catchError((err) => {
         console.error(`[SetService] Atomic install pipeline aborted for set ${scryfallSet.code}:`, err?.message || err);
@@ -174,12 +186,15 @@ export class SetService implements OnDestroy {
    * Removes a complete card set and its relational user data structures blind to platform.
    */
   public uninstall(set: MtgSet): Observable<void> {
-    // PERFECT DEFERRAL: The data wire safely cascades file cleans, outbox enqueuing, or REST drops
+    // 🌟 PERFECT DEFERRAL: Clean, elegant contract match.
+    // No redundant or legacy method generics needed!
     return this.dataWire.delete(sets, set.id).pipe(
       tap(() => {
+        // Optimistically slice the dropped set out of the available UI roster cache stream
         const currentList = this.installedSetsSubject.getValue();
         this.installedSetsSubject.next(currentList.filter(s => s.id !== set.id));
 
+        // Tear down active layout view states instantly if the user purged the set they were actively browsing
         const currentWorkspace = this.activeContextSubject.getValue();
         if (currentWorkspace?.setInfo.id === set.id) {
           this.unloadWorkspace();

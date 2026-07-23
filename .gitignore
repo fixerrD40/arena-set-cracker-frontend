@@ -32,6 +32,7 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
+app_database.sqlite
 /.angular/cache
 .sass-cache/
 /connect.lock

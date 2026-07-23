@@ -1,6 +1,6 @@
 // src/app/core/services/persistence/outbox.service.ts
 import { inject, Injectable } from '@angular/core';
-import { Observable, of, defer, Subscription, merge, fromEvent, EMPTY, from } from 'rxjs';
+import { Observable, of, Subscription, merge, fromEvent, EMPTY, from, defer } from 'rxjs';
 import { map, switchMap, tap, catchError, exhaustMap } from 'rxjs/operators';
 
 // Infrastructure & Authentication Dependencies
@@ -8,9 +8,9 @@ import { AuthService } from './auth.service';
 import { BackendService } from './backend.service';
 import { SqliteEngine } from '../storage/sqlite/sqlite.engine';
 
-// Drizzle Schema Mapping Constants
+// Drizzle Schema Mapping Constants & Relational Operators
 import { syncQueue, SyncQueueRow } from '../storage/sqlite/sqlite.schema';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm'; // 🌟 CLEAN IMPORT: Added 'inArray' here!
 
 export type SyncQueueItem = typeof syncQueue.$inferSelect;
 
@@ -20,7 +20,7 @@ export type SyncQueueItem = typeof syncQueue.$inferSelect;
 export class OutboxService {
   private readonly auth = inject(AuthService);
   private readonly sqliteEngine = inject(SqliteEngine);
-  private readonly backend = inject(BackendService); // Injected Backend Gateway Instance
+  private readonly backend = inject(BackendService);
 
   private activeSyncSubscription?: Subscription;
   private engineInitialized = false;
@@ -33,7 +33,6 @@ export class OutboxService {
 
   /**
    * Called inside PHASE 3 of your ConfigInitializer sequence.
-   * Completely stateless: No caching, no lookups. Just boots the network sync stream tracker.
    */
   public initializeEngine(): void {
     if (this.engineInitialized) return;
@@ -63,8 +62,11 @@ export class OutboxService {
     this.activeSyncSubscription = this.executeBulkSyncPipelineStream().subscribe();
   }
 
+  // ==========================================================
+  // ATOMIC BANDWIDTH SQUASHING ENBOX
+  // ==========================================================
+
   /**
-   * ATOMIC BANDWIDTH SQUASHING ENBOX
    * Writes synchronization frames using native SQLite conflict resolution indices
    * to collapse repetitive offline data modifications into a single network footprint.
    */
@@ -80,46 +82,41 @@ export class OutboxService {
     }
 
     const payloadId = String(item.payload?.id);
+    if (!payloadId) {
+      console.error('[OutboxService] Enqueue aborted: Payload lacks a valid unique identifier "id".');
+      return of(void 0);
+    }
 
     try {
-      // 🌟 PERFORMANCE OPTIMIZATION 1: BANDWIDTH CLEANUP
-      // If deleting an entity, clear any trailing CREATE/UPDATE traces out of the queue first
+      // PERFORMANCE OPTIMIZATION 1: BANDWIDTH CLEANUP
       if (item.action === 'DELETE') {
-        const clearQuery = db
-          .delete(syncQueue)
+        db.delete(syncQueue)
           .where(
             and(
               eq(syncQueue.entityType, item.entityType),
-              // Leverages Drizzle's type-safe sql operator to safely check the JSON index layout
-              sql`json_extract(${syncQueue.payload}, '$.id') = ${payloadId}`
+              eq(syncQueue.entityId, payloadId)
             )
           )
-          .toSQL();
-
-        db.run(clearQuery.sql, clearQuery.params);
+          .run();
       }
 
-      // 🌟 PERFORMANCE OPTIMIZATION 2: ATOMIC UPSERT SQUASHING
-      // If a record conflict occurs on your index, overwrite the payload and advance the timestamp
-      const insertQuery = db
-        .insert(syncQueue)
+      // PERFORMANCE OPTIMIZATION 2: ATOMIC UPSERT SQUASHING
+      db.insert(syncQueue)
         .values({
           entityType: item.entityType,
+          entityId: payloadId,
           action: item.action,
           payload: item.payload
         })
         .onConflictDoUpdate({
-          // Target your unique composite index constraint configuration explicitly
-          target: [syncQueue.entityType, sql`json_extract(${syncQueue.payload}, '$.id')`],
+          target: [syncQueue.entityType, syncQueue.entityId],
           set: {
-            action: sql`excluded.action`,
-            payload: sql`excluded.payload`,
-            createdAt: sql`excluded.created_at`
+            action: item.action,
+            payload: item.payload,
+            createdAt: new Date().toISOString()
           }
         })
-        .toSQL();
-
-      db.run(insertQuery.sql, insertQuery.params);
+        .run();
 
       this.sqliteEngine.flush();
 
@@ -135,8 +132,11 @@ export class OutboxService {
     }
   }
 
+  // ==========================================================
+  // HIGH-PERFORMANCE DATA TRANSMISSION LOG PIPELINE
+  // ==========================================================
+
   /**
-   * HIGH-PERFORMANCE DATA TRANSMISSION LOG PIPELINE
    * Compiles the local database transaction ledger, pipes records to the server via NDJSON,
    * and purges the synced items from the disk safely.
    */
@@ -152,38 +152,48 @@ export class OutboxService {
         return of(void 0);
       }
 
-      const syncedIds: number[] = [];
-
-      // 🌟 CENTRALIZED TYPE ASSIGNMENT: Cleanly cast driver cursor results using the unified row type
+      // Fetch pending sync items sorted chronologically by ID layout
       const rawRecords = db.select().from(syncQueue).orderBy(syncQueue.id).all() as SyncQueueRow[];
+
+      if (rawRecords.length === 0) {
+        console.log('[OutboxService] Outbox log queue empty. System fully synchronized.');
+        return of(void 0);
+      }
+
+      // Track the exact snapshot IDs being processed in this specific stream batch
+      const targetBatchIds = rawRecords.map(r => r.id);
 
       // Convert your native driver array into a strongly-typed, low-overhead RxJS stream
       const outboxDataStream$: Observable<SyncQueueRow> = from(rawRecords).pipe(
         map((queueItem: SyncQueueRow) => {
-          // The compiler perfectly understands queueItem.payload exists and is type-safe
           const resolvedPayload = typeof queueItem.payload === 'string'
             ? JSON.parse(queueItem.payload)
             : queueItem.payload;
 
-          return { ...queueItem, payload: resolvedPayload };
-        }),
-        tap((item) => syncedIds.push(item.id))
+          return {
+            ...queueItem,
+            payload: resolvedPayload
+          };
+        })
       );
 
-      // Route the streaming cursor dataset through your BackendService network client wrapper (NDJSON)
+      console.log(`[OutboxService] Piping ${targetBatchIds.length} NDJSON logs down the sync wire channel...`);
+
+      // Route the streaming dataset through your BackendService network client wrapper
       return this.backend.streamJsonRecordsToServer(outboxDataStream$, 'outbox/bulk-sync').pipe(
         switchMap(() => {
-          if (syncedIds.length === 0) return of(void 0);
+          if (targetBatchIds.length === 0) return of(void 0);
 
-          // Atomic Purge Block: Delete successfully synchronized logs from the SQLite file
-          const idsList = syncedIds.join(',');
-          db.run(`DELETE FROM sync_queue WHERE id IN (${idsList})`);
+          // Type-safe, Drizzle-compliant Atomic Purge Block using static 'inArray' import
+          db.delete(syncQueue)
+            .where(inArray(syncQueue.id, targetBatchIds))
+            .run();
 
           this.sqliteEngine.flush();
           return of(void 0);
         }),
         tap(() => {
-          console.log(`[OutboxService] Bulk sync completed. Purged ${syncedIds.length} local records.`);
+          console.log(`[OutboxService] Bulk sync completed. Purged ${targetBatchIds.length} local records.`);
         }),
         map(() => void 0),
         catchError((err) => {

@@ -1,11 +1,9 @@
 // src/app/core/storage/sqlite/sqlite.engine.ts
 import { inject, Injectable, Injector, runInInjectionContext } from '@angular/core';
-import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import initSqlJs from 'sql.js';
 
 // Core Schema and Dialect Configuration Imports
 import * as MySchema from './sqlite.schema';
-import { getTableName, is } from 'drizzle-orm';
 import { APP_CONFIG } from '../../config/app.config.token';
 import { DESKTOP_CONFIG } from '../../config/desktop.config.token';
 import { drizzle } from 'drizzle-orm/sql-js';
@@ -14,12 +12,14 @@ import { drizzle } from 'drizzle-orm/sql-js';
   providedIn: 'root'
 })
 export class SqliteEngine {
-  public cachedDbInstance?: any;
+  // 🌟 ARCHITECTURAL ALIGNMENT: Explicitly maintain both references for disk flushing loops
+  public rawSqliteClient?: any;   // Holds the raw sql.js WASM Database instance for .export()
+  public cachedDbInstance?: any;  // Holds the type-safe Drizzle Client proxy instance for data wires
   public activeFileName?: string;
 
   /**
    * HIGH-PERFORMANCE BOOTSTRAPPER
-   * Resolves filesystem binaries securely using the global runtime require wire.
+   * Executes ONLY within a verified Electron host container context.
    */
   public async bootstrapEngine(injector: Injector): Promise<void> {
     if (this.cachedDbInstance) return;
@@ -36,18 +36,7 @@ export class SqliteEngine {
 
     this.activeFileName = runtimeConfig.sqliteDbName.replace(/^file:/, '');
 
-    // 🌟 THE RUNTIME NODE DETECTOR: Verifies if the injected require hook is active
     const nodeRequire = (window as any).require;
-    const isElectronHost = !!(nodeRequire && (window as any).process?.versions?.electron);
-
-    // WEB & MOBILE FALLBACK: Initializes a pure, fluid in-memory WASM storage grid
-    if (!isElectronHost) {
-      console.warn('[SqliteEngine] Client running outside native desktop shell. Initializing transient WASM memory engine.');
-      const SQL = await initSqlJs({ locateFile: (file: string) => `assets/${file}` });
-      this.cachedDbInstance = new SQL.Database();
-      return;
-    }
-
     try {
       const fs = nodeRequire('fs');
       const path = nodeRequire('path');
@@ -60,20 +49,23 @@ export class SqliteEngine {
         const rawBuffer = fs.readFileSync(targetPath);
         const bytes = new Uint8Array(rawBuffer);
 
-        const freshDb = new SQL.Database(bytes);
-
-        // 🌟 FIX: Wrap the raw database instance inside Drizzle's proxy engine!
-        this.cachedDbInstance = drizzle(freshDb);
+        this.rawSqliteClient = new SQL.Database(bytes);
+        this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
         console.log(`[SqliteEngine] High-speed Drizzle client loaded via require: [${this.activeFileName}].`);
       } else {
         console.log(`[SqliteEngine] Database container file missing. Compiling schema layout...`);
-        const freshDb = new SQL.Database();
 
-        // 🌟 FIX: Wrap it inside Drizzle here as well before generating tables!
-        this.cachedDbInstance = drizzle(freshDb);
+        this.rawSqliteClient = new SQL.Database();
+        this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
-        this.generateDatabaseSchema(freshDb);
+        // 🌟 FIX: If generateDatabaseSchema was marked async during your earlier compiler tests,
+        // you MUST add the 'await' keyword here to lock out the execution thread!
+        // If it is pure synchronous fs.readFileSync text compilation, running it inline is perfectly safe.
+        this.generateDatabaseSchema(this.rawSqliteClient);
+
+        // This will successfully serialize the tables layout data onto your physical drive
+        this.flush();
       }
     } catch (rootError) {
       console.error('[SqliteEngine] Critical failure during desktop engine initialization pass:', rootError);
@@ -81,34 +73,27 @@ export class SqliteEngine {
     }
   }
 
-
   /**
    * HIGH-PERFORMANCE PHYSICAL FLUSH
    * Synchronizes the in-memory WASM database heap straight onto native disk storage blocks.
    */
   public flush(): void {
-    const db = this.cachedDbInstance;
+    const rawDb = this.rawSqliteClient;
     const fileName = this.activeFileName;
-    if (!db || !fileName) return;
-
-    const nodeRequire = (window as any).require;
-    const isElectronHost = !!(nodeRequire && (window as any).process?.versions?.electron);
-
-    if (!isElectronHost) {
-      console.warn('[SqliteEngine] Flush skipped: Engine context is transient in a web browser environment.');
-      return;
-    }
+    if (!rawDb || !fileName) return;
 
     try {
+      const nodeRequire = (window as any).require;
       const fs = nodeRequire('fs');
       const path = nodeRequire('path');
       const process = (window as any).process;
 
-      const data = db.export();
+      // Extract raw binary data buffers from WebAssembly and stream them down to file systems natively
+      const data = rawDb.export();
       const buffer = Buffer.from(data);
 
       fs.writeFileSync(path.join(process.cwd(), fileName), buffer);
-      console.log(`[SqliteEngine] Database successfully persisted to disk via require channel: [${fileName}].`);
+      console.log(`[SqliteEngine] Memory cache state successfully persisted to disk: [${fileName}].`);
     } catch (error) {
       console.error('[SqliteEngine] Critical failure writing binary block to disk:', error);
     }
@@ -118,59 +103,39 @@ export class SqliteEngine {
    * Compiles your static Drizzle schemas into live SQLite tables inside the WASM instance.
    */
   private generateDatabaseSchema(db: any): void {
-    const tables = Object.values(MySchema).filter(
-      (item: any): item is SQLiteTable<any> => is(item, SQLiteTable)
-    );
-    const ddlStatements: string[] = [];
+    try {
+      console.log('[SqliteEngine] Extracting pre-compiled database schema script layout...');
 
-    for (const table of tables) {
-      const name = getTableName(table);
-      const { columns, indexes, foreignKeys } = getTableConfig(table);
-      const columnDefinitions: string[] = [];
-      const primaryKeyColumns: string[] = [];
+      const nodeRequire = (window as any).require;
+      const fs = nodeRequire('fs');
+      const path = nodeRequire('path');
+      const process = (window as any).process;
 
-      for (const col of columns) {
-        let def = `"${col.name}" ${col.getSQLType()}`;
-        if (col.notNull) def += ' NOT NULL';
-        if (col.primary) {
-          if (name === 'sync_queue') def += ' PRIMARY KEY AUTOINCREMENT';
-          else primaryKeyColumns.push(`"${col.name}"`);
-        }
-        if (col.hasDefault && typeof col.default !== 'function') {
-          def += ` DEFAULT ${typeof col.default === 'string' ? `'${col.default}'` : col.default}`;
-        }
-        columnDefinitions.push(def);
+      // Safe fallback directory mapping to accommodate development vs production distribution folder builds
+      const targetDirectory = fs.existsSync(path.join(process.cwd(), 'public', 'drizzle'))
+        ? path.join(process.cwd(), 'public', 'drizzle')
+        : path.join(process.cwd(), 'dist', 'arena-set-cracker', 'browser', 'drizzle');
+
+      if (!fs.existsSync(targetDirectory)) {
+        throw new Error(`[SqliteEngine] Schema bootstrapper aborted: Directory missing at [${targetDirectory}]. Run 'npm run db:generate'.`);
       }
 
-      if (primaryKeyColumns.length > 0 && name !== 'sync_queue') {
-        columnDefinitions.push(`PRIMARY KEY (${primaryKeyColumns.join(', ')})`);
+      const files = fs.readdirSync(targetDirectory);
+      const initMigrationFile = files.find((file: string) => file.startsWith('0000_') && file.endsWith('.sql'));
+
+      if (!initMigrationFile) {
+        throw new Error(`[SqliteEngine] Initialization DDL file missing inside directory: [${targetDirectory}]`);
       }
 
-      if (foreignKeys && foreignKeys.length > 0) {
-        for (const fk of foreignKeys) {
-          const reference = fk.reference();
-          const localCols = reference.columns.map((c: any) => `"${c.name}"`).join(', ');
-          const foreignCols = reference.foreignColumns.map((c: any) => `"${c.name}"`).join(', ');
-          const foreignTable = getTableName(reference.foreignTable);
-          let fkDef = `FOREIGN KEY (${localCols}) REFERENCES "${foreignTable}"(${foreignCols})`;
-          if ((fk as any).onDelete) fkDef += ` ON DELETE ${(fk as any).onDelete.toUpperCase()}`;
-          columnDefinitions.push(fkDef);
-        }
-      }
+      const sqlScriptPath = path.join(targetDirectory, initMigrationFile);
+      const ddlStatementsScript = fs.readFileSync(sqlScriptPath, 'utf8');
 
-      ddlStatements.push(`CREATE TABLE IF NOT EXISTS "${name}" (\n ${columnDefinitions.join(',\n ')}\n);`);
-
-      for (const idx of indexes) {
-        const indexColumns = idx.config.columns.map((c: any) => `"${c.name}"`).join(', ');
-        const uniqueMarker = idx.config.unique ? 'UNIQUE ' : '';
-        ddlStatements.push(`CREATE ${uniqueMarker}INDEX IF NOT EXISTS "${idx.config.name}" ON "${name}" (${indexColumns});`);
-      }
+      // Execute statements directly inside WebAssembly near the metal
+      db.run(ddlStatementsScript);
+      console.log(`[SqliteEngine] Static database structural schemas successfully initialized via: [${initMigrationFile}].`);
+    } catch (ddlError: any) {
+      console.error('[SqliteEngine] Structural breakdown initializing database schema text:', ddlError?.message || ddlError);
+      throw ddlError;
     }
-
-    db.run(ddlStatements.join('\n'));
-    console.log('[SqliteEngine] Static schema DDL compilation executed successfully.');
-
-    // Commit adjustments to disk instantly
-    this.flush();
   }
 }

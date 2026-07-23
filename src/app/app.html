@@ -92,23 +92,14 @@
     }
   </mat-sidenav>
 
-  <!-- 3. Dynamic Router Main Viewport Panel Container -->
-  <mat-sidenav-content>
-    <!--
-      FIXED CONFIGURATION VIEWPORT SWITCH:
-      If a deck is selected, feed its reference memory block directly to the workspace view.
-      If no deck is active, display a clean dashboard fallback view state.
-    -->
-    @if (selectedDeck) {
-      <app-deck-content [deck]="selectedDeck"></app-deck-content>
-    } @else {
-      <!-- Fallback router outlet handles navigation paths like /about, /login, or /register -->
-      <router-outlet></router-outlet>
+<!-- 3. Dynamic Router Main Viewport Panel Container -->
+<mat-sidenav-content class="app-content">
 
-      <!-- Display empty canvas message ONLY if the router is on the default root path -->
-      <div class="empty-dashboard-state">
-        Select an installed set and choose a destination deck container box from your workspace folder directory tree to view assignment allocations.
-      </div>
-    }
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  <!--
+    🌟 THE ROUTER OUTLET HANDLES EVERYTHING NOW:
+    Angular will automatically load Welcome, Login, Index, SetDetail, OR DeckContent
+    here based on the current browser URL path.
+  -->
+  <router-outlet></router-outlet>
+
+</mat-sidenav-content>
