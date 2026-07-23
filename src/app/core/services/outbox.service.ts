@@ -1,272 +1,196 @@
+// src/app/core/services/persistence/outbox.service.ts
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { SqliteService } from '../sqlite/sqlite.service';
-import { syncQueue } from '../sqlite/sqlite.schema';
-import { AuthService } from './auth.service';
-import { asc, eq } from 'drizzle-orm';
-import { Observable, of, fromEvent, merge } from 'rxjs';
-import { map, switchMap, tap, catchError } from 'rxjs/operators';
+import { Observable, of, defer, Subscription, merge, fromEvent, EMPTY, from } from 'rxjs';
+import { map, switchMap, tap, catchError, exhaustMap } from 'rxjs/operators';
 
-// Infer the strict structure type directly from your Drizzle schema definition
+// Infrastructure & Authentication Dependencies
+import { AuthService } from './auth.service';
+import { BackendService } from './backend.service';
+import { SqliteEngine } from '../storage/sqlite/sqlite.engine';
+
+// Drizzle Schema Mapping Constants
+import { syncQueue, SyncQueueRow } from '../storage/sqlite/sqlite.schema';
+import { and, eq, sql } from 'drizzle-orm';
+
 export type SyncQueueItem = typeof syncQueue.$inferSelect;
 
 @Injectable({
   providedIn: 'root',
 })
-export class OutboxService extends SqliteService<SyncQueueItem, SyncQueueItem> {
-  private readonly http = inject(HttpClient);
+export class OutboxService {
   private readonly auth = inject(AuthService);
-  private readonly baseUrl = 'https://your-api-url.com';
+  private readonly sqliteEngine = inject(SqliteEngine);
+  private readonly backend = inject(BackendService); // Injected Backend Gateway Instance
 
-  // High-performance optimization map: Tracks "entityType:recordId" -> SQLite Queue ID
-  private readonly queueIndexCache = new Map<string, number>();
-  private cacheInitialized = false;
+  private activeSyncSubscription?: Subscription;
+  private engineInitialized = false;
 
-  constructor() {
-    super(syncQueue, {
-      toDomain: (entity) => ({
-        ...entity,
-        // Safely parse row text columns back into active JavaScript objects
-        payload: typeof entity.payload === 'string' ? JSON.parse(entity.payload) : entity.payload
-      }),
-      fromDomain: (domain) => ({
-        ...domain,
-        payload: typeof domain.payload !== 'string' ? JSON.stringify(domain.payload) : domain.payload
-      })
-    });
-  }
+  constructor() {}
+
+  // ==========================================================
+  // CORE STORAGE RUNTIME LIFECYCLE INITIALIZER
+  // ==========================================================
 
   /**
-   * Safe initialization: pre-loads your cache map before spinning up flushes
+   * Called inside PHASE 3 of your ConfigInitializer sequence.
+   * Completely stateless: No caching, no lookups. Just boots the network sync stream tracker.
    */
   public initializeEngine(): void {
-    if (this.cacheInitialized) return;
+    if (this.engineInitialized) return;
+    this.engineInitialized = true;
 
-    this.findAll().pipe(
-      tap((existingRows: SyncQueueItem[]) => {
-        for (const row of existingRows) {
-          const targetId = row.payload?.id;
-          if (targetId) {
-            const key = `${row.entityType}:${targetId}`;
-            this.queueIndexCache.set(key, row.id);
-          }
-        }
-        this.cacheInitialized = true;
+    merge(of(null), fromEvent(window, 'online')).pipe(
+      exhaustMap(() => {
+        if (!this.auth.isAuthenticated()) return EMPTY;
+        console.log('[OutboxService] Online signal detected. Initiating upload pipeline sync...');
+        return this.executeBulkSyncPipelineStream();
       }),
-      switchMap(() => {
-        // Trigger initial network sync and monitor connection restoration safely
-        this.triggerOutboxSync();
-        return merge(fromEvent(window, 'online'));
-      }),
-      tap(() => this.triggerOutboxSync()),
       catchError((err) => {
-        console.error('Sync queue engine initialization failed:', err);
-        return of(null);
+        console.error('[OutboxService] Critical outbox background stream failure:', err);
+        return EMPTY;
       })
     ).subscribe();
   }
 
   /**
-   * Operation-Squashing Enqueue Algorithm
-   */
-  public enqueue(item: Omit<SyncQueueItem, 'id' | 'createdAt'>): Observable<SyncQueueItem> {
-    const targetId = item.payload?.id;
-    const entityKey = `${item.entityType}:${targetId}`;
-    const existingRowId = targetId ? this.queueIndexCache.get(entityKey) : undefined;
-
-    return this.loadDatabaseEngine().pipe(
-      map((db) => {
-        let returnItem: SyncQueueItem | null = null;
-        const currentIsoTimestamp = new Date().toISOString();
-
-        if (existingRowId !== undefined) {
-          const selectCompiled = this.builder.select().from(syncQueue).where(eq(syncQueue.id, existingRowId)).toSQL();
-          const stmt = db.prepare(selectCompiled.sql);
-          stmt.bind(selectCompiled.params);
-
-          let existing: any = null;
-          if (stmt.step()) {
-            existing = stmt.getAsObject();
-          }
-          stmt.free();
-
-          if (existing && existing.id) {
-            const castPayload = typeof existing.payload === 'string' ? JSON.parse(existing.payload) : existing.payload;
-
-            // --- CRITICAL SQUASH 1: Merge local updates onto existing configurations ---
-            if (item.action === 'UPDATE' && (existing.action === 'CREATE' || existing.action === 'UPDATE')) {
-              const updatedPayload = {
-                ...castPayload,
-                entity: { ...castPayload.entity, ...item.payload.entity }
-              };
-
-              const updateCompiled = this.builder
-                .update(syncQueue)
-                .set({ payload: JSON.stringify(updatedPayload), createdAt: currentIsoTimestamp })
-                .where(eq(syncQueue.id, existingRowId))
-                .toSQL();
-
-              db.run(updateCompiled.sql, updateCompiled.params);
-
-              returnItem = {
-                id: existingRowId,
-                entityType: existing.entityType as 'set' | 'deck',
-                action: existing.action as 'CREATE' | 'UPDATE' | 'DELETE',
-                payload: updatedPayload,
-                createdAt: currentIsoTimestamp
-              };
-            }
-
-            // --- CRITICAL SQUASH 2: Evict un-synced creations completely from storage ---
-            else if (item.action === 'DELETE') {
-              if (existing.action === 'CREATE') {
-                const deleteCompiled = this.builder.delete(syncQueue).where(eq(syncQueue.id, existingRowId)).toSQL();
-                db.run(deleteCompiled.sql, deleteCompiled.params);
-
-                this.queueIndexCache.delete(entityKey);
-                returnItem = { id: -1, ...item, createdAt: currentIsoTimestamp } as SyncQueueItem;
-              } else {
-                const updateCompiled = this.builder
-                  .update(syncQueue)
-                  .set({ action: 'DELETE', payload: JSON.stringify({ id: targetId }), createdAt: currentIsoTimestamp })
-                  .where(eq(syncQueue.id, existingRowId))
-                  .toSQL();
-
-                db.run(updateCompiled.sql, updateCompiled.params);
-
-                returnItem = {
-                  id: existingRowId,
-                  entityType: existing.entityType as 'set' | 'deck',
-                  action: 'DELETE',
-                  payload: { id: targetId },
-                  createdAt: currentIsoTimestamp
-                };
-              }
-            }
-          }
-        }
-
-        // --- BASELINE: WRITE STANDARD SEPARATE ENEMY TRANSACTIONS ---
-        if (!returnItem) {
-          const insertCompiled = this.builder
-            .insert(syncQueue)
-            .values({
-              entityType: item.entityType,
-              action: item.action,
-              payload: JSON.stringify(item.payload),
-              createdAt: currentIsoTimestamp
-            })
-            .toSQL();
-
-          db.run(insertCompiled.sql, insertCompiled.params);
-
-          const executionResult = db.exec("SELECT last_insert_rowid() as id");
-          // sql.js rows extract as matrix grids: [firstRow][firstColumn]
-          const allocatedId = (executionResult[0]?.values[0]?.[0] as number) ?? -1;
-
-          if (targetId) {
-            this.queueIndexCache.set(entityKey, allocatedId);
-          }
-
-          returnItem = {
-            id: allocatedId,
-            ...item,
-            createdAt: currentIsoTimestamp
-          } as SyncQueueItem;
-        }
-
-        this.saveDatabaseToDisk(db);
-        db.close();
-
-        return returnItem;
-      })
-    );
-  }
-
-  /**
-   * Pulls the single oldest queue item from your local cache file
-   */
-  private peekNext(): Observable<SyncQueueItem | null> {
-    const compiled = this.builder
-      .select()
-      .from(syncQueue)
-      .orderBy(asc(syncQueue.id))
-      .limit(1)
-      .toSQL();
-
-    return this.executeRawSelect<any>(compiled).pipe(
-      map((rows) => {
-        // Guard clause: Return null immediately if the database queue is entirely empty
-        if (!rows || rows.length === 0) return null;
-
-        const firstRow = rows[0];
-
-        return this.mapper.toDomain(firstRow);
-      })
-    );
-  }
-
-  /**
-   * Continuous Sequence Flusher
+   * Triggers a manual outbox synchronization pass.
    */
   public triggerOutboxSync(): void {
-    if (!this.auth.isAuthenticated() || !this.cacheInitialized) return;
-
-    this.peekNext().pipe(
-      switchMap((queueItem) => {
-        if (!queueItem) return of(null);
-
-        return this.dispatchNetworkCall(queueItem).pipe(
-          switchMap(() => {
-            const compiledDelete = this.builder
-              .delete(syncQueue)
-              .where(eq(syncQueue.id, queueItem.id))
-              .toSQL();
-
-            return this.loadDatabaseEngine().pipe(
-              map((db) => {
-                db.run(compiledDelete.sql, compiledDelete.params);
-                this.saveDatabaseToDisk(db);
-                db.close();
-                return queueItem;
-              })
-            );
-          }),
-          tap((clearedItem) => {
-            const targetId = clearedItem.payload?.id;
-            if (targetId) {
-              const entityKey = `${clearedItem.entityType}:${targetId}`;
-              this.queueIndexCache.delete(entityKey);
-            }
-
-            // Loop back around to clear any consecutive items in line
-            this.triggerOutboxSync();
-          })
-        );
-      }),
-      catchError((err) => {
-        console.warn('Network sync paused. Queue items retained safely on disk.', err?.message || err);
-        return of(null);
-      })
-    ).subscribe();
+    if (this.activeSyncSubscription && !this.activeSyncSubscription.closed) {
+      console.warn('[OutboxService] Sync process currently active. Trigger skipped.');
+      return;
+    }
+    this.activeSyncSubscription = this.executeBulkSyncPipelineStream().subscribe();
   }
 
   /**
-   * Directly maps network operations to standard endpoints with JSON bodies
+   * ATOMIC BANDWIDTH SQUASHING ENBOX
+   * Writes synchronization frames using native SQLite conflict resolution indices
+   * to collapse repetitive offline data modifications into a single network footprint.
    */
-  private dispatchNetworkCall(item: SyncQueueItem): Observable<any> {
-    const url = `${this.baseUrl}/${item.entityType}`;
-    const options = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
-
-    switch (item.action) {
-      case 'CREATE':
-        return this.http.post(url, item.payload.entity, options);
-      case 'UPDATE':
-        return this.http.patch(`${url}/${item.payload.id}`, item.payload.entity, options);
-      case 'DELETE':
-        return this.http.delete(`${url}/${item.payload.id}`, options);
-      default:
-        throw new Error(`Invalid sync action type signature: ${item.action}`);
+  public enqueue(item: {
+    entityType: 'set' | 'deck';
+    action: 'CREATE' | 'UPDATE' | 'DELETE';
+    payload: any
+  }): Observable<void> {
+    const db = this.sqliteEngine.cachedDbInstance;
+    if (!db) {
+      console.warn('[OutboxService] SQLite database instance uninitialized.');
+      return of(void 0);
     }
+
+    const payloadId = String(item.payload?.id);
+
+    try {
+      // 🌟 PERFORMANCE OPTIMIZATION 1: BANDWIDTH CLEANUP
+      // If deleting an entity, clear any trailing CREATE/UPDATE traces out of the queue first
+      if (item.action === 'DELETE') {
+        const clearQuery = db
+          .delete(syncQueue)
+          .where(
+            and(
+              eq(syncQueue.entityType, item.entityType),
+              // Leverages Drizzle's type-safe sql operator to safely check the JSON index layout
+              sql`json_extract(${syncQueue.payload}, '$.id') = ${payloadId}`
+            )
+          )
+          .toSQL();
+
+        db.run(clearQuery.sql, clearQuery.params);
+      }
+
+      // 🌟 PERFORMANCE OPTIMIZATION 2: ATOMIC UPSERT SQUASHING
+      // If a record conflict occurs on your index, overwrite the payload and advance the timestamp
+      const insertQuery = db
+        .insert(syncQueue)
+        .values({
+          entityType: item.entityType,
+          action: item.action,
+          payload: item.payload
+        })
+        .onConflictDoUpdate({
+          // Target your unique composite index constraint configuration explicitly
+          target: [syncQueue.entityType, sql`json_extract(${syncQueue.payload}, '$.id')`],
+          set: {
+            action: sql`excluded.action`,
+            payload: sql`excluded.payload`,
+            createdAt: sql`excluded.created_at`
+          }
+        })
+        .toSQL();
+
+      db.run(insertQuery.sql, insertQuery.params);
+
+      this.sqliteEngine.flush();
+
+      // Optimistically trigger background streaming if connection state allows
+      if (navigator.onLine && this.auth.isAuthenticated()) {
+        this.triggerOutboxSync();
+      }
+
+      return of(void 0);
+    } catch (err) {
+      console.error('[OutboxService] Native database upsert block failure:', err);
+      return of(void 0);
+    }
+  }
+
+  /**
+   * HIGH-PERFORMANCE DATA TRANSMISSION LOG PIPELINE
+   * Compiles the local database transaction ledger, pipes records to the server via NDJSON,
+   * and purges the synced items from the disk safely.
+   */
+  public executeBulkSyncPipelineStream(): Observable<void> {
+    if (!this.auth.isAuthenticated()) {
+      return of(void 0);
+    }
+
+    return defer(() => {
+      const db = this.sqliteEngine.cachedDbInstance;
+      if (!db) {
+        console.warn('[OutboxService] Sync aborted: Database engine uninitialized.');
+        return of(void 0);
+      }
+
+      const syncedIds: number[] = [];
+
+      // 🌟 CENTRALIZED TYPE ASSIGNMENT: Cleanly cast driver cursor results using the unified row type
+      const rawRecords = db.select().from(syncQueue).orderBy(syncQueue.id).all() as SyncQueueRow[];
+
+      // Convert your native driver array into a strongly-typed, low-overhead RxJS stream
+      const outboxDataStream$: Observable<SyncQueueRow> = from(rawRecords).pipe(
+        map((queueItem: SyncQueueRow) => {
+          // The compiler perfectly understands queueItem.payload exists and is type-safe
+          const resolvedPayload = typeof queueItem.payload === 'string'
+            ? JSON.parse(queueItem.payload)
+            : queueItem.payload;
+
+          return { ...queueItem, payload: resolvedPayload };
+        }),
+        tap((item) => syncedIds.push(item.id))
+      );
+
+      // Route the streaming cursor dataset through your BackendService network client wrapper (NDJSON)
+      return this.backend.streamJsonRecordsToServer(outboxDataStream$, 'outbox/bulk-sync').pipe(
+        switchMap(() => {
+          if (syncedIds.length === 0) return of(void 0);
+
+          // Atomic Purge Block: Delete successfully synchronized logs from the SQLite file
+          const idsList = syncedIds.join(',');
+          db.run(`DELETE FROM sync_queue WHERE id IN (${idsList})`);
+
+          this.sqliteEngine.flush();
+          return of(void 0);
+        }),
+        tap(() => {
+          console.log(`[OutboxService] Bulk sync completed. Purged ${syncedIds.length} local records.`);
+        }),
+        map(() => void 0),
+        catchError((err) => {
+          console.error('[OutboxService] Network sync transfer aborted.', err);
+          throw err;
+        })
+      );
+    });
   }
 }

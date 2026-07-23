@@ -17,7 +17,7 @@ export const welcomeGuard: CanActivateFn = () => {
         console.log('welcomeGuard: Profile confirmed. Initializing in-memory relational cache...');
 
         // 3. RETURNING USER HANDOVER: Warm up database cache arrays as they clear the gate!
-        setService.initStorageRosterPull();
+        setService.syncInstalledCache();
         return true;
       }
 

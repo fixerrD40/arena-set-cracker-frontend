@@ -1,6 +1,9 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
+// FORCE V8 ENGINE TO ALLOW 4GB OF HEAP MEMORY
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,

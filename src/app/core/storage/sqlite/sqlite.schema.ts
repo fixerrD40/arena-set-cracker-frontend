@@ -1,5 +1,6 @@
 // src/app/core/sqlite/sqlite.schema.ts
-import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+import { sqliteTable, text, integer, index, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // ==========================================
 // STATIC RELATIONAL CORE
@@ -8,7 +9,7 @@ export const sets = sqliteTable('sets', {
   id: text('id').primaryKey(),
   code: text('code').notNull().unique(),
   name: text('name').notNull(),
-  createdAt: text('created_at').notNull().$default(() => new Date().toISOString()),
+  createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`)
 }, (table) => [
   index('sets_name_idx').on(table.name),
 ]);
@@ -55,11 +56,27 @@ export const syncQueue = sqliteTable('sync_queue', {
   action: text('action').$type<'CREATE' | 'UPDATE' | 'DELETE'>().notNull(),
   payload: text('payload', { mode: 'json' }).$type<any>().notNull(),
   createdAt: text('created_at').notNull().$default(() => new Date().toISOString()),
-});
+}, (table) => [
+  uniqueIndex('sync_queue_entity_record_idx').on(
+    table.entityType,
+    sql`json_extract(${table.payload}, '$.id')`
+  )
+]);
 
 // ==========================================
-// INFERRED TYPES
+// INFERRED DATABASE DATA SHAPES
 // ==========================================
-export type SetEntity = typeof sets.$inferSelect;
-export type CardEntity = typeof cards.$inferSelect;
-export type DeckEntity = typeof decks.$inferSelect;
+
+/** Selection Records (What comes OUT of the database) */
+export type SetRow = typeof sets.$inferSelect;
+export type CardRow = typeof cards.$inferSelect;
+export type DeckRow = typeof decks.$inferSelect;
+export type DeckCardRow = typeof deckCards.$inferSelect;
+export type SyncQueueRow = typeof syncQueue.$inferSelect;
+
+/** Insertion Payloads (What goes IN to the database) */
+export type SetInsert = typeof sets.$inferInsert;
+export type CardInsert = typeof cards.$inferInsert;
+export type DeckInsert = typeof decks.$inferInsert;
+export type DeckCardInsert = typeof deckCards.$inferInsert;
+export type SyncQueueInsert = typeof syncQueue.$inferInsert;

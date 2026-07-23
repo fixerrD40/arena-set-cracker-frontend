@@ -9,65 +9,70 @@
         <!-- Colors Filter -->
         <div>
           <strong>Colors:</strong>
-          <button
-            *ngFor="let color of filters.colors.options"
-            (click)="toggleFilter('colors', color)"
-            [ngClass]="{
-              'include': filters.colors.states.get(color) === TriState.Include,
-              'exclude': filters.colors.states.get(color) === TriState.Exclude
-            }"
-            class="color-button"
-          >
-            <img
-              [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'"
-              [alt]="color"
-            />
-          </button>
+          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
+          @for (color of filters['colors'].options; track color) {
+            <button
+              (click)="toggleFilter('colors', color)"
+              [ngClass]="{
+                'include': filters['colors'].states.get(color) === TriState.Include,
+                'exclude': filters['colors'].states.get(color) === TriState.Exclude
+              }"
+              class="color-button"
+            >
+              <img [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'" [alt]="color" />
+            </button>
+          }
         </div>
 
         <!-- Types Filter -->
         <div>
           <strong>Types:</strong>
-          <button
-            *ngFor="let type of filters.types.options"
-            (click)="toggleFilter('types', type)"
-            [ngClass]="{
-              'include': filters.types.states.get(type) === TriState.Include,
-              'exclude': filters.types.states.get(type) === TriState.Exclude
-            }"
-          >
-            {{ type }}
-          </button>
+          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
+          @for (type of filters['types'].options; track type) {
+            <button
+              (click)="toggleFilter('types', type)"
+              [ngClass]="{
+                'include': filters['types'].states.get(type) === TriState.Include,
+                'exclude': filters['types'].states.get(type) === TriState.Exclude
+              }"
+            >
+              {{ type }}
+            </button>
+          }
         </div>
 
         <!-- Rarities Filter -->
         <div>
           <strong>Rarities:</strong>
-          <button
-            *ngFor="let rarity of filters.rarities.options"
-            (click)="toggleFilter('rarities', rarity)"
-            [ngClass]="{
-              'include': filters.rarities.states.get(rarity) === TriState.Include,
-              'exclude': filters.rarities.states.get(rarity) === TriState.Exclude
-            }"
-          >
-            {{ rarity }}
-          </button>
+          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
+          @for (rarity of filters['rarities'].options; track rarity) {
+            <button
+              (click)="toggleFilter('rarities', rarity)"
+              [ngClass]="{
+                'include': filters['rarities'].states.get(rarity) === TriState.Include,
+                'exclude': filters['rarities'].states.get(rarity) === TriState.Exclude
+              }"
+            >
+              {{ rarity }}
+            </button>
+          }
         </div>
 
         <!-- Costs Filter -->
         <div>
           <strong>Costs (CMC):</strong>
-          <button
-            *ngFor="let cost of filters.costs.options"
-            (click)="toggleFilter('costs', cost)"
-            [ngClass]="{
-              'include': filters.costs.states.get(cost) === TriState.Include,
-              'exclude': filters.costs.states.get(cost) === TriState.Exclude
-            }"
-          >
-            {{ cost }}
-          </button>
+          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
+          @for (cost of filters['costs'].options; track cost) {
+            <button
+              (click)="toggleFilter('costs', cost)"
+              [ngClass]="{
+                'include': filters['costs'].states.get(cost) === TriState.Include,
+                'exclude': filters['costs'].states.get(cost) === TriState.Exclude
+              }"
+            >
+              {{ cost }}
+            </button>
+          }
         </div>
 
       </div>
@@ -116,35 +121,49 @@
   </div>
 
   <!-- Bottom section: Underutilized cards -->
-  <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
-  <h3>Underutilized Cards</h3>
-  <div *ngIf="underutilizedCards.length > 0; else noUnderutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-    <div *ngFor="let card of underutilizedCards" class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
-      <img *ngIf="card.image" [src]="card.image" alt="{{ card.name }}" style="width: 100%; height: auto;" />
-      <div><strong>{{ card.name }}</strong></div>
-      <div>Used: {{ card.quantity }}</div>
-      <div>{{ card.typeLine }}</div>
+  <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
+    <h3>Underutilized Cards</h3>
+
+    <div class="card-grid-flex" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      @for (card of underutilizedCards; track card.id) {
+        <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
+
+          <!-- 🌟 FIXED: Replaced legacy *ngIf with clean native @if flow block -->
+          @if (card.localArtUri) {
+            <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
+          }
+
+          <div><strong>{{ card.name }}</strong></div>
+          <div>Used: {{ card.quantity }}</div>
+          <div style="font-size: 0.85rem; color: #666;">{{ card.typeLine }}</div>
+        </div>
+      } @empty {
+        <p>No underutilized cards found.</p>
+      }
     </div>
-  </div>
-  <ng-template #noUnderutilized>
-    <p>No underutilized cards found.</p>
-  </ng-template>
   </section>
 
   <!-- Bottom section: Overutilized cards -->
-  <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px;">
-  <h3>Overutilized Cards</h3>
-  <div *ngIf="overutilizedCards.length > 0; else noOverutilized" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-    <div *ngFor="let card of overutilizedCards" class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
-      <img *ngIf="card.image" [src]="card.image" alt="{{ card.name }}" style="width: 100%; height: auto;" />
-      <div><strong>{{ card.name }}</strong></div>
-      <div>Used: {{ card.quantity }}</div>
-      <div>{{ card.typeLine }}</div>
+  <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
+    <h3>Overutilized Cards</h3>
+
+    <div class="card-grid-flex" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+      @for (card of overutilizedCards; track card.id) {
+        <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
+
+          <!-- 🌟 FIXED: Replaced legacy *ngIf with clean native @if flow block -->
+          @if (card.localArtUri) {
+            <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
+          }
+
+          <div><strong>{{ card.name }}</strong></div>
+          <div>Used: {{ card.quantity }}</div>
+          <div style="font-size: 0.85rem; color: #666;">{{ card.typeLine }}</div>
+        </div>
+      } @empty {
+        <p>No overutilized cards found.</p>
+      }
     </div>
-  </div>
-  <ng-template #noOverutilized>
-    <p>No overutilized cards found.</p>
-  </ng-template>
   </section>
 
 </div>

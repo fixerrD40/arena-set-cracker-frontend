@@ -52,7 +52,7 @@
           <div (click)="toggleSet({ set: entry })" class="set-header">
             <span>{{ entry.name }} ({{ entry.code }})</span>
             <span class="spacer"></span>
-            <button mat-icon-button (click)="deleteSet(entry.id); $event.stopPropagation()" aria-label="Delete set">
+            <button mat-icon-button (click)="deleteSet(entry); $event.stopPropagation()" aria-label="Delete set">
               <mat-icon color="warn">delete</mat-icon>
             </button>
           </div>

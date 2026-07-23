@@ -1,156 +1,69 @@
+// src/app/core/services/deck.service.ts
 import { inject, Injectable } from '@angular/core';
-import { SqliteService } from '../sqlite/sqlite.service';
-import { decks, deckCards, DeckEntity } from '../sqlite/sqlite.schema';
-import { OutboxService } from './outbox.service';
-import { MtgDeck } from '../../shared/models/deck';
-import { BehaviorSubject, catchError, map, Observable, of, Subscription, switchMap, tap } from 'rxjs';
-import { eq } from 'drizzle-orm';
+import { SetService } from './set.service';
+import { DATA_WIRE_TOKEN } from '../../app.config';
+import { Observable, tap } from 'rxjs';
+
+import { decks } from '../storage/sqlite/sqlite.schema';
+import { MtgDeck } from '../../shared/models/deck/deck';
 
 @Injectable({
   providedIn: 'root'
 })
-export class DeckService extends SqliteService<DeckEntity, MtgDeck> {
-  private readonly outbox = inject(OutboxService);
-  private loadSubscription?: Subscription;
+export class DeckService {
+  private readonly dataWire = inject(DATA_WIRE_TOKEN);
+  private readonly setService = inject(SetService);
 
-  // The local reactive state container for your UI
-  private activeDecksSubject = new BehaviorSubject<MtgDeck[]>([]);
-  readonly activeDecks$: Observable<MtgDeck[]> = this.activeDecksSubject.asObservable();
-
-  constructor() {
-    super(decks, {
-      toDomain: (entity) => MtgDeck.fromSqlite(entity),
-      fromDomain: (domain) => domain.toSqlite()
-    });
+  /**
+   * PURE MATH UTILITY: Increments a card count on a copied scratchpad Map.
+   */
+  public incrementInMap(cardsMap: Map<string, number>, cardId: string): Map<string, number> {
+    const updated = new Map(cardsMap);
+    const currentQty = updated.get(cardId) || 0;
+    updated.set(cardId, currentQty + 1);
+    return updated;
   }
 
   /**
-   * ATOMIC MATRIX LOAD: Pulls all decks and their entire nested collection of card quantities
-   * assigned to this target set context using a consolidated left-join query compilation strategy.
+   * PURE MATH UTILITY: Decrements a card count on a copied scratchpad Map.
    */
-  loadDecksForSet(localSetId: string): void {
-    this.loadSubscription?.unsubscribe();
+  public decrementInMap(cardsMap: Map<string, number>, cardId: string): Map<string, number> {
+    const updated = new Map(cardsMap);
+    const currentQty = updated.get(cardId) || 0;
 
-    // Compile the explicit left join into standard SQLite SQL string arrays
-    const compiled = this.builder
-      .select({
-        deckId: decks.id,
-        setName: decks.name,
-        setId: decks.setId,
-        notes: decks.notes,
-        tags: decks.tags,
-        createdAt: decks.createdAt,
-        cardId: deckCards.cardId,
-        quantity: deckCards.quantity
-      })
-      .from(decks)
-      .leftJoin(deckCards, eq(decks.id, deckCards.deckId))
-      .where(eq(decks.id, localSetId))
-      .toSQL();
-
-    this.loadSubscription = this.executeRawSelect<any>(compiled).pipe(
-      // Aggregate the raw flat join rows into distinct deck entities with card lists
-      map((rows) => {
-        const deckMap = new Map<string, { deckEntity: any; cards: any[] }>();
-
-        for (const row of rows) {
-          if (!deckMap.has(row.deckId)) {
-            deckMap.set(row.deckId, {
-              deckEntity: {
-                id: row.deckId,
-                name: row.setName,
-                setId: row.setId,
-                notes: row.notes,
-                tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
-                createdAt: row.createdAt
-              },
-              cards: []
-            });
-          }
-
-          if (row.cardId) {
-            deckMap.get(row.deckId)!.cards.push({
-              cardId: row.cardId,
-              quantity: row.quantity
-            });
-          }
-        }
-
-        return Array.from(deckMap.values()).map(({ deckEntity, cards }) =>
-          MtgDeck.fromSqlite(deckEntity, cards)
-        );
-      }),
-      tap((hydratedMatrix) => this.activeDecksSubject.next(hydratedMatrix)),
-      catchError((err) => {
-        console.error(`Failed to stitch relational deck components for set ${localSetId}:`, err?.message || err);
-        this.activeDecksSubject.next([]);
-        return of([]);
-      })
-    ).subscribe();
+    if (currentQty <= 1) {
+      updated.delete(cardId);
+    } else {
+      updated.set(cardId, currentQty - 1);
+    }
+    return updated;
   }
 
-  unloadAssignmentWorkspace(): void {
-    this.loadSubscription?.unsubscribe();
-    this.activeDecksSubject.next([]);
-  }
+  /**
+   * THE FLUSH OPERATION
+   * Commits the component's finalized scratchpad memory directly down to the database wire.
+   * Tells the aggregate root to sync its cache so the fresh save becomes the new global baseline.
+   */
+  public saveDeckChanges(finalizedDeck: MtgDeck): Observable<void> {
+    // Convert the JavaScript Map back to a plain object dictionary literal for serialization
+    const cardsPayload = Object.fromEntries(finalizedDeck.cards);
 
-  // ========================================================
-  // PERSISTENCE MUTATIONS (Keeps your active Matrix updated)
-  // ========================================================
-
-  override update(id: string, deck: MtgDeck): Observable<MtgDeck> {
-    return super.update(id, deck).pipe(
-      switchMap(updatedDeck => {
-        const outboxPayload = deck.toJSON();
-
-        // FIXED: Remove the top-level 'id' property. The payload wrapper encapsulates the target record state.
-        return this.outbox.enqueue({
-          entityType: 'deck',
-          action: 'UPDATE',
-          payload: outboxPayload // The payload already encapsulates String(deck.id) internally via toJSON()
-        }).pipe(map(() => updatedDeck));
-      }),
-      tap((updatedDeck) => {
-        const currentMatrix = this.activeDecksSubject.getValue();
-        const updatedMatrix = currentMatrix.map(d => d.id === updatedDeck.id ? updatedDeck : d);
-        this.activeDecksSubject.next(updatedMatrix);
-      })
-    );
-  }
-
-  override create(deck: MtgDeck): Observable<MtgDeck> {
-    return super.create(deck).pipe(
-      switchMap(insertedDeck => {
-        const outboxPayload = deck.toJSON();
-
-        // FIXED: Remove the top-level 'id' property. Let the database engine allocate the queue auto-increment key.
-        return this.outbox.enqueue({
-          entityType: 'deck',
-          action: 'CREATE',
-          payload: outboxPayload
-        }).pipe(map(() => insertedDeck));
-      }),
-      tap((newDeck: MtgDeck) => {
-        const currentMatrix = this.activeDecksSubject.getValue();
-        this.activeDecksSubject.next([...currentMatrix, newDeck]);
-      })
-    );
-  }
-
-  override delete(id: string): Observable<void> {
-    return super.delete(id).pipe(
-      switchMap(() => {
-        // FIXED: The record index stringification happens cleanly inside the payload object
-        return this.outbox.enqueue({
-          entityType: 'deck',
-          action: 'DELETE',
-          payload: { id: String(id) } // Strictly pass the identifier here to track the server eviction
-        }).pipe(map(() => undefined));
-      }),
+    // 🌟 PERFECT DEFERRAL: Hand the payload down to the platform-blind wire
+    return this.dataWire.update(decks, finalizedDeck.id, {
+      name: finalizedDeck.name,
+      notes: finalizedDeck.notes,
+      tags: finalizedDeck.tags,
+      cards: cardsPayload
+    }).pipe(
       tap(() => {
-        const currentMatrix = this.activeDecksSubject.getValue();
-        const updatedMatrix = currentMatrix.filter(d => String(d.id) !== String(id));
-        this.activeDecksSubject.next(updatedMatrix);
+        // 1. Force the parent SetService cache to reload from disk natively
+        this.setService.syncInstalledCache();
+
+        // 2. Automatically refresh the open active workspace state snapshot
+        const openContext = this.setService.currentWorkspaceSnapshot;
+        if (openContext) {
+          this.setService.loadSetWorkspace(finalizedDeck.setId, openContext.setInfo.code);
+        }
       })
     );
   }

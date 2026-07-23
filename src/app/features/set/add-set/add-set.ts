@@ -8,9 +8,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterModule } from '@angular/router';
 import { map, Observable, of, startWith } from 'rxjs';
-import { ScryfallService } from '../../../core/services/scryfall/scryfall-service';
+import { ScryfallService } from '../../../core/services/api/scryfall/scryfall.service';
 import { SetService } from '../../../core/services/set.service';
-import { ScryfallSet } from '../../../core/services/scryfall/models/set.scryfall';
+import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scryfall';
 
 @Component({
   selector: 'app-add-set',

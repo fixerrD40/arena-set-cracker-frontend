@@ -1,11 +1,11 @@
 // src/app/core/config/config.initializer.ts
-import { inject, Injector, runInInjectionContext } from '@angular/core';
+import { inject, Injector } from '@angular/core';
 import { AppConfigService } from './config.service';
-import { SqliteService } from '../sqlite/sqlite.service';
-import { OutboxService } from '../services/outbox.service'; // Import your outbox engine
+import { SqliteEngine } from '../storage/sqlite/sqlite.engine';
+import { OutboxService } from '../services/outbox.service';
 
 /**
- * CONFIGURATION INITIALIZER: Coordinates system startup sequences.
+ * CONFIGURATION INITIALIZER: Coordinates cross-platform system startup sequences.
  * Executes on-demand initialization scripts securely after storage files are active.
  */
 export async function runConfigAndStorageInitialization(): Promise<void> {
@@ -17,21 +17,33 @@ export async function runConfigAndStorageInitialization(): Promise<void> {
   try {
     // PHASE 1: Fetch and unpack your config.json asset file parameters
     await configService.load();
-    console.log(`⚡ ConfigInitializer: Settings loaded. Database target identified as: ${configService.sqliteDbName}`);
+    console.log(`⚡ ConfigInitializer: Settings loaded. Base server URL identified as: ${configService.baseUrl}`);
 
-    // PHASE 2: Instruct SqliteService to initialize its static cache parameters directly
-    // This catches missing files and compiles all schemas all at once from sqlite.schema.ts
-    await SqliteService.bootstrapEngine(injector);
+    // ENVIRONMENT CHECK: Safely determine if running inside an Electron desktop context
+    const isElectron = !!(
+      typeof window !== 'undefined' &&
+      window.navigator &&
+      window.navigator.userAgent.toLowerCase().includes('electron')
+    );
 
-    // PHASE 3: Now that tables are safe on disk, dynamically wake up the background flusher!
-    runInInjectionContext(injector, () => {
-      const outboxService = inject(OutboxService);
+    if (isElectron) {
+      console.log('🖥️ ConfigInitializer: Electron host detected. Bootstrapping desktop storage engine...');
 
-      // Call your safe public method inside an isolated execution environment channel!
-      outboxService.initializeEngine();
-    });
+      // Look up your root-injectable SqliteEngine singleton from the injector instance
+      const sqliteEngine = injector.get(SqliteEngine);
+      await sqliteEngine.bootstrapEngine(injector);
+    } else {
+      console.log('🌐 ConfigInitializer: Web/Mobile platform detected. Skipping local file block allocations.');
+    }
 
-    console.log('🏁 ConfigInitializer: System database files, configurations, and outbox flusher are fully synced.');
+    // PHASE 3: Now that tables are safe on disk (on desktop), awaken background sync loops!
+    console.log('🔄 ConfigInitializer: Awakening background data synchronization engines...');
+
+    // 🌟 FIX: Fetch the service via injector.get to bypass asynchronous inject context exceptions safely
+    const outboxService = injector.get(OutboxService);
+    outboxService.initializeEngine();
+
+    console.log('🏁 ConfigInitializer: System configurations, databases, and background tasks are fully active.');
   } catch (error) {
     console.error('❌ ConfigInitializer: CRITICAL FATAL SEQUENCE CRASH DURING STARTUP INTERCEPT:', error);
     throw error;

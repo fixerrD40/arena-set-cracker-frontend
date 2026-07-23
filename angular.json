@@ -22,33 +22,41 @@
       "architect": {
         "build": {
           "builder": "@angular/build:application",
-          "options": {
-            "browser": "src/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
-            "tsConfig": "tsconfig.app.json",
-            "assets": [
-              "src/favicon.ico",
-              "src/assets",
-              {
-                "glob": "**/*",
-                "input": "public"
-              },
-              {
-                "glob": "*.wasm",
-                "input": "./node_modules/sql.js/dist/",
-                "output": "assets"
-              }
-            ],
-            "styles": [
-              "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles.css"
-            ],
-            "allowedCommonJsDependencies": [
-              "sql.js"
-            ]
-          },
+            "options": {
+              "browser": "src/main.ts",
+              "polyfills": [
+                "zone.js"
+              ],
+              "tsConfig": "tsconfig.app.json",
+              "assets": [
+                "src/favicon.ico",
+                "src/assets",
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                {
+                  "glob": "*.wasm",
+                  "input": "./node_modules/sql.js/dist/",
+                  "output": "assets"
+                }
+              ],
+              "styles": [
+                "@angular/material/prebuilt-themes/azure-blue.css",
+                "src/styles.css"
+              ],
+              "allowedCommonJsDependencies": [
+                "sql.js"
+              ],
+              "externalDependencies": [
+                "fs",
+                "path",
+                "crypto",
+                "os",
+                "events",
+                "stream"
+              ]
+            },
           "configurations": {
             "production": {
               "optimization": true,

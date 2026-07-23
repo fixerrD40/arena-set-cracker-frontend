@@ -45,7 +45,7 @@ export class WelcomeComponent {
         console.log('WelcomeComponent: Identity confirmed. Hydrating local workspace caches...');
 
         // 3. THE HANDOVER TRIGGER: Populate in-memory datasets now that identity is established
-        this.setService.initStorageRosterPull();
+        this.setService.syncInstalledCache();
 
         // Safe sequential view change after the hardware writes finish processing
         this.router.navigate(['/']);

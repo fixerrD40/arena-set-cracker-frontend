@@ -1,29 +1,26 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, tap } from 'rxjs';
 
 import { SetDetailChartComponent } from './set-detail-chart.component';
-import { CardService } from '../../../core/services/card.service';
-import { DeckService } from '../../../core/services/deck.service';
-import { MtgCard } from '../../../shared/models/card';
+import { MtgCard } from '../../../shared/models/card/card';
 import { Color, ColorDisplayNames } from '../../../shared/models/color';
-import { MtgDeck } from '../../../shared/models/deck';
+import { MtgDeck } from '../../../shared/models/deck/deck';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import { NgxTippyModule } from 'ngx-tippy-wrapper';
+import { SetService } from '../../../core/services/set.service';
 
-enum TriState {
+export enum TriState {
   Unselected = 0,
   Include = 1,
   Exclude = 2,
 }
 
-interface AggregatedCard {
-  name: string;
+export interface AggregatedCard extends MtgCard {
   quantity: number;
-  typeLine: string;
-  colors: string[];
-  rarity: string;
-  mana_cost?: string;
-  image?: string;
 }
 
 interface FilterCategory {
@@ -34,44 +31,35 @@ interface FilterCategory {
 @Component({
   selector: 'app-set-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, SetDetailChartComponent],
+  imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetDetailChartComponent],
   templateUrl: './set-detail.html',
-  styleUrls: ['./set-detail.css'],
+  styleUrls: ['./set-detail.css']
 })
 export class SetDetail implements OnInit {
   readonly TriState = TriState;
-
   public Math = Math;
-  private deckService = inject(DeckService);
-  private cardService = inject(CardService);
 
-  // Core Data Cache Matrix Arrays
-  allAggregatedCards: AggregatedCard[] = [];
-  filteredCards: AggregatedCard[] = [];
-  underutilizedCards: AggregatedCard[] = [];
-  overutilizedCards: AggregatedCard[] = [];
+  // 🌟 Clean context access: SetService owns the single source of truth matrix [INDEX]
+  private readonly setService = inject(SetService);
 
-  pageSize = 20;
-  currentPage = 0;
+  // Synchronous local memory view buffers
+  public allAggregatedCards: AggregatedCard[] = [];
+  public filteredCards: AggregatedCard[] = [];
+  public underutilizedCards: AggregatedCard[] = [];
+  public overutilizedCards: AggregatedCard[] = [];
 
-  // 1. Reactive Input Controls Streams
-  private searchTermSubject = new BehaviorSubject<string>('');
-  private filterTriggerSubject = new BehaviorSubject<void>(undefined);
+  public pageSize = 20;
+  public currentPage = 0;
 
-  set searchTerm(value: string) {
-    this.searchTermSubject.next(value);
-  }
-  get searchTerm(): string {
-    return this.searchTermSubject.getValue();
-  }
+  // Reactive Input Control Subjects
+  private readonly searchTermSubject = new BehaviorSubject<string>('');
+  private readonly filterTriggerSubject = new BehaviorSubject<void>(undefined);
 
-  // 2. Comprehensive Tri-State Filters Matrix Layout
-  filters: {
-    colors: FilterCategory;
-    types: FilterCategory;
-    rarities: FilterCategory;
-    costs: FilterCategory;
-  } = {
+  public set searchTerm(value: string) { this.searchTermSubject.next(value); }
+  public get searchTerm(): string { return this.searchTermSubject.getValue(); }
+
+  // Tri-State Filter Configurations Matrix
+  public filters: Record<string, FilterCategory> = {
     colors: { options: Object.values(Color), states: new Map() },
     types: {
       options: ['Creature', 'Instant', 'Sorcery', 'Enchantment', 'Artifact', 'Planeswalker', 'Land'],
@@ -81,40 +69,12 @@ export class SetDetail implements OnInit {
     costs: { options: ['1', '2', '3', '4', '5', '6+'], states: new Map() },
   };
 
-  public barChartData = {
-    labels: [] as string[],
-    datasets: [
-      {
-        data: [] as number[],
-        label: 'Card Utilization',
-        backgroundColor: 'rgba(75,192,192,0.6)',
-        borderColor: 'rgba(75,192,192,1)',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  public barChartOptions = {
-    indexAxis: 'y' as const,
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: { beginAtZero: true },
-      y: { ticks: { autoSkip: false, font: { size: 11 } } },
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (tooltipItem: any) => `Used ${tooltipItem.raw} times`,
-        },
-      },
-    },
-  };
+  // Chart configuration structures
+  public barChartData = { labels: [] as string[], datasets: [{ data: [] as number[] }] };
 
   constructor() {
-    // Initialize all filter states to Unselected
-    for (const categoryKey of Object.keys(this.filters) as (keyof typeof this.filters)[]) {
+    // Initialize all criteria matrix toggles to plain Unselected baseline states
+    for (const categoryKey of Object.keys(this.filters)) {
       const category = this.filters[categoryKey];
       for (const option of category.options) {
         category.states.set(option, TriState.Unselected);
@@ -122,92 +82,100 @@ export class SetDetail implements OnInit {
     }
   }
 
-  ngOnInit() {
-    combineLatest([
-      this.deckService.activeDecks$,
-      this.cardService.activeCards$, // Powered by your store-backed service
-      this.searchTermSubject,        // Emits on text entry
-      this.filterTriggerSubject      // Emits on click events
-    ])
-    .pipe(
-      map(([decks, cards, currentSearch]) => {
-        // Step A: Aggregate raw counts when cards or decks alter
-        const aggregated = this.aggregateCards(decks, cards);
-        this.allAggregatedCards = aggregated.sort((a, b) => b.quantity - a.quantity);
+  public ngOnInit(): void {
+    // UNIFIED REACTIVE WORKSPACE STREAM
+    combineLatest({
+      workspace: this.setService.activeContext$,
+      searchTerm: this.searchTermSubject.asObservable(),
+      filterEvent: this.filterTriggerSubject.asObservable()
+    }).pipe(
+      map(({ workspace, searchTerm }) => {
+        if (!workspace) return { sortedAggregated: [], searchTerm };
 
-        // Step B: Apply your custom multi-layered filtering loops
-        return this.executeFiltering(this.allAggregatedCards, currentSearch);
+        // Step A: Aggregate counts on domain models extracted out of the unified stream snapshot
+        const aggregated = this.aggregateCards(workspace.decks, workspace.cards);
+        const sortedAggregated = aggregated.sort((a, b) => b.quantity - a.quantity);
+
+        // Pass both the total aggregate pool and current search term down the stream line
+        return { sortedAggregated, searchTerm };
+      }),
+      tap(({ sortedAggregated, searchTerm }) => {
+        // 🌟 FIX: Commit the unfiltered aggregate list to the class property so the template tracks it!
+        this.allAggregatedCards = sortedAggregated;
+
+        // Step B: Execute your filtering passes against the baseline cached total collection
+        this.filteredCards = this.executeFiltering(this.allAggregatedCards, searchTerm);
+
+        // Step C: Inline Page Index Guard Rails
+        const maxPage = Math.max(0, Math.ceil(this.filteredCards.length / this.pageSize) - 1);
+        if (this.currentPage > maxPage) {
+          this.currentPage = maxPage;
+        }
+
+        // Step D: Trigger downstream metrics calculations automatically entirely in memory RAM
+        this.classifyUtilization();
+        this.updateChart();
       })
-    )
-    .subscribe((processedCards) => {
-      this.filteredCards = processedCards;
-
-      // Step C: Inline Page Index Guard Rails (Ported directly from your logic)
-      const maxPage = Math.max(0, Math.ceil(this.filteredCards.length / this.pageSize) - 1);
-      if (this.currentPage > maxPage) {
-        this.currentPage = maxPage;
-      }
-
-      // Step D: Trigger downstream metrics calculations automatically
-      this.classifyUtilization();
-      this.updateChart();
-    });
+    ).subscribe();
   }
 
   getColorName(code: string): string {
     return ColorDisplayNames[code as Color];
   }
 
-  // --- Pure Multi-Layered Functional Processing Engines ---
-
+  /**
+   * HIGH-PERFORMANCE FLAT AGGREGATION MOTOR
+   * Spreads all native card metadata flatly into memory entries and sums up deck weights.
+   */
   private aggregateCards(decks: MtgDeck[], cards: MtgCard[]): AggregatedCard[] {
     const cardUsageMap = new Map<string, AggregatedCard>();
 
+    // 1. Pre-populate your hash dictionary by flat-spreading every single card row
     for (const card of cards) {
       cardUsageMap.set(card.name, {
-        name: card.name,
-        quantity: 0,
-        typeLine: card.typeLine,
-        colors: card.colors,
-        rarity: card.rarity,
-        mana_cost: card.manaCost,
-        image: card.localArtUri,
+        ...card,     // Spreads name, rarity, typeLine, localArtUri flatly!
+        quantity: 0  // Base initialization weight
       });
     }
 
+    // 2. Iterate through live workspace user decks, accumulating counts by name or identifier
     for (const deck of decks) {
-      for (const [cardName, quantity] of deck.cards.entries()) {
-        const existing = cardUsageMap.get(cardName);
-        if (existing) {
-          existing.quantity += quantity;
+      deck.cards.forEach((quantity, cardIdentifier) => {
+        const match = cardUsageMap.get(cardIdentifier) ||
+                      Array.from(cardUsageMap.values()).find(entry => entry.id === cardIdentifier);
+
+        if (match) {
+          match.quantity += quantity;
         }
-      }
+      });
     }
 
     return Array.from(cardUsageMap.values());
   }
 
-  /**
-   * Extracted Filtering Pipeline utilizing your native matching patterns
-   */
-  private executeFiltering(cards: AggregatedCard[], activeSearch: string): AggregatedCard[] {
-    return cards.filter((card) => {
-      // Functional local search match pass
-      if (activeSearch && !card.name.toLowerCase().includes(activeSearch.toLowerCase())) {
+  private executeFiltering(aggregatedCards: AggregatedCard[], activeSearch: string): AggregatedCard[] {
+    const cleanSearch = activeSearch.trim().toLowerCase();
+
+    return aggregatedCards.filter((card) => {
+      // 1. Search Query String Match Pass
+      if (cleanSearch && !card.name.toLowerCase().includes(cleanSearch)) {
         return false;
       }
 
-      // Your exact predicate matching methods running safely inside the array loop
-      if (!this.passesTriStateFilter('colors', card.colors, (o) => card.colors.includes(o))) {
+      // 🌟 Clean call-sites passing ONLY the category key and the matching predicate function! [INDEX]
+      if (!this.passesTriStateFilter('colors', (option) => card.colors.includes(option))) {
         return false;
       }
-      if (!this.passesTriStateFilter('types', this.filters.types.options, (o) => card.typeLine.includes(o))) {
+      if (!this.passesTriStateFilter('types', (option) => card.typeLine.includes(option))) {
         return false;
       }
-      if (!this.passesTriStateFilter('rarities', [card.rarity], (o) => card.rarity === o)) {
+      if (!this.passesTriStateFilter('rarities', (option) => card.rarity === option)) {
         return false;
       }
-      if (!this.passesTriStateFilter('costs', this.filters.costs.options, (o) => o === this.bucketCMC(this.getCMC(card.mana_cost)))) {
+      if (!this.passesTriStateFilter('costs', (option) => {
+        const computedCmc = this.getCMC(card.manaCost);
+        return option === this.bucketCMC(computedCmc);
+      })) {
         return false;
       }
 
@@ -215,13 +183,18 @@ export class SetDetail implements OnInit {
     });
   }
 
+
   /**
-   * UI Click Handler: Updates the Tri-State map and forces the stream pipeline to re-run
+   * UI CLICK HANDLER
+   * Cycles a filter setting through Unselected -> Required -> Excluded, then kicks off the stream layout recalculation.
    */
-  toggleFilter(categoryKey: keyof typeof this.filters, option: string): void {
+  public toggleFilter(categoryKey: keyof typeof this.filters, option: string): void {
     const category = this.filters[categoryKey];
+    if (!category) return;
+
     const current = category.states.get(option) ?? TriState.Unselected;
 
+    // Cycle state natively: 0 (Unselected) -> 1 (Required) -> 2 (Excluded) -> 0
     const nextState = (current + 1) % 3 as TriState;
     category.states.set(option, nextState);
 
@@ -297,32 +270,37 @@ export class SetDetail implements OnInit {
     });
   }
 
+  /**
+   * COMPREHENSIVE TRI-STATE INVARIANT EVALUATOR
+   * Gathers active filters into subsets to guarantee flawless multi-attribute sorting.
+   */
   private passesTriStateFilter(
-    category: keyof typeof this.filters,
-    optionsToTest: string[],
-    matchesOption: (option: string) => boolean
+    categoryKey: keyof typeof this.filters,
+    matchesOption: (option: string) => boolean // 🌟 Clean: optionsToTest safely deleted!
   ): boolean {
-    const states = this.filters[category].states;
+    const states = this.filters[categoryKey].states;
 
     const included = new Set<string>();
     const excluded = new Set<string>();
 
+    // 1. Separate options into strict active Include and Exclude subsets dynamically
     for (const [option, state] of states.entries()) {
       if (state === TriState.Include) included.add(option);
       else if (state === TriState.Exclude) excluded.add(option);
     }
 
+    // Guard A: If no explicit filter criteria are active, the row is automatically valid
     if (included.size === 0 && excluded.size === 0) return true;
 
-    for (const option of optionsToTest) {
-      if (excluded.has(option) && matchesOption(option)) return false;
+    // Guard B: Check EXCLUSIONS first. If ANY excluded option matches your predicate, drop the row
+    for (const option of excluded) {
+      if (matchesOption(option)) return false;
     }
 
+    // Guard C: Check INCLUSIONS. If any options are marked as Include, the card MUST satisfy at least one
     if (included.size > 0) {
-      for (const option of optionsToTest) {
-        if (included.has(option) && matchesOption(option)) return true;
-      }
-      return false;
+      const satisfiesAtLeastOne = Array.from(included).some(option => matchesOption(option));
+      if (!satisfiesAtLeastOne) return false;
     }
 
     return true;
