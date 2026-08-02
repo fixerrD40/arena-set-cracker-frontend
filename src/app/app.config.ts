@@ -1,13 +1,5 @@
 // src/app/app.config.ts
-import {
-  ApplicationConfig,
-  provideZoneChangeDetection,
-  provideAppInitializer,
-  inject,
-  Injector,
-  runInInjectionContext,
-  InjectionToken
-} from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject, Injector, runInInjectionContext } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
@@ -16,21 +8,13 @@ import { runConfigAndStorageInitialization } from './core/config/config.initiali
 import { AppConfigService } from './core/config/config.service';
 import { APP_CONFIG, AppConfigData } from './core/config/app.config.token';
 
-// DataWire Contract and Platform Wire Conductor Implementations
-import { DataWire } from './core/services/data-wire/data-wire.contract';
-import { ElectronDataWire } from './core/services/data-wire/electron.data-wire';
-import { CloudDataWire } from './core/services/data-wire/cloud.data-wire';
-
-/**
- * Centrally managed dependency injection token for your stateless data pipes.
- * Resolves polymorphically to Electron or Cloud storage targets based on environment constraints.
- */
-export const DATA_WIRE_TOKEN = new InjectionToken<DataWire>('DATA_WIRE_TOKEN');
+// DataWire Contract
+import { DATA_WIRE_TOKEN } from './core/services/data-wire/data-wire.contract';
 
 /**
  * High-reliability environment flag boundary checker evaluating native browser user agent parameters.
  */
-const isElectronEnvironment = (): boolean => !!(
+export const isElectronEnvironment = (): boolean => !!(
   typeof window !== 'undefined' &&
   window.navigator &&
   window.navigator.userAgent.toLowerCase().includes('electron')
@@ -42,12 +26,23 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideRouter(routes),
 
-    // 🌟 IDIOMATIC POLYMORPHIC BINDING
-    // Automatically routes your global token dependency to the correct data platform implementation
+    // 🌟 IDIOMATIC CROSS-PLATFORM FACTORY INJECTION
+    // Dynamically resolves platform classes out of the Injector pool at launch.
+    // This allows tree-shaking tools to drop Electron files cleanly outside the desktop shell!
     {
       provide: DATA_WIRE_TOKEN,
-      // 🌟 Cleanest Mapping: Directly assign your two main wire options
-      useClass: isElectronEnvironment() ? ElectronDataWire : CloudDataWire
+      useFactory: (injector: Injector) => {
+        if (isElectronEnvironment()) {
+          // Dynamically fetch the Electron provider only when inside the native desktop window wrapper
+          const { ElectronDataWire } = require('./core/services/data-wire/electron.data-wire');
+          return injector.get(ElectronDataWire);
+        } else {
+          // Fallback to CloudDataWire instantly for Web, PWA, or Capacitor Mobile environments
+          const { CloudDataWire } = require('./core/services/data-wire/cloud.data-wire');
+          return injector.get(CloudDataWire);
+        }
+      },
+      deps: [Injector]
     },
 
     provideAppInitializer(() => {

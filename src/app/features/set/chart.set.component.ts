@@ -4,7 +4,7 @@ import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2
 import { ChartConfiguration } from 'chart.js';
 
 @Component({
-  selector: 'app-set-detail-chart',
+  selector: 'app-set-chart',
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
@@ -18,7 +18,7 @@ import { ChartConfiguration } from 'chart.js';
     </div>
   `
 })
-export class SetDetailChartComponent implements OnChanges {
+export class SetChart implements OnChanges {
   @Input() chartData!: ChartConfiguration<'bar'>['data'];
 
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;

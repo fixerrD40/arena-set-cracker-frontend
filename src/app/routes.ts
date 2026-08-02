@@ -1,78 +1,74 @@
 import { Routes } from '@angular/router';
+import { deckGuard } from './core/guards/deck.guard';
 import { welcomeGuard } from './core/guards/welcome.guard';
 
 export const routes: Routes = [
   // ==========================================
-  // 1. PUBLIC UNGUARDED ROUTES
-  // ==========================================
-  {
-    path: 'welcome',
-    loadComponent: () =>
-      import('./features/index/welcome/welcome').then(m => m.WelcomeComponent)
-  },
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./features/auth/login/login').then(m => m.Login)
-  },
-  {
-    path: 'register',
-    loadComponent: () =>
-      import('./features/auth/register/register').then(m => m.Register)
-  },
-  {
-    path: 'request-password-reset',
-    loadComponent: () =>
-      import('./features/auth/request-password-reset/request-password-reset').then(m => m.RequestPasswordReset)
-  },
-  {
-    path: 'reset-password',
-    loadComponent: () =>
-      import('./features/auth/reset-password/reset-password').then(m => m.ResetPassword)
-  },
-
-  // ==========================================
-  // 2. CORE LOCAL RUNTIME (Protected by Onboarding)
+  // 1. GLOBAL ROOT LANDING (The First-Boot Welcome Card)
   // ==========================================
   {
     path: '',
-    canActivate: [welcomeGuard], // Halts view loading until app_config.json is verified
-    children: [
-      {
-        path: '',
-        loadComponent: () =>
-          import('./features/index/index').then(m => m.Index)
-      },
-      {
-        path: 'about',
-        loadComponent: () =>
-          import('./features/index/about/about').then(m => m.About)
-      },
-      {
-        path: 'add-set',
-        loadComponent: () =>
-          import('./features/set/add-set/add-set').then(m => m.AddSet)
-      },
-      {
-        path: 'set/:id',
-        loadComponent: () =>
-          import('./features/set/set-detail/set-detail').then(m => m.SetDetail)
-      },
-      {
-        path: 'add-deck',
-        loadComponent: () =>
-          import('./features/deck/add-deck/add-deck').then(m => m.AddDeck)
-      },
-      {
-        path: 'deck/:id',
-        loadComponent: () =>
-          import('./features/deck/deck-content/deck-content').then(m => m.DeckContent)
-      }
-    ]
+    pathMatch: 'full',
+    canActivate: [welcomeGuard], // 🌟 Redirects configured users to /library immediately
+    loadComponent: () => import('./features/index/index.component').then(m => m.Index)
   },
 
   // ==========================================
-  // 3. CATCH-ALL WILDCARD REDIRECT
+  // 2. CONFIGURED CORE DASHBOARD HOME
+  // ==========================================
+  {
+    path: 'library',
+    canActivate: [welcomeGuard], // 🌟 Protects against manual URL entry if unconfigured
+    loadComponent: () => import('./features/library/library.component').then(m => m.LibraryComponent)
+  },
+
+  // ==========================================
+  // 3. PUBLIC ENTRY FLOWS (Unguarded targets for the Index button)
+  // ==========================================
+  {
+    path: 'about',
+    loadComponent: () => import('./features/index/about/about.component').then(m => m.About)
+  },
+  {
+    path: 'welcome', // Desktop offline initialization endpoint
+    loadComponent: () => import('./features/index/welcome/welcome.component').then(m => m.Welcome)
+  },
+  {
+    path: 'login', // Cloud web/mobile login endpoint
+    loadComponent: () => import('./features/index/login/login.component').then(m => m.Login)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/index/register/register.component').then(m => m.Register)
+  },
+
+  // ==========================================
+  // 4. SECURED DATA SUBSYSTEMS
+  // ==========================================
+  {
+    path: 'add-set',
+    canActivate: [welcomeGuard],
+    loadComponent: () => import('./features/set/add/add.set.component').then(m => m.AddSet)
+  },
+  {
+    path: 'set/:id',
+    canActivate: [welcomeGuard],
+    loadComponent: () => import('./features/set/set.component').then(m => m.Set)
+  },
+  {
+    path: 'add-deck',
+    canActivate: [welcomeGuard],
+    loadComponent: () => import('./features/deck/add/add.deck.component').then(m => m.AddDeck)
+  },
+  {
+    path: 'deck/:id',
+    canActivate: [welcomeGuard],
+    canDeactivate: [deckGuard],
+    loadComponent: () => import('./features/deck/deck.component').then(m => m.Deck)
+  },
+
+  // ==========================================
+  // 5. CATCH-ALL WILDCARD REDIRECT
   // ==========================================
   { path: '**', redirectTo: '' }
 ];

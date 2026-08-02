@@ -101,7 +101,7 @@
     <!-- Chart Canvas: Structurally Identical and Bound to reactive state updates -->
     <div class="chart-wrapper" style="flex-grow: 1; min-height: 300px;">
       @defer (on timer(150ms)) {
-        <app-set-detail-chart [chartData]="barChartData" />
+        <app-set-chart [chartData]="barChartData" />
       } @placeholder {
         <div class="chart-loading-skeleton" style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #fafafa; border: 1px dashed #ccc; border-radius: 4px;">
           <p style="color: #666; font-size: 0.9rem;">Assembling layout charts...</p>

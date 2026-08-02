@@ -1,105 +1,84 @@
-<!-- 1. The Navbar Layout Shell -->
-<mat-toolbar color="primary" class="navbar">
-  <button mat-icon-button (click)="isShowing = !isShowing" aria-label="Toggle Menu">
-    <mat-icon>menu</mat-icon>
-  </button>
+<!-- app.component.html -->
+<mat-toolbar color="primary" class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
 
-  <span class="logo" routerLink="">Arena Set Cracker</span>
-  <span class="spacer"></span>
+  <!-- Left Side: Interactive Main Brand Logo Link -->
+  <span class="logo" (click)="handleHomeClick()" style="cursor: pointer; font-weight: 700; font-size: 20px; white-space: nowrap;">
+    Arena Set Cracker
+  </span>
 
-  <nav>
-    <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
-  </nav>
+  <!-- Center Area: Progressive Filtering Hierarchy Tabs Component -->
+  @if (profile$ | async) {
+    @if (workspace$ | async; as workspace) {
+      <nav mat-tab-nav-bar [tabPanel]="tabPanel" style="border-bottom: none; margin-left: 24px; flex-grow: 1;">
 
-  @if (userProfileService.config$ | async; as profile) {
-    @if (!profile.is_cloud_synced) {
-      <a mat-button routerLink="/register" style="margin-right: 8px;">
-        <mat-icon style="margin-right: 4px; vertical-align: middle;">cloud_upload</mat-icon>
-        <span style="vertical-align: middle;">Sync to Cloud</span>
-      </a>
+        <!-- LAYER 1 BOOKMARK: Base System Library Index Grid -->
+        <a mat-tab-link
+           (click)="navigateToLibraryLayer()"
+           [active]="!workspace.setInfo">
+           <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">apps</mat-icon>
+           Library
+        </a>
+
+        <!-- LAYER 2 BOOKMARK: Target Active MTG Expansion Set Profile -->
+        @if (workspace.setInfo) {
+          <a mat-tab-link
+             (click)="navigateToSetLayer(workspace.setInfo.id)"
+             [active]="workspace.setInfo && !isCurrentRouteDeck()">
+             <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">folder</mat-icon>
+             {{ workspace.setInfo.name }}
+          </a>
+        }
+
+        <!-- LAYER 3 BOOKMARK: Target Deep Unsaved Scratchpad Deck View Workspace -->
+        @if (isCurrentRouteDeck()) {
+          <!-- We inspect the active router state URL path to grab the string parameters if required, -->
+          <!-- but checking if the deck route is true tells us a deck view layout card is actively mounted -->
+          <a mat-tab-link
+             [active]="true"
+             style="opacity: 1;">
+             <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">style</mat-icon>
+             Active Deck Workspace
+          </a>
+        }
+      </nav>
     }
-
-    <button mat-icon-button [matMenuTriggerFor]="profileMenu" aria-label="User profile">
-      <mat-icon>account_circle</mat-icon>
-    </button>
-
-    <mat-menu #profileMenu="matMenu">
-      <button mat-menu-item disabled>Hello, {{ profile.display_name }}</button>
-      @if (!profile.is_cloud_synced) {
-        <button mat-menu-item routerLink="/register">Link Cloud Credentials</button>
-      }
-      <button mat-menu-item (click)="logout()">Clear Workspace & Logout</button>
-    </mat-menu>
-  } @else {
-    <a mat-button routerLink="/login" routerLinkActive="active-link">Login</a>
   }
+
+  <span class="spacer" style="flex-grow: 1;" @if (!(workspace$ | async)) { style="display: block;" }></span>
+
+  <!-- Right Side: Secondary Public Utility Navigation Links Tray and Account Switches -->
+  <nav style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+    <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
+
+    @if (profile$ | async; as profile) {
+      @if (!profile.is_cloud_synced) {
+        <a mat-button routerLink="/register" class="sync-cloud-btn">
+          <mat-icon style="margin-right: 4px;">cloud_upload</mat-icon>
+          <span>Sync to Cloud</span>
+        </a>
+      }
+
+      <button mat-icon-button [matMenuTriggerFor]="profileMenu" aria-label="User profile">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+
+      <mat-menu #profileMenu="matMenu">
+        <button mat-menu-item disabled>Hello, {{ profile.display_name }}</button>
+        @if (!profile.is_cloud_synced) {
+          <button mat-menu-item routerLink="/register">Link Cloud Credentials</button>
+        }
+        <button mat-menu-item (click)="logout()">Clear Workspace & Logout</button>
+      </mat-menu>
+    } @else {
+      <a mat-button routerLink="/login" routerLinkActive="active-link">Login</a>
+    }
+  </nav>
 </mat-toolbar>
 
-<!-- 2. Sidenav Layout Stretches Below -->
-<mat-sidenav-container>
-  <mat-sidenav mode="side" [opened]="isShowing">
-    <mat-toolbar color="transparent" class="sidenav-header" style="position: relative;">
-      <span>My Sets</span>
-      <button mat-icon-button aria-label="Add set" (click)="addSet()" matTooltip="Add Set">
-        <mat-icon>add</mat-icon>
-      </button>
-    </mat-toolbar>
+<!-- Required Anchor structural container mapping for Material Nav Bar layouts -->
+<mat-tab-nav-panel #tabPanel></mat-tab-nav-panel>
 
-    @if (sets$ | async; as sets) {
-      @for (entry of sets; track entry.id) {
-        <div class="sets">
-          <!-- Pass entry down to unified toggle method -->
-          <div (click)="toggleSet({ set: entry })" class="set-header">
-            <span>{{ entry.name }} ({{ entry.code }})</span>
-            <span class="spacer"></span>
-            <button mat-icon-button (click)="deleteSet(entry); $event.stopPropagation()" aria-label="Delete set">
-              <mat-icon color="warn">delete</mat-icon>
-            </button>
-          </div>
-
-          <!-- FIXED: Uses clean signal comparison instead of the funky method execution loop -->
-          @if (expandedSetId() === entry.id) {
-            <ul>
-              <li class="add-deck-item">
-                <button mat-button color="primary" (click)="addDeck(entry)">
-                  + Add New Deck
-                </button>
-              </li>
-
-              <!-- FIXED MATRIX SUBSCRIPTION: Resolve the active grid array via async -->
-              @if (activeDecks$ | async; as decks) {
-                @if (decks.length === 0) {
-                  <li class="no-decks">No decks yet</li>
-                }
-                @for (deck of decks; track deck.id) {
-                  <!-- FIXED: Replaced [routerLink] with synchronous selection logic. Applies the 'active-workspace' CSS class instantly when clicked. -->
-                  <li (click)="selectDeckWorkspace(deck)"
-                      class="deck-item"
-                      [class.active-workspace]="selectedDeck?.id === deck.id"
-                      role="button"
-                      tabindex="0">
-                    <span class="deck-icons"></span>
-                    <span class="deck-name">{{ deck.name }}</span>
-                  </li>
-                }
-              } @else {
-                <li class="no-decks">Loading assignment topologies...</li>
-              }
-            </ul>
-          }
-        </div>
-      }
-    }
-  </mat-sidenav>
-
-<!-- 3. Dynamic Router Main Viewport Panel Container -->
-<mat-sidenav-content class="app-content">
-
-  <!--
-    🌟 THE ROUTER OUTLET HANDLES EVERYTHING NOW:
-    Angular will automatically load Welcome, Login, Index, SetDetail, OR DeckContent
-    here based on the current browser URL path.
-  -->
+<!-- 2. Primary Page Rendering Anchor Frame Viewport -->
+<main class="page-content-wrapper" style="min-height: calc(100vh - 64px); display: block; position: relative;">
   <router-outlet></router-outlet>
-
-</mat-sidenav-content>
+</main>

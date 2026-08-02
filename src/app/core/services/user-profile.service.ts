@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 import { FileSystemService } from './file-system.service';
+import { isElectronEnvironment } from '../../app.config';
 
 export interface UserProfile {
   user_uuid: string;
@@ -16,18 +17,20 @@ export class UserProfileService {
   private readonly fileSystem = inject(FileSystemService);
   private readonly USER_FILE = 'user_profile.json';
 
-  // FIXED TYPE: Changed BehaviorSubject type target from AppConfig to UserProfile
   private readonly configSubject = new BehaviorSubject<UserProfile | null>(null);
   public readonly config$ = this.configSubject.asObservable();
 
   public readonly displayName$ = this.config$.pipe(map(c => c?.display_name || null));
+
+  // 🌟 CLOUD AWARENESS STATE STRINGS
+  public readonly isCloudSynced$ = this.config$.pipe(map(c => !!c?.is_cloud_synced));
+  public readonly lastSync$ = this.config$.pipe(map(c => c?.last_sync_timestamp || null));
 
   /**
    * Initializes the configuration on application startup.
    * Resolves true if a valid identity exists, false if onboarding is required.
    */
   public initializeConfig(): Observable<boolean> {
-    // FIXED TYPE: Map file readout directly into your UserProfile structure
     return this.fileSystem.readJsonFile<UserProfile>(this.USER_FILE).pipe(
       tap((config) => this.configSubject.next(config)),
       map((config) => !!(config && config.user_uuid && config.display_name)),
@@ -39,14 +42,22 @@ export class UserProfileService {
   }
 
   /**
+   * 🌟 MULTIPLATFORM TRAFFIC DISPATCH PATHWAY
+   * Tells your welcomeGuard exactly where to redirect unconfigured users instantly,
+   * avoiding any double environment checking downstream.
+   */
+  public getOnboardingTargetRoute(): string {
+    return isElectronEnvironment() ? '/welcome' : '/login';
+  }
+
+  /**
    * Creates a fresh local profile (called from Welcome screen)
    */
   public establishIdentity(name: string): Observable<void> {
-    // FIXED TYPE: Instantiated as a clean UserProfile data object
     const newConfig: UserProfile = {
       user_uuid: crypto.randomUUID(),
       display_name: name.trim(),
-      is_cloud_synced: false,
+      is_cloud_synced: false, // Desktop local-first start state
       last_sync_timestamp: null
     };
 
@@ -59,11 +70,10 @@ export class UserProfileService {
    * Promotes a local profile to a cloud-linked state (called from Login/Register)
    */
   public saveCloudIdentity(uuid: string, name: string): Observable<void> {
-    // FIXED TYPE: Instantiated as a clean UserProfile data object
     const syncedConfig: UserProfile = {
       user_uuid: uuid,
       display_name: name.trim(),
-      is_cloud_synced: true,
+      is_cloud_synced: true, // Web default state / Desktop promoted state
       last_sync_timestamp: new Date().toISOString()
     };
 
@@ -73,9 +83,28 @@ export class UserProfileService {
   }
 
   /**
+   * 🌟 CLOUD TRANSACTION LANE: Marks a local profile as uploaded to cloud
+   * Use this when an offline Electron user pushes their data to the server for the first time.
+   */
+  public updateCloudSyncStatus(timestamp: string = new Date().toISOString()): Observable<void> {
+    const current = this.getSnapshot();
+    if (!current) return of(void 0);
+
+    const updatedConfig: UserProfile = {
+      ...current,
+      is_cloud_synced: true,
+      last_sync_timestamp: timestamp
+    };
+
+    return this.fileSystem.writeJsonFile(this.USER_FILE, updatedConfig).pipe(
+      tap(() => this.configSubject.next(updatedConfig))
+    );
+  }
+
+  /**
    * Synchronous lookups for edge cases or guards
    */
-  public getSnapshot(): UserProfile | null { // FIXED TYPE
+  public getSnapshot(): UserProfile | null {
     return this.configSubject.getValue();
   }
 
@@ -84,7 +113,6 @@ export class UserProfileService {
    */
   public clearConfig(): Observable<void> {
     this.configSubject.next(null);
-    // FIXED VARIABLE: Changed this.CONFIG_FILE to this.USER_FILE
     return this.fileSystem.writeJsonFile(this.USER_FILE, {});
   }
 }

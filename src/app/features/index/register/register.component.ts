@@ -28,8 +28,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatButtonModule,
     MatProgressSpinner
   ],
-  templateUrl: './register.html',
-  styleUrls: ['register.css', '../auth.css', '../../features.css']
+  templateUrl: './register.component.html',
+  styleUrls: ['register.component.css', '../auth.css', '../../features.css']
 })
 export class Register implements OnInit {
   // Use modern token injection to keep the constructor clean

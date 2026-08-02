@@ -1,4 +1,34 @@
-@if (deck) {
+<!-- 🌟 FIX: Unroll your stateful service observable stream to keep it as your single template truth -->
+@if (scratchpadDeck$ | async; as deck) {
+
+  <!-- ======== Authoritative Workspace Action Banner ======== -->
+  <div class="workspace-toolbar">
+    <div class="toolbar-info">
+      @if (isDirty$ | async) {
+        <span class="status-badge dirty">⚠️ Unsaved Changes</span>
+      } @else {
+        <span class="status-badge pristine">✅ Synchronized</span>
+      }
+    </div>
+    <div class="toolbar-actions">
+      <!-- Only activate button workflows when structural matrices differ from disk -->
+      <button
+        mat-flat-button
+        color="primary"
+        [disabled]="!(isDirty$ | async)"
+        (click)="handleSaveChanges()">
+        Save Deck
+      </button>
+      <button
+        mat-stroked-button
+        color="warn"
+        [disabled]="!(isDirty$ | async)"
+        (click)="handleCancelChanges()">
+        Discard Changes
+      </button>
+    </div>
+  </div>
+
   <div class="deck-wrapper">
 
     <!-- ======== Deck Meta Section ======== -->
@@ -36,16 +66,24 @@
 
     <!-- ======== Deck List Section ======== -->
     <div class="deck-list">
+
+      <!-- 🌟 REFACTORED INLINE EDITING WORKFLOW -->
       @if (editing) {
-        <div class="edit-mode-container">
-          <div class="form-header">
-            <h2>Edit Deck Configuration</h2>
+        <div class="inline-rename-container">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Edit Deck Name</mat-label>
+            <input
+              matInput
+              #nameField
+              [value]="deck.name"
+              (keydown.enter)="saveInlineName(nameField.value)"
+              (keydown.escape)="cancelEdit()"
+            />
+          </mat-form-field>
+          <div class="inline-actions">
+            <button mat-flat-button color="primary" (click)="saveInlineName(nameField.value)">Save</button>
             <button mat-button color="warn" (click)="cancelEdit()">Cancel</button>
           </div>
-          <app-deck-form
-            [initialValues]="{ name: deck.name, arenaDeck: '' }"
-            (submitted)="saveDeckFromForm($event)"
-          ></app-deck-form>
         </div>
       } @else {
         <h2>
@@ -56,7 +94,7 @@
         </h2>
 
         <div class="decklist-cards">
-          <!-- 3. Bind the loop cleanly to the unified displayedCards$ stream -->
+          <!-- Bind the loop cleanly to the unified displayedCards$ stream -->
           @for (item of displayedCards$ | async; track item.card.id) {
             <div
               class="decklist-card"
@@ -85,6 +123,7 @@
     </div>
   </div>
 } @else {
+  <!-- Fallback loader block triggers smoothly while route param changes execute resolution transitions -->
   <div class="loading-workspace-spinner">
     Initializing assignment profile context matrices...
   </div>

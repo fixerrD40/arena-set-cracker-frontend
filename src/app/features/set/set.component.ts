@@ -3,15 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, combineLatest, map, tap } from 'rxjs';
 
-import { SetDetailChartComponent } from './set-detail-chart.component';
-import { MtgCard } from '../../../shared/models/card/card';
-import { Color, ColorDisplayNames } from '../../../shared/models/color';
-import { MtgDeck } from '../../../shared/models/deck/deck';
+import { SetChart } from './chart.set.component';
+import { MtgCard } from '../../shared/models/card/card';
+import { Color, ColorDisplayNames } from '../../shared/models/color';
+import { MtgDeck } from '../../shared/models/deck/deck';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { NgxTippyModule } from 'ngx-tippy-wrapper';
-import { SetService } from '../../../core/services/set.service';
+import { SetService } from '../../core/services/set.service';
 
 export enum TriState {
   Unselected = 0,
@@ -29,13 +29,13 @@ interface FilterCategory {
 }
 
 @Component({
-  selector: 'app-set-detail',
+  selector: 'app-set',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetDetailChartComponent],
-  templateUrl: './set-detail.html',
-  styleUrls: ['./set-detail.css']
+  imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetChart],
+  templateUrl: './set.component.html',
+  styleUrls: ['./set.component.css']
 })
-export class SetDetail implements OnInit {
+export class Set implements OnInit {
   readonly TriState = TriState;
   public Math = Math;
 

@@ -16,8 +16,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 @Component({
   selector: 'app-add-set',
   standalone: true,
-  templateUrl: './add-set.html',
-  styleUrls: ['./add-set.css'],
+  templateUrl: './add.set.component.html',
+  styleUrls: ['./add.set.component.css'],
   imports: [
     AsyncPipe,
     RouterModule,

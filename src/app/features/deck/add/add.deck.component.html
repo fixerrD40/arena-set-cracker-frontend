@@ -6,13 +6,12 @@
       <mat-label>Deck Name</mat-label>
       <input matInput formControlName="name" placeholder="Enter deck name" required />
 
-      <!-- Modernized Control Flow replaces *ngIf -->
       @if (form.controls.name.invalid && form.controls.name.touched) {
         <mat-error>Name is required</mat-error>
       }
     </mat-form-field>
 
-    <!-- 2. Optional Arena Text Copy-Paste Arena Import Area -->
+    <!-- 2. Optional Arena Text Copy-Paste Area -->
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Optional: Arena Deck Code</mat-label>
       <textarea
@@ -28,4 +27,11 @@
       Save Deck Configuration
     </button>
   </form>
+
+  <!-- 4. Error Context Readout Display -->
+  @if (errorMessage) {
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+  }
 </mat-card>

@@ -27,8 +27,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatButtonModule,
     MatProgressSpinner
   ],
-  templateUrl: './login.html',
-  styleUrls: ['login.css', '../auth.css', '../../features.css']
+  templateUrl: './login.component.html',
+  styleUrls: ['login.component.css', '../auth.css', '../../features.css']
 })
 export class Login {
   // Inject your unified profile service manager

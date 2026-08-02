@@ -26,8 +26,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatButtonModule,
     MatProgressSpinner // Swapped from Module wrapper format
   ],
-  templateUrl: './reset-password.html',
-  styleUrls: ['./reset-password.css', '../auth.css', '../../features.css']
+  templateUrl: './reset-password.component.html',
+  styleUrls: ['./reset-password.component.css', '../auth.css', '../../features.css']
 })
 export class ResetPassword implements OnInit {
   // Use modern token injection to match your Login and Register components

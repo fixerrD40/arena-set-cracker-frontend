@@ -1,8 +1,8 @@
 // src/app/core/services/set.service.ts
-import { inject, Injectable, OnDestroy } from '@angular/core';
+import { inject, Injectable, Injector, OnDestroy } from '@angular/core';
 import { BehaviorSubject, from, Observable, of, Subscription, throwError, forkJoin } from 'rxjs';
 import { catchError, concatMap, map, switchMap, tap, toArray } from 'rxjs/operators';
-import { DATA_WIRE_TOKEN } from '../../app.config';
+import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 // Pure Functional Domain Layout Contracts
 import { MtgSet } from '../../shared/models/set/set';
@@ -19,6 +19,7 @@ import { sets, cards, decks } from '../storage/sqlite/sqlite.schema';
 import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
 import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';
+import { DeckService } from './deck.service';
 
 /**
  * Service-Owned Aggregate Workspace Snapshot.
@@ -38,6 +39,7 @@ export interface WorkspaceState {
 export class SetService implements OnDestroy {
   // Pure, platform-blind data conduit token injection
   private readonly dataWire = inject(DATA_WIRE_TOKEN);
+  private readonly injector = inject(Injector);
   private readonly scryfallService = inject(ScryfallService);
   private readonly fileService = inject(FileSystemService);
 
@@ -209,8 +211,59 @@ export class SetService implements OnDestroy {
   }
 
   /**
-   * Clears out current client memory allocations during view routing sequences.
+   * 🌟 WORKSPACE MEMORY MODIFIER
+   * Allows sub-feature domains (like DeckService) to update a specific deck element
+   * inside the live in-memory workspace cache array without forcing a slow disk reload.
    */
+  public updateDeckInWorkspaceMemory(updatedDeck: MtgDeck): void {
+    const current = this.currentWorkspaceSnapshot;
+    if (!current) return;
+
+    // Swap out only the deck that was modified, cloning references cleanly
+    const updatedDecks = current.decks.map(deck =>
+      String(deck.id) === String(updatedDeck.id)
+        ? { ...updatedDeck, tags: [...updatedDeck.tags], cards: new Map(updatedDeck.cards) }
+        : deck
+    );
+
+    // Push the updated matrix state back down the public stream line
+    this.activeContextSubject.next({
+      ...current,
+      decks: updatedDecks
+    });
+
+    console.log(`[SetService] Workspace memory cache updated locally for deck: ${updatedDeck.name}`);
+  }
+
+  /**
+   * 🌟 AUTHORITATIVE MASTER FLUSH
+   * Directly calls the downstream sub-feature domain's flush method on demand
+   * without creating standard constructor compiler circular lookup loops.
+   */
+  public flush(): Observable<void> {
+    const current = this.currentWorkspaceSnapshot;
+    if (!current) return of(void 0);
+
+    // 1. Flush core set layout updates to disk if required
+    const setUpdate$ = this.dataWire.update(sets, current.setInfo.id, {
+      name: current.setInfo.name,
+      code: current.setInfo.code
+    });
+
+    return setUpdate$.pipe(
+      switchMap(() => {
+        console.log('[SetService] Base catalog flush complete. Invoking deferred downward sub-feature flush...');
+
+        // 2. Resolve DeckService from memory dynamically on demand
+        const deckService = this.injector.get(DeckService);
+
+        // 3. Direct execution routing
+        return deckService.flush();
+      }),
+      map(() => void 0)
+    );
+  }
+
   public unloadWorkspace(): void {
     this.loadSubscription?.unsubscribe();
     this.activeContextSubject.next(null);

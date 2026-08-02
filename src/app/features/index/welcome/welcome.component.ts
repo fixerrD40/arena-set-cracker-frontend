@@ -25,10 +25,10 @@ import { SetService } from '../../../core/services/set.service'; // 1. IMPORT DA
     MatInputModule,
     MatButtonModule
   ],
-  templateUrl: './welcome.html',
-  styleUrls: ['./welcome.css']
+  templateUrl: './welcome.component.html',
+  styleUrls: ['./welcome.component.css']
 })
-export class WelcomeComponent {
+export class Welcome {
   private readonly router = inject(Router);
   private readonly userProfile = inject(UserProfileService);
   private readonly setService = inject(SetService); // 2. INJECT DATABASE SERVICE

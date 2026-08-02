@@ -1,5 +1,12 @@
 // src/app/core/data-wire/data-wire.contract.ts
+import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
+
+/**
+ * 🌟 CONSOLIDATED REGISTRY TOKEN
+ * Explicit description string guarantees uniqueness under strict minifier obfuscation.
+ */
+export const DATA_WIRE_TOKEN = new InjectionToken<DataWire>('MTG_DATA_WIRE_SYSTEM_TOKEN');
 
 /**
  * Platform Execution Boundary Data Conduit Contract.

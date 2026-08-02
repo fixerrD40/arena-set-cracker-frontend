@@ -1,15 +1,27 @@
 <div class="wrapper">
-  <mat-card>
+  <mat-card appearance="raised">
     <mat-card-header>
-      <mat-icon>auto_awesome</mat-icon>
+      <mat-icon color="primary">auto_awesome</mat-icon>
       <mat-card-title>Welcome to Set Cracker</mat-card-title>
       <mat-card-subtitle>Get the most out of your cards.</mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
       <p>
         To begin, you may view my decks.
         Create an account, target a set, and import your decks to achieve set mastery!
       </p>
+
+      <!-- Content projected dynamically based on platform -->
+      <ng-content></ng-content>
     </mat-card-content>
+
+    @if (showDefaultAction()) {
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="handleGetStartedClick()">
+          Get Started!
+        </button>
+      </mat-card-actions>
+    }
   </mat-card>
 </div>

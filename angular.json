@@ -59,7 +59,7 @@
             },
           "configurations": {
             "production": {
-              "optimization": true,
+              "optimization": false,
               "extractLicenses": true,
               "sourceMap": true,
               "namedChunks": true,
