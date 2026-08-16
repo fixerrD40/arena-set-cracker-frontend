@@ -7,7 +7,7 @@ import { SetService } from '../../core/services/set.service';
 import { UserProfileService } from '../../core/services/user-profile.service';
 
 @Component({
-  selector: 'app-index',
+  selector: 'app-index-component',
   standalone: true,
   templateUrl: './index.component.html',
   styleUrls: ['./index.component.css'],
@@ -18,7 +18,7 @@ import { UserProfileService } from '../../core/services/user-profile.service';
     MatIconModule
   ]
 })
-export class Index implements OnInit {
+export class IndexComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly userProfile = inject(UserProfileService);
   private readonly setService = inject(SetService);
@@ -49,7 +49,7 @@ export class Index implements OnInit {
       return;
     }
 
-    const targetRoute = this.userProfile.getOnboardingTargetRoute();
+    const targetRoute = this.userProfile.onboardingTargetRoute;
     console.log(`[Index] Routing unconfigured user to platform target: ${targetRoute}`);
     this.router.navigate([targetRoute]);
   }

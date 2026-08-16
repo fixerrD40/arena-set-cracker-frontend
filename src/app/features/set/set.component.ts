@@ -29,13 +29,13 @@ interface FilterCategory {
 }
 
 @Component({
-  selector: 'app-set',
+  selector: 'app-set-component',
   standalone: true,
   imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetChart],
   templateUrl: './set.component.html',
   styleUrls: ['./set.component.css']
 })
-export class Set implements OnInit {
+export class SetComponent implements OnInit {
   readonly TriState = TriState;
   public Math = Math;
 

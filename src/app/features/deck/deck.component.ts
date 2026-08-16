@@ -16,7 +16,7 @@ import { SetService } from '../../core/services/set.service';
 import { DeckValidationResult } from '../../shared/models/deck/deck';
 
 @Component({
-  selector: 'app-deck-content',
+  selector: 'app-deck-component',
   standalone: true,
   imports: [
     CommonModule,
@@ -33,7 +33,7 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
   templateUrl: './deck.component.html', // Points straight to your updated clean HTML wireframe file
   styleUrls: ['./deck.component.css']
 })
-export class Deck implements OnInit, OnDestroy {
+export class DeckComponent implements OnInit, OnDestroy {
   private readonly deckService = inject(DeckService);
   private readonly setService = inject(SetService);
   private readonly route = inject(ActivatedRoute);

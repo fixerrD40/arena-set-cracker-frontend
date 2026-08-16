@@ -1,7 +1,7 @@
-import { inject, Injectable } from '@angular/core';
+import { Inject, inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 import { FileSystemService } from './file-system.service';
-import { isElectronEnvironment } from '../../app.config';
+import { APP_CONFIG } from '../config/config.model';
 
 export interface UserProfile {
   user_uuid: string;
@@ -16,6 +16,7 @@ export interface UserProfile {
 export class UserProfileService {
   private readonly fileSystem = inject(FileSystemService);
   private readonly USER_FILE = 'user_profile.json';
+  public readonly onboardingTargetRoute;
 
   private readonly configSubject = new BehaviorSubject<UserProfile | null>(null);
   public readonly config$ = this.configSubject.asObservable();
@@ -25,6 +26,12 @@ export class UserProfileService {
   // 🌟 CLOUD AWARENESS STATE STRINGS
   public readonly isCloudSynced$ = this.config$.pipe(map(c => !!c?.is_cloud_synced));
   public readonly lastSync$ = this.config$.pipe(map(c => c?.last_sync_timestamp || null));
+
+  constructor(
+    @Inject(APP_CONFIG) appConfig: any
+  ) {
+    this.onboardingTargetRoute = appConfig.isElectron ? '/welcome' : '/login';
+  }
 
   /**
    * Initializes the configuration on application startup.
@@ -39,15 +46,6 @@ export class UserProfileService {
         return of(false);
       })
     );
-  }
-
-  /**
-   * 🌟 MULTIPLATFORM TRAFFIC DISPATCH PATHWAY
-   * Tells your welcomeGuard exactly where to redirect unconfigured users instantly,
-   * avoiding any double environment checking downstream.
-   */
-  public getOnboardingTargetRoute(): string {
-    return isElectronEnvironment() ? '/welcome' : '/login';
   }
 
   /**

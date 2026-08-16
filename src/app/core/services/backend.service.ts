@@ -1,6 +1,6 @@
 // src/app/core/services/api/backend.service.ts
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConfigService } from '../config/config.service';
 
@@ -10,56 +10,24 @@ import { AppConfigService } from '../config/config.service';
 export class BackendService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(AppConfigService);
-  private readonly jsonOptions = { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
 
-  /**
-   * Dynamically resolves the base URL from the application's configuration context.
-   */
   private get baseUrl(): string {
-    return this.config.baseUrl || 'https://yourdomain.com';
-  }
-
-  // ==========================================================
-  // ATOMIC CRUD NETWORK CONDUCTORS (Used by CloudDataWire)
-  // ==========================================================
-
-  /**
-   * Requests a collection from a remote REST endpoint.
-   */
-  public fetchCollection<T>(segment: string, contextId: string | number): Observable<T[]> {
-    return this.http.get<T[]>(`${this.baseUrl}/${segment}?contextId=${contextId}`);
+    return this.config.config.baseUrl || 'https://yourdomain.com';
   }
 
   /**
-   * Submits a fresh payload to a remote endpoint via HTTP POST.
+   * PWA / Web Client Initialization: Fetches a historic snapshot from a remote collection
+   * to hydrate the browser's fresh in-memory SQLite sandbox upon initial login.
    */
-  public insert<T>(segment: string, payload: any): Observable<T> {
-    return this.http.post<T>(`${this.baseUrl}/${segment}`, payload, this.jsonOptions);
+  public fetchCollectionFromServer<T>(segment: string, contextId: string | number): Observable<T[]> {
+    return this.http.get<T[]>(`${this.baseUrl}/api/${segment}?contextId=${contextId}`);
   }
 
   /**
-   * Pushes partial modifications to a remote endpoint via HTTP PATCH.
+   * HIGH-PERFORMANCE GLOBAL CHUNK INGESTOR (NDJSON)
+   * Streams mixed table transaction ledgers over a single HTTP request connection.
    */
-  public update<T>(segment: string, id: string | number, payload: any): Observable<T> {
-    return this.http.patch<T>(`${this.baseUrl}/${segment}/${id}`, payload, this.jsonOptions);
-  }
-
-  /**
-   * Destroys a remote record by unique identifier via HTTP DELETE.
-   */
-  public delete(segment: string, id: string | number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${segment}/${id}`);
-  }
-
-  // ==========================================================
-  // HIGH-PERFORMANCE CHUNK STREAMER (Used by OutboxService)
-  // ==========================================================
-
-  /**
-   * HIGH-PERFORMANCE CHUNK WRITER (NDJSON)
-   * Streams raw JSON lines over a single fetch connection using a custom browser readable stream.
-   */
-  public streamJsonRecordsToServer(recordObservable$: Observable<any>, endpointPath: string): Observable<void> {
+  public streamJsonRecordsToServer(recordObservable$: Observable<any>): Observable<void> {
     return new Observable<void>((subscriber) => {
       const encoder = new TextEncoder();
 
@@ -79,7 +47,8 @@ export class BackendService {
         }
       });
 
-      fetch(`${this.baseUrl}/${endpointPath}`, {
+      // Simple, absolute stream entry point to feed your backend outbox processor
+      fetch(`${this.baseUrl}/api/outbox/bulk-sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-ndjson' },
         body: stream,
@@ -87,7 +56,7 @@ export class BackendService {
       } as any)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`[BackendService] Bulk stream failed with status: ${response.status}`);
+          throw new Error(`[BackendService] Bulk outbox ingest failed with status: ${response.status}`);
         }
         subscriber.next();
         subscriber.complete();

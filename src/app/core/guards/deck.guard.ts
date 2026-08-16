@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 
 // Absolute or relative path targets tracking down to your service layer and viewport component
 import { DeckService } from '../services/deck.service'; // Adjust path tracking to your services location
-import { Deck } from '../../features/deck/deck.component';
+import { DeckComponent } from '../../features/deck/deck.component';
 
 export type DeckGuardChoice = 'SAVE' | 'DISCARD' | 'ABORT';
 
@@ -55,7 +55,7 @@ export class DeckGuardDialog {
 }
 
 // 2. 🌟 FUNCTIONAL ROUTE TRANSACTION GUARD
-export const deckGuard: CanDeactivateFn<Deck> = async (component: Deck) => {
+export const deckGuard: CanDeactivateFn<DeckComponent> = async (component: DeckComponent) => {
   const deckService = inject(DeckService);
   const dialog = inject(MatDialog);
 

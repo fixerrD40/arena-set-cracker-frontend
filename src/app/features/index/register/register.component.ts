@@ -16,7 +16,7 @@ import { UserProfileService } from '../../../core/services/user-profile.service'
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-register-component',
   standalone: true,
   imports: [
     CommonModule,
@@ -31,7 +31,7 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './register.component.html',
   styleUrls: ['register.component.css', '../auth.css', '../../features.css']
 })
-export class Register implements OnInit {
+export class RegisterComponent implements OnInit {
   // Use modern token injection to keep the constructor clean
   private userProfileService = inject(UserProfileService);
 

@@ -15,7 +15,7 @@ import { parseArenaTextToDeckMap } from '../../../shared/models/deck/deck.utils'
 
 
 @Component({
-  selector: 'app-add-deck',
+  selector: 'app-add-deck-component',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -27,7 +27,7 @@ import { parseArenaTextToDeckMap } from '../../../shared/models/deck/deck.utils'
   templateUrl: './add.deck.component.html',
   styleUrls: ['./add.deck.component.css']
 })
-export class AddDeck implements OnInit {
+export class AddDeckComponent implements OnInit {
   private readonly deckService = inject(DeckService);
   private readonly setService = inject(SetService);
   private readonly router = inject(Router);

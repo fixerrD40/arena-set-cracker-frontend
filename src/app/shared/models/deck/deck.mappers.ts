@@ -1,6 +1,6 @@
 // src/app/shared/models/deck/deck.mappers.ts
 import { MtgDeck, CloudDeckPayload } from './deck';
-import { DeckRow, DeckCardRow, DeckInsert } from '../../../core/storage/sqlite/sqlite.schema';
+import { DeckRow, DeckCardRow, DeckInsert } from '../../../core/sqlite/sqlite.schema';
 
 // ==========================================================
 // 1. DATABASE BOUNDARY MAPPERS

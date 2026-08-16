@@ -10,7 +10,7 @@ export const routes: Routes = [
     path: '',
     pathMatch: 'full',
     canActivate: [welcomeGuard], // 🌟 Redirects configured users to /library immediately
-    loadComponent: () => import('./features/index/index.component').then(m => m.Index)
+    loadComponent: () => import('./features/index/index.component').then(m => m.IndexComponent)
   },
 
   // ==========================================
@@ -27,19 +27,19 @@ export const routes: Routes = [
   // ==========================================
   {
     path: 'about',
-    loadComponent: () => import('./features/index/about/about.component').then(m => m.About)
+    loadComponent: () => import('./features/index/about/about.component').then(m => m.AboutComponent)
   },
   {
     path: 'welcome', // Desktop offline initialization endpoint
-    loadComponent: () => import('./features/index/welcome/welcome.component').then(m => m.Welcome)
+    loadComponent: () => import('./features/index/welcome/welcome.component').then(m => m.WelcomeComponent)
   },
   {
     path: 'login', // Cloud web/mobile login endpoint
-    loadComponent: () => import('./features/index/login/login.component').then(m => m.Login)
+    loadComponent: () => import('./features/index/login/login.component').then(m => m.LoginComponent)
   },
   {
     path: 'register',
-    loadComponent: () => import('./features/index/register/register.component').then(m => m.Register)
+    loadComponent: () => import('./features/index/register/register.component').then(m => m.RegisterComponent)
   },
 
   // ==========================================
@@ -48,23 +48,23 @@ export const routes: Routes = [
   {
     path: 'add-set',
     canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/set/add/add.set.component').then(m => m.AddSet)
+    loadComponent: () => import('./features/set/add/add.set.component').then(m => m.AddSetComponent)
   },
   {
     path: 'set/:id',
     canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/set/set.component').then(m => m.Set)
+    loadComponent: () => import('./features/set/set.component').then(m => m.SetComponent)
   },
   {
     path: 'add-deck',
     canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/deck/add/add.deck.component').then(m => m.AddDeck)
+    loadComponent: () => import('./features/deck/add/add.deck.component').then(m => m.AddDeckComponent)
   },
   {
     path: 'deck/:id',
     canActivate: [welcomeGuard],
     canDeactivate: [deckGuard],
-    loadComponent: () => import('./features/deck/deck.component').then(m => m.Deck)
+    loadComponent: () => import('./features/deck/deck.component').then(m => m.DeckComponent)
   },
 
   // ==========================================

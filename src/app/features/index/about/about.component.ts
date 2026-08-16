@@ -4,10 +4,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  selector: 'app-about',
+  selector: 'app-about-component',
   standalone: true,
   imports: [MatCardModule, MatIconModule, MatButtonModule],
   templateUrl: './about.component.html',
   styleUrls: ['./about.component.css', '../../features.css']
 })
-export class About {}
+export class AboutComponent {}

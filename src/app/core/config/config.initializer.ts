@@ -1,12 +1,12 @@
 // src/app/core/config/config.initializer.ts
 import { inject, Injector } from '@angular/core';
 import { AppConfigService } from './config.service';
-import { SqliteEngine } from '../storage/sqlite/sqlite.engine';
 import { OutboxService } from '../services/outbox.service';
+import { SqliteEngine } from '../sqlite/sqlite.engine';
 
 /**
  * CONFIGURATION INITIALIZER: Coordinates cross-platform system startup sequences.
- * Executes on-demand initialization scripts securely after storage files are active.
+ * Executes on-demand initialization scripts cleanly based on your platform profile.
  */
 export async function runConfigAndStorageInitialization(): Promise<void> {
   console.log('⚡ ConfigInitializer: Booting system context engine...');
@@ -16,31 +16,24 @@ export async function runConfigAndStorageInitialization(): Promise<void> {
 
   try {
     // PHASE 1: Fetch and unpack your config.json asset file parameters
-    await configService.load();
-    console.log(`⚡ ConfigInitializer: Settings loaded. Base server URL identified as: ${configService.baseUrl}`);
+    const runtimeConfig = await configService.load();
+    console.log(`⚡ ConfigInitializer: Settings loaded. Server Endpoint: ${runtimeConfig.baseUrl}`);
 
     // PHASE 2: STORAGE CONFIGURATION INTERCEPT
-    // Safe lookup: Request the SqliteEngine singleton token using an optional fallback configuration
-    const sqliteEngine = injector.get(SqliteEngine, null);
-
-    // 🌟 TYPE-SAFE ENVIRONMENT PROFILE ZONING:
-    // If our useFactory in app.config.ts mapped SqliteEngine into the token ecosystem, execute it.
-    // If running on a web/mobile node, the token resolves to null, safely skipping disk allocations!
-    if (sqliteEngine) {
+    if (runtimeConfig.isElectron) {
       console.log('🖥️ ConfigInitializer: Storage engine detected in active profile. Bootstrapping desktop storage schemas...');
 
-      // 🌟 CRITICAL FIX: Properly await the asynchronous WebAssembly compilation and physical disk check passes
-      await sqliteEngine.bootstrapEngine(injector);
+      const sqliteEngine = injector.get(SqliteEngine);
+      await sqliteEngine.bootstrap(injector);
 
       console.log('🖥️ ConfigInitializer: Desktop storage engine bootstrap complete.');
     } else {
       console.log('🌐 ConfigInitializer: Web/Mobile profile verified. Skipping local file block allocations.');
     }
 
-    // PHASE 3: Now that tables are safe on disk (on desktop), awaken background sync loops!
+    // PHASE 3: Awaken background synchronization engines
     console.log('🔄 ConfigInitializer: Awakening background data synchronization engines...');
 
-    // Fetch the service via injector.get to bypass asynchronous inject context exceptions safely
     const outboxService = injector.get(OutboxService);
     outboxService.initializeEngine();
 

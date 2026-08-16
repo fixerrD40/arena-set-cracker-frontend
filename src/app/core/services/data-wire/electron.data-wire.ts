@@ -1,38 +1,22 @@
 // src/app/core/data-wire/electron.data-wire.service.ts
-import { inject, Injectable } from '@angular/core';
-import { from, Observable, of, throwError } from 'rxjs';
-import { catchError, concatMap, map, toArray } from 'rxjs/operators';
+import { Injectable, inject } from '@angular/core';
+import { Observable, of, from, throwError } from 'rxjs';
+import { concatMap, map, catchError, toArray } from 'rxjs/operators';
 import { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { eq, getTableColumns, getTableName, InferSelectModel } from 'drizzle-orm';
-import { DataWire } from './data-wire.contract';
-import { SqliteEngine } from '../../storage/sqlite/sqlite.engine';
+import { getTableName, getTableColumns, eq, InferSelectModel } from 'drizzle-orm';
+
+// 🌟 Reconciled Global Infrastructure Imports
+import { SQLITE_ENGINE_TOKEN } from '../../sqlite/sqlite.engine';
 import { OutboxService } from '../outbox.service';
+import { hydrateRow, serializePayload, serializePayloadsBulk } from '../../sqlite/sqlite.registry';
 
-// Central Registry Mappers
-import { mapRowToSet, serializeSetToSqlite } from '../../../shared/models/set/set.mappers';
-import { mapCardToInsert, mapRowToCard } from '../../../shared/models/card/card.mappers';
-import { mapDeckToInsert, mapRowToDeck } from '../../../shared/models/deck/deck.mappers';
-
-@Injectable({ providedIn: 'root' })
-export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
-  private readonly sqliteEngine = inject(SqliteEngine);
+@Injectable({
+  providedIn: 'root'
+})
+export class ElectronDataWire {
+  // 🌟 Inject the new base SQLite abstraction token cleanly
+  private readonly sqliteEngine = inject(SQLITE_ENGINE_TOKEN);
   private readonly outbox = inject(OutboxService);
-
-  /**
-   * 🌟 FIX: Index your maps using string table name names (e.g., 'sets', 'cards')
-   * to bypass duplicate in-memory schema object references.
-   */
-  private readonly serializerRegistry = new Map<string, (domain: any) => any>([
-    ['sets', serializeSetToSqlite],
-    ['cards', mapCardToInsert],
-    ['decks', mapDeckToInsert]
-  ]);
-
-  private readonly hydratorRegistry = new Map<string, (raw: any) => any>([
-    ['sets', mapRowToSet],
-    ['cards', mapRowToCard],
-    ['decks', mapRowToDeck]
-  ]);
 
   /**
    * DYNAMIC DOMAIN INSERT CONDUCTOR
@@ -41,31 +25,26 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     table: SQLiteTable<any>,
     domainModel: TInput
   ): Observable<TOutput> {
-    const db = this.sqliteEngine.cachedDbInstance;
+    const db = (this.sqliteEngine as any).cachedDbInstance;
     if (!db) return throwError(() => new Error('[ElectronDataWire] Engine uninitialized.'));
 
     try {
-      const tableName = getTableName(table);
-      const serializer = this.serializerRegistry.get(tableName);
-      const dbPayload = serializer ? serializer(domainModel) : domainModel;
+      const dbPayload = serializePayload(table, domainModel);
 
-      // 🌟 FIX 1: Run the statement synchronously and wrap the response context in 'of()'
-      // This stops RxJS from expecting a Promise and allows sql.js to process parameters natively.
       db.insert(table).values(dbPayload).run();
 
       return of(void 0).pipe(
         concatMap(() => {
-          if (this.flush) this.flush();
+          this.flush();
+          const tableNameStr = getTableName(table);
 
-          if (tableName === 'decks' || tableName === 'sets') {
-            const entityType = tableName === 'decks' ? 'deck' : 'set';
+          if (tableNameStr === 'decks' || tableNameStr === 'sets') {
+            const entityType = tableNameStr === 'decks' ? 'deck' : 'set';
             return this.outbox.enqueue({
               entityType,
               action: 'CREATE',
               payload: domainModel
-            }).pipe(
-              map(() => domainModel as unknown as TOutput)
-            );
+            }).pipe(map(() => domainModel as unknown as TOutput));
           }
           return of(domainModel as unknown as TOutput);
         }),
@@ -83,24 +62,22 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     table: SQLiteTable<any>,
     payloads: TInput[]
   ): Observable<TOutput[]> {
-    const db = this.sqliteEngine.cachedDbInstance;
+    const db = (this.sqliteEngine as any).cachedDbInstance;
     if (!db) return throwError(() => new Error('[ElectronDataWire] Engine not bootstrapped.'));
     if (!payloads || payloads.length === 0) return of([]);
 
     try {
-      const tableName = getTableName(table);
-      const serializer = this.serializerRegistry.get(tableName);
-      const dbPayloads = serializer ? payloads.map(p => serializer(p)) : payloads;
+      const dbPayloads = serializePayloadsBulk(table, payloads);
 
-      // 🌟 FIX 2: Execute synchronous batch statement insertion directly near the metal
       db.insert(table).values(dbPayloads).run();
 
       return of(void 0).pipe(
         concatMap(() => {
-          if (this.flush) this.flush();
+          this.flush();
+          const tableNameStr = getTableName(table);
 
-          if (tableName === 'decks' || tableName === 'sets') {
-            const entityType = tableName === 'decks' ? 'deck' : 'set';
+          if (tableNameStr === 'decks' || tableNameStr === 'sets') {
+            const entityType = tableNameStr === 'decks' ? 'deck' : 'set';
 
             return from(payloads).pipe(
               concatMap(domainItem => this.outbox.enqueue({
@@ -112,7 +89,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
               map(() => payloads as unknown as TOutput[])
             );
           }
-
           return of(payloads as unknown as TOutput[]);
         }),
         catchError((err) => throwError(() => err))
@@ -123,56 +99,50 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
   }
 
   /**
-   * Merges partial modifications onto a local record by unique primary identifier.
-   * Extracts delta changes and appends an UPDATE tracking frame to the outbox.
+   * Updates an existing database row synchronously by unique primary key,
+   * flushes data arrays to disk, and pushes an UPDATE frame context straight to outbox logs.
    */
-  public update(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
-    id: string | number,
-    payload: any
-  ): Observable<void> {
-    const db = this.sqliteEngine.cachedDbInstance;
-    if (!db) return throwError(() => new Error('[ElectronDataWire] Engine not bootstrapped.'));
+  public update<TInput = any, TOutput = any>(
+    table: SQLiteTable<any>,
+    domainModel: TInput
+  ): Observable<TOutput> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[ElectronDataWire] Engine uninitialized.'));
 
     try {
-      // Safely check for an ID tracking column using dynamic runtime properties
+      // 1. Resolve your ID identity columns and lookups dynamically
       const idColumn = (table as any).id;
-      if (!idColumn) {
-        return throwError(() => new Error('[ElectronDataWire] Target table lacks an "id" tracking token.'));
+      const recordId = (domainModel as any)?.id;
+
+      if (!idColumn || !recordId) {
+        return throwError(() => new Error('[ElectronDataWire] Update aborted: Missing unique primary key identifier "id".'));
       }
 
-      const tableName = getTableName(table);
-      const serializer = this.serializerRegistry.get(tableName);
-      let dbPayload = payload;
+      // 2. Normalize your payload models through your serialization registries
+      const dbPayload = serializePayload(table, domainModel);
 
-      // Extract sparse column updates safely without wiping unmentioned fields
-      if (serializer) {
-        const fullyMapped = serializer(payload);
-        dbPayload = {};
-        for (const key in payload) {
-          if (Object.prototype.hasOwnProperty.call(payload, key) && fullyMapped[key] !== undefined) {
-            dbPayload[key] = fullyMapped[key];
-          }
-        }
-      }
+      // 3. Commit modification statements directly near the WebAssembly metal
+      db.update(table)
+        .set(dbPayload)
+        .where(eq(idColumn, recordId))
+        .run();
 
-      // Synchronously execute your update transaction directly into WebAssembly memory bounds
-      db.update(table).set(dbPayload).where(eq(idColumn, id)).run();
-
-      // Wrap synchronous completion into an RxJS stream framework cleanly
+      // 4. Sequence down the RxJS pipeline to safely track updates and outbox pushes
       return of(void 0).pipe(
         concatMap(() => {
-          if (this.flush) this.flush();
+          this.flush();
+          const tableNameStr = getTableName(table);
 
-          if (tableName === 'decks' || tableName === 'sets') {
-            const entityType = tableName === 'decks' ? 'deck' : 'set';
+          // Append transaction frames only for synchronizable entities
+          if (tableNameStr === 'decks' || tableNameStr === 'sets') {
+            const entityType = tableNameStr === 'decks' ? 'deck' : 'set';
             return this.outbox.enqueue({
               entityType,
               action: 'UPDATE',
-              payload: { id, ...payload } // Capture tracking delta context for remote replaying
-            }).pipe(map(() => void 0));
+              payload: domainModel
+            }).pipe(map(() => domainModel as unknown as TOutput));
           }
-          return of(void 0);
+          return of(domainModel as unknown as TOutput);
         }),
         catchError((err) => throwError(() => err))
       );
@@ -183,28 +153,25 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
 
   /**
    * Deletes a record from the local SQLite database by unique identity lookup.
-   * Wipes disk allocations and enqueues a DELETE tombstone trace to the sync log queue.
    */
   public delete(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
+    table: SQLiteTable<any>,
     id: string | number
   ): Observable<void> {
-    const db = this.sqliteEngine.cachedDbInstance;
+    const db = (this.sqliteEngine as any).cachedDbInstance;
     if (!db) return throwError(() => new Error('[ElectronDataWire] Engine not bootstrapped.'));
 
     try {
-      // Safely check for an ID tracking column using dynamic runtime properties
       const idColumn = (table as any).id;
       if (!idColumn) {
         return throwError(() => new Error('[ElectronDataWire] Target table lacks an "id" tracking token.'));
       }
 
-      // Synchronously execute row elimination directly near the metal
       db.delete(table).where(eq(idColumn, id)).run();
 
       return of(void 0).pipe(
         concatMap(() => {
-          if (this.flush) this.flush();
+          this.flush();
           const tableName = getTableName(table);
 
           if (tableName === 'decks' || tableName === 'sets') {
@@ -212,7 +179,7 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
             return this.outbox.enqueue({
               entityType,
               action: 'DELETE',
-              payload: { id } // Passes the deletion key mapping context straight to outbox logs
+              payload: { id }
             }).pipe(map(() => void 0));
           }
           return of(void 0);
@@ -227,44 +194,33 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
   /**
    * Extracts raw row snapshots from the local SQLite table dataset and handles domain hydration.
    */
-  public fetchCollection<TOutput = any>(
-    table: SQLiteTable<any>, // 🌟 FIX: Removed TTable generic; type directly against SQLiteTable<any>
-    contextId?: string | number
-  ): Observable<TOutput[]> {
-    const db = this.sqliteEngine.cachedDbInstance;
-    if (!db) return throwError(() => new Error('[ElectronDataWire] Engine uninitialized.'));
+  public fetchCollection<TOutput = any>(table: SQLiteTable<any>, contextId?: string | number): Observable<TOutput[]> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[DataWire] Engine uninitialized.'));
 
     try {
-      const tableName = getTableName(table);
       const columns = getTableColumns(table);
       const setIdColumn = columns['setId'] || columns['set_id'];
 
       let queryBuilder = db.select().from(table);
-
       if (contextId !== undefined && contextId !== 'all' && setIdColumn) {
         queryBuilder = queryBuilder.where(eq(setIdColumn, String(contextId))) as any;
       }
 
-      // Pull database row snapshots synchronously via .all() and emit down the pipeline stream
-      const untypedRows = queryBuilder.all();
+      const untypedRows = queryBuilder.all() as Record<string, any>[];
 
-      // 🌟 FIX: Cast using SQLiteTable<any> directly to keep the compiler happy without local generics
-      const rows = untypedRows as InferSelectModel<SQLiteTable<any>>[];
-      const activeHydrator = this.hydratorRegistry.get(tableName);
-
-      const result = activeHydrator
-        ? rows.map((row) => activeHydrator(row))
-        : (rows as unknown as TOutput[]);
+      const result = untypedRows.map((row) => hydrateRow<TOutput>(table, row));
 
       return of(result);
-    } catch (err) {
-      return throwError(() => err);
-    }
+    } catch (err) { return throwError(() => err); }
   }
 
+  /**
+   * Synchronizes memory heap changes safely to native disk frames.
+   */
   public flush(): void {
-    if (this.sqliteEngine.flush) {
-      this.sqliteEngine.flush();
+    if (typeof (this.sqliteEngine as any).flush === 'function') {
+      (this.sqliteEngine as any).flush();
     }
   }
 }

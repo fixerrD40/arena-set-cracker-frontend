@@ -1,5 +1,5 @@
 // src/app/shared/models/card/card.mappers.ts
-import { CardRow, CardInsert } from '../../../core/storage/sqlite/sqlite.schema';
+import { CardRow, CardInsert } from '../../../core/sqlite/sqlite.schema';
 import { MtgCard, CloudCardPayload } from './card';
 import { ScryfallCard } from '../../../core/services/api/scryfall/models/card.scryfall';
 

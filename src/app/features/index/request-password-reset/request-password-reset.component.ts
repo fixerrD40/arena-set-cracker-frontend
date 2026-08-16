@@ -13,7 +13,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner'; // Stan
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-request-password-reset',
+  selector: 'app-request-password-reset-component',
   standalone: true, // Marked explicitly for compiler clarity
   imports: [
     CommonModule,
@@ -27,7 +27,7 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './request-password-reset.component.html',
   styleUrls: ['./request-password-reset.component.css', '../auth.css', '../../features.css']
 })
-export class RequestPasswordReset {
+export class RequestPasswordResetComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
 

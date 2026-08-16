@@ -15,7 +15,7 @@ import { UserProfileService } from '../../../core/services/user-profile.service'
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-login-component',
   standalone: true,
   imports: [
     CommonModule,
@@ -30,7 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['login.component.css', '../auth.css', '../../features.css']
 })
-export class Login {
+export class LoginComponent {
   // Inject your unified profile service manager
   private userProfileService = inject(UserProfileService);
 

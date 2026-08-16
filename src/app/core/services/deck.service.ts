@@ -4,7 +4,7 @@ import { map, tap } from 'rxjs/operators';
 import { SetService } from './set.service';
 import { MtgCard } from '../../shared/models/card/card';
 import { MtgDeck } from '../../shared/models/deck/deck';
-import { decks } from '../storage/sqlite/sqlite.schema';
+import { decks } from '../sqlite/sqlite.schema';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 export interface DisplayedCardLine {

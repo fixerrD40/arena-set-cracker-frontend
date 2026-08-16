@@ -3,7 +3,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { jwtDecode } from 'jwt-decode';
-import { APP_CONFIG } from '../config/app.config.token';
+import { APP_CONFIG } from '../config/config.model';
 
 export interface CloudSessionResponse {
   token: string;

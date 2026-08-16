@@ -14,7 +14,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner'; // Stan
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-reset-password',
+  selector: 'app-reset-password-component',
   standalone: true, // Marked explicitly for standalone compiler clarity
   imports: [
     CommonModule,
@@ -29,7 +29,7 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './reset-password.component.html',
   styleUrls: ['./reset-password.component.css', '../auth.css', '../../features.css']
 })
-export class ResetPassword implements OnInit {
+export class ResetPasswordComponent implements OnInit {
   // Use modern token injection to match your Login and Register components
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);

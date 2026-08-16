@@ -1,6 +1,6 @@
 // src/app/shared/models/set/set.mappers.ts
 import { MtgSet, CloudSetPayload } from './set';
-import { SetRow, SetInsert } from '../../../core/storage/sqlite/sqlite.schema';
+import { SetRow, SetInsert } from '../../../core/sqlite/sqlite.schema';
 import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scryfall';
 
 /**

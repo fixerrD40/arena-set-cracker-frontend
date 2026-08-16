@@ -1,205 +1,210 @@
-// src/app/core/data-wire/cloud.data-wire.ts
-import { inject, Injectable } from '@angular/core';
-import { from, Observable, of, throwError } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { type SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { getTableName } from 'drizzle-orm';
-import { DataWire } from './data-wire.contract';
-import { BackendService } from '../backend.service';
+// src/app/core/services/data-wire/cloud.data-wire.ts
+import { Injectable, inject } from '@angular/core';
+import { Observable, of, from, throwError } from 'rxjs';
+import { concatMap, map, catchError, toArray } from 'rxjs/operators';
+import { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { getTableName, getTableColumns, eq } from 'drizzle-orm';
 
-// Pure Network Translation Mappers (Encapsulated inside the infrastructure layer)
-import { mapJsonToSet, serializeSetToJSON } from '../../../shared/models/set/set.mappers';
-import { mapJsonToCard, mapCardToJson } from '../../../shared/models/card/card.mappers';
-import { mapJsonToDeck, mapDeckToJson } from '../../../shared/models/deck/deck.mappers';
+// 🌟 Reconciled Configuration & Registry Imports
+import { SQLITE_ENGINE_TOKEN } from '../../sqlite/sqlite.engine';
+import { OutboxService } from '../outbox.service';
+import { serializePayload, serializePayloadsBulk, hydrateRow } from '../../sqlite/sqlite.registry';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
-export class CloudDataWire implements DataWire<SQLiteTable<any>> {
-  private readonly backend = inject(BackendService);
+export class CloudDataWire {
+  // 🌟 Injects the same abstract token, which maps to BrowserWasmSqliteEngine on web!
+  private readonly sqliteEngine = inject(SQLITE_ENGINE_TOKEN);
+  private readonly outbox = inject(OutboxService);
 
   /**
-   * Symmetrical Endpoint Registry.
-   * Maps abstract headless Drizzle table tokens directly to their remote REST paths.
-   */
-private readonly endpointRegistry = new Map<string, string>([
-    ['sets', 'sets'],
-    ['decks', 'decks']
-  ]);
-
-  /** Internal registry mapping table schema tokens to Web/JSON REST API serializers */
-  private readonly serializerRegistry = new Map<string, (domain: any) => any>([
-    ['sets', serializeSetToJSON],
-    ['cards', mapCardToJson],
-    ['decks', mapDeckToJson]
-  ]);
-
-  /** Internal registry mapping table schema tokens to network payload hydrators */
-  private readonly hydratorRegistry = new Map<string, (json: any) => any>([
-    ['sets', mapJsonToSet],
-    ['cards', mapJsonToCard],
-    ['decks', mapJsonToDeck]
-  ]);
-
-  /**
-   * Performs a single payload record mutation across the remote server API.
-   * Serializes the domain object to a network payload literal before transport.
+   * DYNAMIC DOMAIN INSERT CONDUCTOR (WEB SANDBOX)
    */
   public insert<TInput = any, TOutput = any>(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
+    table: SQLiteTable<any>,
     domainModel: TInput
   ): Observable<TOutput> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine uninitialized.'));
+
     try {
       const tableName = getTableName(table);
 
-      // 🌟 RESILIENT CARD GUARD: Cloud completely ignores card writes
-      if (tableName === 'cards') {
-        return of(domainModel as unknown as TOutput);
-      }
+      // 🌟 Unified Serialization pass
+      const dbPayload = serializePayload(table, domainModel);
+      db.insert(table).values(dbPayload).run();
 
-      // 🌟 FIX: Look up endpoints and mappers cleanly using string name identifiers
-      const segment = this.endpointRegistry.get(tableName);
-      if (!segment) {
-        return throwError(() => new Error(`[CloudDataWire] Unmapped table schema signature submitted to insert: "${tableName}".`));
-      }
-
-      const serializer = this.serializerRegistry.get(tableName);
-      const jsonPayload = serializer ? serializer(domainModel) : domainModel;
-
-      return this.backend.insert<TOutput>(segment, jsonPayload);
-    } catch (err) {
-      return throwError(() => err);
-    }
+      return of(void 0).pipe(
+        concatMap(() => {
+          this.flush();
+          if (tableName === 'decks' || tableName === 'sets') {
+            const entityType = tableName === 'decks' ? 'deck' : 'set';
+            return this.outbox.enqueue({
+              entityType,
+              action: 'CREATE',
+              payload: domainModel
+            }).pipe(map(() => domainModel as unknown as TOutput));
+          }
+          return of(domainModel as unknown as TOutput);
+        }),
+        catchError((err) => throwError(() => err))
+      );
+    } catch (err) { return throwError(() => err); }
   }
 
   /**
-   * Performs a high-performance batch insert mutation sweep across remote endpoints.
-   * Converts the dataset to NDJSON lines via the high-utility Backend chunk streamer.
+   * HIGH-PERFORMANCE BATCH INSERTION WIRE (WEB SANDBOX)
+   * Collapses multiple web-side offline models into a unified database execution frame.
    */
   public insertBulk<TInput = any, TOutput = any>(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
+    table: SQLiteTable<any>,
     payloads: TInput[]
   ): Observable<TOutput[]> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine not bootstrapped.'));
+    if (!payloads || payloads.length === 0) return of([]);
+
     try {
       const tableName = getTableName(table);
 
-      // 🌟 RESILIENT CARD GUARD: Returns instantly so cloud installs skip reference data bloat
-      if (tableName === 'cards') {
-        return of([]);
-      }
+      // 🌟 High-performance plural array transformation
+      const dbPayloads = serializePayloadsBulk(table, payloads);
+      db.insert(table).values(dbPayloads).run();
 
-      // 🌟 FIX: Look up endpoints and mappers cleanly using string name identifiers
-      const segment = this.endpointRegistry.get(tableName);
-      if (!segment) {
-        return throwError(() => new Error(`[CloudDataWire] Unmapped table schema signature for insertBulk: "${tableName}".`));
-      }
+      return of(void 0).pipe(
+        concatMap(() => {
+          this.flush();
+          if (tableName === 'decks' || tableName === 'sets') {
+            const entityType = tableName === 'decks' ? 'deck' : 'set';
 
-      if (!payloads || payloads.length === 0) {
-        return of([]);
-      }
-
-      const serializer = this.serializerRegistry.get(tableName);
-      const jsonPayloads = serializer ? payloads.map(p => serializer(p)) : payloads;
-
-      // Streams data down the NDJSON pipeline natively
-      return this.backend.streamJsonRecordsToServer(from(jsonPayloads), `${segment}/bulk-insert`).pipe(
-        map(() => payloads as unknown as TOutput[])
+            return from(payloads).pipe(
+              concatMap(domainItem => this.outbox.enqueue({
+                entityType,
+                action: 'CREATE',
+                payload: domainItem
+              })),
+              toArray(),
+              map(() => payloads as unknown as TOutput[])
+            );
+          }
+          return of(payloads as unknown as TOutput[]);
+        }),
+        catchError((err) => throwError(() => err))
       );
-    } catch (err) {
-      return throwError(() => err);
-    }
+    } catch (err) { return throwError(() => err); }
   }
 
   /**
-   * Pushes partial field updates to modification REST endpoints by unique identifier.
+   * DYNAMIC DOMAIN UPDATE CONDUCTOR (WEB SANDBOX)
    */
-  public update(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
-    id: string | number,
-    payload: any // Accepts loose delta tracking update frames objects
-  ): Observable<void> {
+  public update<TInput = any, TOutput = any>(
+    table: SQLiteTable<any>,
+    domainModel: TInput
+  ): Observable<TOutput> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine uninitialized.'));
+
     try {
       const tableName = getTableName(table);
+      const idColumn = (table as any).id;
+      const recordId = (domainModel as any)?.id;
 
-      if (tableName === 'cards') {
-        return of(void 0);
+      if (!idColumn || !recordId) {
+        return throwError(() => new Error('[CloudDataWire] Update aborted: Missing identifier "id".'));
       }
 
-      // 🌟 FIX: Extract strings to navigate cross-route registry keys seamlessly
-      const segment = this.endpointRegistry.get(tableName);
-      if (!segment) {
-        return throwError(() => new Error(`[CloudDataWire] Unmapped table schema signature submitted to update: "${tableName}".`));
-      }
+      const dbPayload = serializePayload(table, domainModel);
+      db.update(table).set(dbPayload).where(eq(idColumn, recordId)).run();
 
-      const serializer = this.serializerRegistry.get(tableName);
-      const jsonPayload = serializer ? serializer(payload) : payload;
-
-      return this.backend.update<any>(segment, id, jsonPayload).pipe(map(() => void 0));
-    } catch (err) {
-      return throwError(() => err);
-    }
+      return of(void 0).pipe(
+        concatMap(() => {
+          this.flush();
+          if (tableName === 'decks' || tableName === 'sets') {
+            const entityType = tableName === 'decks' ? 'deck' : 'set';
+            return this.outbox.enqueue({
+              entityType,
+              action: 'UPDATE',
+              payload: domainModel
+            }).pipe(map(() => domainModel as unknown as TOutput));
+          }
+          return of(domainModel as unknown as TOutput);
+        }),
+        catchError((err) => throwError(() => err))
+      );
+    } catch (err) { return throwError(() => err); }
   }
 
   /**
-   * Dispatches destructive elimination requests targeting unique primary identifiers over REST.
+   * DYNAMIC DOMAIN DELETION CONDUCTOR (WEB SANDBOX)
    */
-  public delete(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition
-    id: string | number
-  ): Observable<void> {
+  public delete(table: SQLiteTable<any>, id: string | number): Observable<void> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine uninitialized.'));
+
     try {
       const tableName = getTableName(table);
+      const idColumn = (table as any).id;
 
-      if (tableName === 'cards') {
-        return of(void 0);
+      if (!idColumn) {
+        return throwError(() => new Error('[CloudDataWire] Target table lacks an "id" token.'));
       }
 
-      // 🌟 FIX: Extract strings to navigate cross-route registry keys seamlessly
-      const segment = this.endpointRegistry.get(tableName);
-      if (!segment) {
-        return throwError(() => new Error(`[CloudDataWire] Unmapped table schema signature submitted to delete: "${tableName}".`));
-      }
+      db.delete(table).where(eq(idColumn, id)).run();
 
-      return this.backend.delete(segment, id);
-    } catch (err) {
-      return throwError(() => err);
-    }
+      return of(void 0).pipe(
+        concatMap(() => {
+          this.flush();
+          if (tableName === 'decks' || tableName === 'sets') {
+            const entityType = tableName === 'decks' ? 'deck' : 'set';
+            return this.outbox.enqueue({
+              entityType,
+              action: 'DELETE',
+              payload: { id }
+            }).pipe(map(() => void 0));
+          }
+          return of(void 0);
+        }),
+        catchError((err) => throwError(() => err))
+      );
+    } catch (err) { return throwError(() => err); }
   }
 
   /**
-   * Extracts data array collections down from cloud server nodes and auto-hydrates domain models.
+   * EXTRACTS COLLECTION SNAPSHOTS & HYDRATES DOMAINS (WEB SANDBOX)
    */
   public fetchCollection<TOutput = any>(
-    table: SQLiteTable<any>, // 🌟 Bound cleanly to the root class type definition, keeping TOutput for features
+    table: SQLiteTable<any>,
     contextId?: string | number
   ): Observable<TOutput[]> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine uninitialized.'));
+
     try {
-      const tableName = getTableName(table);
+      const columns = getTableColumns(table);
+      const setIdColumn = columns['setId'] || columns['set_id'];
 
-      // 🌟 THE FALLBACK TRIGGER: Returning an empty array signals the SetService
-      // that it must immediately fire its internal fallback to fetch fresh cards from Scryfall
-      if (tableName === 'cards') {
-        return of([]);
+      let queryBuilder = db.select().from(table);
+      if (contextId !== undefined && contextId !== 'all' && setIdColumn) {
+        queryBuilder = queryBuilder.where(eq(setIdColumn, String(contextId))) as any;
       }
 
-      // 🌟 FIX: Extract strings to navigate cross-route registry keys seamlessly
-      const segment = this.endpointRegistry.get(tableName);
-      if (!segment) {
-        return throwError(() => new Error(`[CloudDataWire] Unmapped table schema signature submitted to fetchCollection: "${tableName}".`));
-      }
+      // 🌟 Explicit dictionary type assertion silences warning 7006 completely!
+      const untypedRows = queryBuilder.all() as Record<string, any>[];
 
-      return this.backend.fetchCollection<any>(segment, contextId ?? 'all').pipe(
-        map((payloads: any[]) => {
-          const activeHydrator = this.hydratorRegistry.get(tableName);
+      // 🌟 Clean automated type hydration routing
+      const result = untypedRows.map((row) => hydrateRow<TOutput>(table, row));
 
-          // AUTOMATIC HYDRATION: Emits clean domain model arrays natively!
-          return activeHydrator
-            ? payloads.map((json) => activeHydrator(json))
-            : (payloads as TOutput[]);
-        })
-      );
-    } catch (err) {
-      return throwError(() => err);
+      return of(result);
+    } catch (err) { return throwError(() => err); }
+  }
+
+  /**
+   * ASYNCHRONOUS WEB STATE FLUSH
+   */
+  public flush(): void {
+    if (typeof (this.sqliteEngine as any).flushToIndexedDb === 'function') {
+      (this.sqliteEngine as any).flushToIndexedDb();
     }
   }
 }

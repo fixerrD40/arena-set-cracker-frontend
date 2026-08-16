@@ -1,6 +1,4 @@
 // src/app/shared/models/deck/deck.utils.spec.ts
-import { describe, it } from 'node:test';
-import assert from 'node:assert'; // Native Node assertion engine
 import { parseArenaTextToDeckMap } from './deck.utils';
 
 describe('Deck Domain Engine (Pure Functional)', () => {
@@ -30,7 +28,6 @@ Deck
 2 The Black Breath (LTR) 78
 `;
 
-  // A raw text string representing an empty or unrecognizable deck footprint
   const badRaw = `
 Deck
 Malformed Line Without Brackets Or Numbers
@@ -40,29 +37,22 @@ Another Stray Text Line 1234
   describe('parseArenaTextToDeckMap Clipboard Parser', () => {
 
     it('successfully translates valid card lines into a structured Map', () => {
-      // 🌟 TEST THE UTILITY DIRECTLY: Takes text, yields a pure Map dictionary [INDEX]
       const cardMap = parseArenaTextToDeckMap(exampleRaw);
-
-      // Verify the parser successfully extracted items [INDEX]
-      assert.strictEqual(cardMap.size, 22);
-
-      // Verify explicit card allocation weights match your string parameters [INDEX]
-      assert.strictEqual(cardMap.get('5'), 1);   // 1 Dawn of a New Age
-      assert.strictEqual(cardMap.get('266'), 9); // 9 Swamp
-      assert.strictEqual(cardMap.get('263'), 10); // 10 Plains
-      assert.strictEqual(cardMap.get('78'), 2);  // 2 The Black Breath
+      expect(cardMap.size).toBe(22);
+      expect(cardMap.get('5')).toBe(1);
+      expect(cardMap.get('266')).toBe(9);
+      expect(cardMap.get('263')).toBe(10);
+      expect(cardMap.get('78')).toBe(2);
     });
 
     it('returns an empty Map container when handed a blank or empty string', () => {
       const cardMap = parseArenaTextToDeckMap('');
-      assert.strictEqual(cardMap.size, 0);
+      expect(cardMap.size).toBe(0);
     });
 
     it('safely skips malformed text structures without crashing the loop thread', () => {
       const cardMap = parseArenaTextToDeckMap(badRaw);
-
-      // Because no lines matched the MTG Arena export regex token, map remains empty [INDEX]
-      assert.strictEqual(cardMap.size, 0);
+      expect(cardMap.size).toBe(0);
     });
 
     it('correctly aggregates quantities if duplicate card lines exist in text', () => {
@@ -70,11 +60,8 @@ Another Stray Text Line 1234
         1 Dawn of a New Age (LTR) 5
         3 Dawn of a New Age (LTR) 5
       `;
-
       const cardMap = parseArenaTextToDeckMap(duplicateLinesRaw);
-
-      // 🌟 ACCUMULATION CHECK: Quantities should sum up to 4 rather than getting overridden! [INDEX]
-      assert.strictEqual(cardMap.get('5'), 4);
+      expect(cardMap.get('5')).toBe(4);
     });
   });
 });

@@ -15,7 +15,7 @@ import { ScryfallCard } from './api/scryfall/models/card.scryfall';
 import { mapScryfallToCard } from '../../shared/models/card/card.mappers';
 
 // Headless Database Schema Tokens and Behavioral Command Services
-import { sets, cards, decks } from '../storage/sqlite/sqlite.schema';
+import { sets, cards, decks } from '../sqlite/sqlite.schema';
 import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
 import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';

@@ -14,7 +14,7 @@ import { UserProfileService } from '../../../core/services/user-profile.service'
 import { SetService } from '../../../core/services/set.service'; // 1. IMPORT DATA CONTEXT
 
 @Component({
-  selector: 'app-welcome',
+  selector: 'app-welcome-component',
   standalone: true,
   imports: [
     CommonModule,
@@ -28,7 +28,7 @@ import { SetService } from '../../../core/services/set.service'; // 1. IMPORT DA
   templateUrl: './welcome.component.html',
   styleUrls: ['./welcome.component.css']
 })
-export class Welcome {
+export class WelcomeComponent {
   private readonly router = inject(Router);
   private readonly userProfile = inject(UserProfileService);
   private readonly setService = inject(SetService); // 2. INJECT DATABASE SERVICE

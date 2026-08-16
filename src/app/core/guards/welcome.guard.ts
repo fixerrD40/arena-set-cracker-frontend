@@ -29,7 +29,7 @@ export const welcomeGuard: CanActivateFn = (_, state: RouterStateSnapshot) => {
       }
 
       // If they manually try to type a deep link while unconfigured, redirect to their explicit onboarding path
-      return router.createUrlTree([userProfile.getOnboardingTargetRoute()]);
+      return router.createUrlTree([userProfile.onboardingTargetRoute]);
     })
   );
 };
