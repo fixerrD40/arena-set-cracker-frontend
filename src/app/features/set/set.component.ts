@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, combineLatest, map, tap } from 'rxjs';
 
-import { SetChart } from './chart.set.component';
+import { SetChartComponent } from './set-chart.component';
 import { MtgCard } from '../../shared/models/card/card';
 import { Color, ColorDisplayNames } from '../../shared/models/color';
 import { MtgDeck } from '../../shared/models/deck/deck';
@@ -31,9 +31,9 @@ interface FilterCategory {
 @Component({
   selector: 'app-set-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetChart],
-  templateUrl: './set.component.html',
-  styleUrls: ['./set.component.css']
+  imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetChartComponent],
+  templateUrl: './set.html',
+  styleUrls: ['./set.css']
 })
 export class SetComponent implements OnInit {
   readonly TriState = TriState;

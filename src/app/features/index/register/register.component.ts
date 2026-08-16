@@ -1,56 +1,48 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-
-// Angular Material Imports
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIcon } from '@angular/material/icon';
-import { MatProgressSpinner } from '@angular/material/progress-spinner';
-
-// Custom Local Services
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { UserProfileService } from '../../../core/services/user-profile.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-  selector: 'app-register-component',
+  selector: 'app-set-register', // 🌟 Modernized to follow your noun-first naming conventions
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MatCardModule,
     MatFormFieldModule,
-    MatIcon,
+    MatIconModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressSpinner
+    MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
   ],
-  templateUrl: './register.component.html',
-  styleUrls: ['register.component.css', '../auth.css', '../../features.css']
+  templateUrl: './register.html',
+  styleUrls: ['register.css', '../auth.css', '../../features.css']
 })
 export class RegisterComponent implements OnInit {
-  // Use modern token injection to keep the constructor clean
-  private userProfileService = inject(UserProfileService);
+  private readonly userProfileService = inject(UserProfileService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  form: FormGroup;
-  errorMessage: string | null = null;
-  isLoading = false;
+  public readonly form = new FormGroup({
+    email: new FormControl('', [Validators.required, Validators.email]),
+    username: new FormControl({ value: '', disabled: true }, Validators.required),
+    password: new FormControl('', Validators.required)
+  });
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.form = new FormGroup({
-      email: new FormControl('', [Validators.required, Validators.email]),
-      username: new FormControl({ value: '', disabled: true }, Validators.required),
-      password: new FormControl('', Validators.required)
-    });
-  }
+  public errorMessage: string | null = null;
+  public isLoading = false;
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
     // Read the pre-loaded username straight from the central memory cache stream
     this.userProfileService.displayName$.subscribe({
       next: (name) => {
@@ -67,16 +59,16 @@ export class RegisterComponent implements OnInit {
     });
   }
 
-  register() {
+  public register(): void {
     if (this.form.invalid) return;
 
     this.errorMessage = null;
     this.isLoading = true;
 
-    // 1. Extract your form values using getRawValue() so disabled fields are included
-    const { email, username, password } = this.form.getRawValue();
+    // Extract your form values using getRawValue() so disabled fields are included
+    const { email, password } = this.form.getRawValue();
 
-    // 2. Fetch the hidden local configuration snapshot from your central cache
+    // Fetch the hidden local configuration snapshot from your central cache
     const profileSnapshot = this.userProfileService.getSnapshot();
 
     if (!profileSnapshot) {
@@ -86,39 +78,31 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    // 3. Construct the exact 4-parameter credential payload object your service expects
-    const claimPayload = {
-      email: email!,
-      username: username!, // Captured from the form field we pre-filled
-      password: password!,
-      userUuid: profileSnapshot.user_uuid // Hidden UUID passed seamlessly behind the scenes!
-    };
-
-    // 4. Pass the unified payload object directly into the service stream
+    // 🚀 PRIVACY STRATEGY MATCH: Send exactly TWO credentials up over the wire request lines.
+    // Your backend server registers this email and returns an opaque session token.
     this.authService
-      .claimOfflineAccount(claimPayload)
+      .claimOfflineAccount({ email: email!, password: password! })
       .subscribe({
-        next: (response: any) => {
-          // Commit the account variables to the central profile state disk cache
-          this.userProfileService.saveCloudIdentity(response.userUuid, response.displayName).subscribe({
+        next: (response: { token: string; displayName: string }) => {
+
+          // 🌟 CONVERGED SYSTEM PASS: Promotes your local profile row inside SQLite to a cloud state
+          this.userProfileService.linkLocalProfileToCloud(response.token).subscribe({
             next: () => {
               this.isLoading = false;
-              this.router.navigate(['/']);
+
+              // 🚀 Transition views directly to the main workspace grid safely
+              this.router.navigate(['/library']);
             },
-            error: (fileErr) => {
+            error: (dbErr) => {
               this.isLoading = false;
-              console.error('Failed to update local user profile configuration file:', fileErr);
-              this.errorMessage = 'Failed to lock secure profile structure down. Please retry.';
+              console.error('[Register] Failed to promote profile row inside SQLite:', dbErr);
+              this.errorMessage = 'Failed to lock secure profile configuration structure down. Please retry.';
             }
           });
         },
         error: (err) => {
           this.isLoading = false;
-          if (err.error?.message || err.message === 'Username already exists.') {
-            this.errorMessage = err.error?.message || err.message;
-          } else {
-            this.errorMessage = 'Registration failed. Please try again.';
-          }
+          this.errorMessage = err.message || 'Registration request failed. Please verify your credentials.';
         }
       });
   }

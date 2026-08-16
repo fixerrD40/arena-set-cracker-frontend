@@ -18,7 +18,7 @@ import { ChartConfiguration } from 'chart.js';
     </div>
   `
 })
-export class SetChart implements OnChanges {
+export class SetChartComponent implements OnChanges {
   @Input() chartData!: ChartConfiguration<'bar'>['data'];
 
   @ViewChild(BaseChartDirective) chart?: BaseChartDirective;

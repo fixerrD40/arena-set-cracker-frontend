@@ -1,13 +1,11 @@
-import { Inject, Injectable } from '@angular/core';
+import { inject, Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
-import { jwtDecode } from 'jwt-decode';
+import { tap, catchError } from 'rxjs/operators';
 import { APP_CONFIG } from '../config/config.model';
 
 export interface CloudSessionResponse {
   token: string;
-  userUuid: string;
   displayName: string;
 }
 
@@ -15,63 +13,57 @@ export interface CloudSessionResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private authUrl: string;
-  private jwtKey = 'jwt';
+  private readonly http = inject(HttpClient);
+  private readonly authUrl: string;
 
-  // 1. Core State: Initialize true if a token exists, false if not
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(!!this.getToken());
+  // 🌟 CONVERGED AUTH STATE: Initialized false on startup.
+  // The UserProfileService will push 'true' to this channel when it loads the SQLite config row.
+  private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  public readonly isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
 
-  // 2. Public Stream: Read-only stream for components and router guards
-  readonly isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
-
-  constructor(
-    protected http: HttpClient,
-    @Inject(APP_CONFIG) appConfig: any
-  ) {
+  constructor(@Inject(APP_CONFIG) appConfig: any) {
     this.authUrl = new URL('/auth', appConfig.baseUrl).toString();
   }
 
-  /**
-   * SYNCHRONOUS SNAPSHOT: Allows services like the OutboxService to check
-   * the immediate login state without needing to subscribe to an observable thread.
-   */
   public isAuthenticated(): boolean {
     return this.isAuthenticatedSubject.getValue();
   }
 
   /**
-   * Called on a fresh device setup to restore a pre-existing cloud workspace.
-   * Resolves the server profile object to seed user-profile.service.ts
+   * Pushes manual authentication flags into your stream channels
    */
-  login(credentials: { username: string; password: string }): Observable<CloudSessionResponse> {
+  public setAuthenticationState(state: boolean): void {
+    this.isAuthenticatedSubject.next(state);
+  }
+
+  /**
+   * Called on a fresh device setup to restore a pre-existing cloud workspace.
+   * 🌟 FIX: Uses "email" parameters matching your form inputs, and strips out localStorage loops.
+   */
+  public login(credentials: { email: string; password: string }): Observable<CloudSessionResponse> {
     return this.http
-      .post<CloudSessionResponse>(`${`${this.authUrl}/login`}`, credentials)
+      .post<CloudSessionResponse>(`${this.authUrl}/login`, credentials)
       .pipe(
-        tap((response) => {
-          this.saveToken(response.token);
-          this.isAuthenticatedSubject.next(true);
-        }),
+        tap(() => this.isAuthenticatedSubject.next(true)),
         catchError(this.handleError)
       );
   }
 
   /**
-   * Bridges a pre-established local offline identity to the cloud.
-   * Sends email, password, and the hidden userUuid up to the network.
+   * Bridges a local identity to the cloud.
+   * 🌟 PRIVACY SECURITY FIX: Stripped out the tracking userUuid parameters entirely!
+   * The server infers who the user is through their verified email credential context.
    */
-  claimOfflineAccount(credentials: { email?: string; username: string; password: string; userUuid: string }): Observable<CloudSessionResponse> {
+  public claimOfflineAccount(credentials: { email: string; password: string }): Observable<CloudSessionResponse> {
     return this.http
-      .post<CloudSessionResponse>(`${`${this.authUrl}/register`}`, credentials)
+      .post<CloudSessionResponse>(`${this.authUrl}/register`, credentials)
       .pipe(
-        tap((response) => {
-          this.saveToken(response.token),
-          this.isAuthenticatedSubject.next(true);
-        }),
+        tap(() => this.isAuthenticatedSubject.next(true)),
         catchError(this.handleError)
       );
   }
 
-  requestPasswordReset(email: string): Observable<void> {
+  public requestPasswordReset(email: string): Observable<void> {
     return this.http
       .post<void>(`${this.authUrl}/request-reset`, email, {
         headers: { 'Content-Type': 'text/plain' },
@@ -79,58 +71,21 @@ export class AuthService {
       .pipe(catchError(this.handleError));
   }
 
-  resetPassword(data: { token: string; newPassword: string }): Observable<void> {
+  public resetPassword(data: { token: string; newPassword: string }): Observable<void> {
     return this.http
       .post<void>(`${this.authUrl}/reset-password`, data)
       .pipe(catchError(this.handleError));
   }
 
-  logout(): void {
-    localStorage.removeItem(this.jwtKey);
+  /**
+   * Synchronous flush trigger to purge internal stream flags
+   */
+  public clearAuthenticationState(): void {
     this.isAuthenticatedSubject.next(false);
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(this.jwtKey);
-  }
-
-  /**
-   * Helper extracting structural parameters out of active session keys if needed
-   */
-  getUserIdentityFromToken(): { username: string | null; userUuid: string | null } {
-    const token = this.getToken();
-    if (!token) return { username: null, userUuid: null };
-
-    try {
-      const payload = jwtDecode<{ username?: string; userUuid?: string }>(token);
-      return {
-        username: payload?.username || null,
-        userUuid: payload?.userUuid || null
-      };
-    } catch (e) {
-      console.warn('Failed to decode active network session payload framework:', e);
-      return { username: null, userUuid: null };
-    }
-  }
-
-  private saveToken(token: string): void {
-    const clean = this.cleanToken(token);
-    localStorage.setItem(this.jwtKey, clean);
-  }
-
-  private cleanToken(token: string): string {
-    return token.replace(/^"|"$/g, '');
-  }
-
-  private handleError(error: HttpErrorResponse) {
-    let message = 'An unknown error occurred!';
-    if (error.status === 400) {
-      message = 'Bad request. Please check your input.';
-    } else if (error.status === 401) {
-      message = 'Invalid username or password.';
-    } else if (error.status === 409) {
-      message = 'Username already exists.';
-    }
-    return throwError(() => new Error(message));
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    console.error('[AuthService API Error]:', error.message || error);
+    return throwError(() => new Error(error.error?.message || 'Authentication network request failed.'));
   }
 }

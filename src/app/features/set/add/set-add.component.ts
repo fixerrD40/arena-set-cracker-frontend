@@ -14,10 +14,10 @@ import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scry
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
-  selector: 'app-add-set-component',
+  selector: 'app-set-add',
   standalone: true,
-  templateUrl: './add.set.component.html',
-  styleUrls: ['./add.set.component.css'],
+  templateUrl: './set-add.html',
+  styleUrls: ['./set-add.css'],
   imports: [
     AsyncPipe,
     RouterModule,
@@ -30,7 +30,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatProgressSpinnerModule
   ]
 })
-export class AddSetComponent implements OnInit {
+export class SetAddComponent implements OnInit {
   // 1. Utilize modern functional injection helpers programmatically
   private readonly scryfall = inject(ScryfallService);
   private readonly setService = inject(SetService);

@@ -15,19 +15,3 @@ export interface MtgCard {
   rarity: string;
   manaCost: string;
 }
-
-/**
- * Over-the-wire JSON REST endpoint contract.
- */
-export interface CloudCardPayload {
-  id: string;
-  setId: string;
-  arenaId: number;
-  scryfallId: string;
-  name: string;
-  localArtUri?: string;
-  typeLine?: string;
-  colors?: string[];
-  rarity: string;
-  manaCost: string;
-}

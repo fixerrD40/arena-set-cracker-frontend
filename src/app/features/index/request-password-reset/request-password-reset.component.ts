@@ -1,20 +1,18 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-
-// Angular Material Imports
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinner } from '@angular/material/progress-spinner'; // Standardized Component Link
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 // Custom Local Services
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-request-password-reset-component',
-  standalone: true, // Marked explicitly for compiler clarity
+  selector: 'app-request-password-reset',
+  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -22,24 +20,24 @@ import { AuthService } from '../../../core/services/auth.service';
     MatInputModule,
     MatCardModule,
     MatButtonModule,
-    MatProgressSpinner // Swapped from Module wrapper format
+    MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
   ],
-  templateUrl: './request-password-reset.component.html',
-  styleUrls: ['./request-password-reset.component.css', '../auth.css', '../../features.css']
+  templateUrl: './request-password-reset.html',
+  styleUrls: ['./request-password-reset.css', '../auth.css', '../../features.css'] as any
 })
 export class RequestPasswordResetComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
 
-  form: FormGroup = this.fb.group({
+  public readonly form: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
   });
 
-  error: string | null = null;
-  success = false;
-  isLoading = false;
+  public error: string | null = null;
+  public success = false;
+  public isLoading = false;
 
-  requestReset() {
+  public requestReset(): void {
     if (this.form.invalid) return;
 
     this.error = null;
@@ -50,6 +48,7 @@ export class RequestPasswordResetComponent {
       next: () => {
         this.success = true;
         this.isLoading = false;
+        this.form.reset(); // 🚀 Best practice: Reset the input field upon network dispatch completion
       },
       error: (err) => {
         this.error = err.message;

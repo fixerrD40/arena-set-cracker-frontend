@@ -51,7 +51,7 @@
     <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
 
     @if (profile$ | async; as profile) {
-      @if (!profile.is_cloud_synced) {
+      @if (!profile.isCloudSynced) {
         <a mat-button routerLink="/register" class="sync-cloud-btn">
           <mat-icon style="margin-right: 4px;">cloud_upload</mat-icon>
           <span>Sync to Cloud</span>
@@ -63,8 +63,8 @@
       </button>
 
       <mat-menu #profileMenu="matMenu">
-        <button mat-menu-item disabled>Hello, {{ profile.display_name }}</button>
-        @if (!profile.is_cloud_synced) {
+        <button mat-menu-item disabled>Hello, {{ profile.displayName }}</button>
+        @if (!profile.isCloudSynced) {
           <button mat-menu-item routerLink="/register">Link Cloud Credentials</button>
         }
         <button mat-menu-item (click)="logout()">Clear Workspace & Logout</button>

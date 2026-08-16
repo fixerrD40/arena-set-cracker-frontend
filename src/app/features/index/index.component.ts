@@ -7,10 +7,10 @@ import { SetService } from '../../core/services/set.service';
 import { UserProfileService } from '../../core/services/user-profile.service';
 
 @Component({
-  selector: 'app-index-component',
+  selector: 'app-index',
   standalone: true,
-  templateUrl: './index.component.html',
-  styleUrls: ['./index.component.css'],
+  templateUrl: './index.html',
+  styleUrls: ['./index.css'],
   imports: [
     RouterModule,
     MatCardModule,
@@ -23,34 +23,38 @@ export class IndexComponent implements OnInit {
   private readonly userProfile = inject(UserProfileService);
   private readonly setService = inject(SetService);
 
-  // Hidden initially to prevent action flickers while loading config from disk
+  // 🛡️ Hidden initially to prevent action flickers while loading config from disk
   public readonly showDefaultAction = signal<boolean>(false);
 
   public ngOnInit(): void {
-    // 🌟 AUTO-FORWARD EXCLUSION ROUTING LANE
-    this.userProfile.initializeConfig().subscribe(isValidProfile => {
-      if (isValidProfile) {
-        console.log('[Index] Valid profile context confirmed. Fast-tracking to Library.');
-        this.setService.syncInstalledCache();
-        this.router.navigate(['/library']);
-      } else {
-        this.showDefaultAction.set(true);
-      }
-    });
+    // Check if your central profile state subject is already holding a valid active memory configuration
+    const currentProfile = this.userProfile.getSnapshot();
+
+    if (currentProfile && currentProfile.displayName) {
+      console.log('[Index] Active memory profile context confirmed. Fast-tracking straight to Library.');
+      this.setService.syncInstalledCache();
+      this.router.navigate(['/library']);
+    } else {
+      // 🚀 FIX: Let your welcomeGuard handle cold-boot initialization, and safely reveal actions here without duplicate queries
+      this.showDefaultAction.set(true);
+    }
   }
 
   /**
    * Primary action dispatcher for onboarding destinations.
    */
   public handleGetStartedClick(): void {
-    if (this.userProfile.getSnapshot()?.user_uuid) {
+    const currentProfile = this.userProfile.getSnapshot();
+
+    // 🌟 PRIVACY REFACTOR: Check if displayName string exists instead of checking the deleted user_uuid key!
+    if (currentProfile && currentProfile.displayName) {
       this.setService.syncInstalledCache();
       this.router.navigate(['/library']);
       return;
     }
 
     const targetRoute = this.userProfile.onboardingTargetRoute;
-    console.log(`[Index] Routing unconfigured user to platform target: ${targetRoute}`);
+    console.log(`[Index] Routing unconfigured session to platform target path: ${targetRoute}`);
     this.router.navigate([targetRoute]);
   }
 }

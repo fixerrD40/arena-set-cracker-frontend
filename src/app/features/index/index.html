@@ -1,0 +1,29 @@
+<div class="wrapper landing-page-wrapper">
+  <mat-card appearance="raised">
+
+    <mat-card-header class="landing-header">
+      <mat-icon color="primary" class="header-icon-vector">auto_awesome</mat-icon>
+      <mat-card-title class="main-title">Welcome to Set Cracker</mat-card-title>
+      <mat-card-subtitle class="sub-title">Get the most out of your cards.</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content class="landing-body-content">
+      <p>
+        To begin, you may view your deck collections workspace.
+        Create an account, target a set expansion, and import your scratchpads to achieve set mastery!
+      </p>
+
+      <!-- Content projected dynamically based on underlying platform targets -->
+      <ng-content></ng-content>
+    </mat-card-content>
+
+    <!-- 🌟 SIGNAL EVALUATION: Executes your visual flicker-block check natively inside language flows -->
+    @if (showDefaultAction()) {
+      <mat-card-actions class="landing-actions">
+        <button mat-raised-button color="primary" class="cta-btn" (click)="handleGetStartedClick()">
+          Get Started!
+        </button>
+      </mat-card-actions>
+    }
+  </mat-card>
+</div>

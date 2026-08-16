@@ -19,7 +19,6 @@ import { sets, cards, decks } from '../sqlite/sqlite.schema';
 import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
 import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';
-import { DeckService } from './deck.service';
 
 /**
  * Service-Owned Aggregate Workspace Snapshot.
@@ -39,7 +38,6 @@ export interface WorkspaceState {
 export class SetService implements OnDestroy {
   // Pure, platform-blind data conduit token injection
   private readonly dataWire = inject(DATA_WIRE_TOKEN);
-  private readonly injector = inject(Injector);
   private readonly scryfallService = inject(ScryfallService);
   private readonly fileService = inject(FileSystemService);
 
@@ -130,11 +128,10 @@ export class SetService implements OnDestroy {
   public install(scryfallSet: ScryfallSet): void {
     const cleanCode = scryfallSet.code.toLowerCase();
 
-    // Map to a standard MtgSet UI domain model signature
+    // 🌟 PRIVACY REFACTORED: Decoupled domain mapper completely clear of server backend parameters!
     const domainSet: MtgSet = mapScryfallToDomainSet(scryfallSet);
 
-    // STEP 1: Write the primary set parent record blindly.
-    // 🌟 FIX: Stripped legacy multi-generics down to <TInput, TOutput> matching the interface
+    // STEP 1: Write the primary set parent record utilizing your two-argument contract signature
     this.dataWire.insert<MtgSet, MtgSet>(sets, domainSet).pipe(
 
       // STEP 2: Pull down full card dataset from Scryfall REST API
@@ -148,12 +145,15 @@ export class SetService implements OnDestroy {
           concatMap((apiCard: ScryfallCard) => {
             const imageUrl = apiCard.image_uris?.normal || apiCard.card_faces?.[0]?.image_uris?.normal;
 
-            // Ensure mapScryfallToCard uses domainSet.id consistently
             if (!imageUrl) {
               return of(mapScryfallToCard(apiCard, domainSet.id, ''));
             }
 
-            return this.fileService.downloadFile(imageUrl, cleanCode, apiCard.arena_id!).pipe(
+            // 🚀 IDIOMATIC PATH REFACTOR: Business layer dictates the target path destination string
+            const destinationFilePath = this.getCardArtPath(cleanCode, apiCard.arena_id!);
+
+            // Hand the explicit target string to your dumb, domain-blind file service utility
+            return this.fileService.downloadRemoteUrlToDisk(imageUrl, destinationFilePath).pipe(
               map((localUri: string) => mapScryfallToCard(apiCard, domainSet.id, localUri)),
               catchError(() => of(mapScryfallToCard(apiCard, domainSet.id, '')))
             );
@@ -162,8 +162,7 @@ export class SetService implements OnDestroy {
         );
       }),
 
-      // STEP 4: DIRECT INSERT: Trust the data wire to serialize your domain array safely!
-      // 🌟 FIX: Stripped legacy multi-generics down to <TInput, TOutput> matching the interface
+      // STEP 4: DIRECT BULK INSERT: Trust the data wire to serialize your domain array safely!
       switchMap((domainCards: MtgCard[]) => {
         return this.dataWire.insertBulk<MtgCard, MtgCard>(cards, domainCards);
       }),
@@ -188,9 +187,15 @@ export class SetService implements OnDestroy {
    * Removes a complete card set and its relational user data structures blind to platform.
    */
   public uninstall(set: MtgSet): Observable<void> {
-    // 🌟 PERFECT DEFERRAL: Clean, elegant contract match.
-    // No redundant or legacy method generics needed!
+    // 1. Kick off the primary database row purge via your contract token port
     return this.dataWire.delete(sets, set.id).pipe(
+
+      // 2. 🚀 CHOSEN DIRECTION: Business tier dictates path formatting & purges disk binaries
+      concatMap(() => {
+        const targetArtFolder = this.getSetDirectoryPath(set.code);
+        return this.fileService.deleteDirectory(targetArtFolder);
+      }),
+
       tap(() => {
         // Optimistically slice the dropped set out of the available UI roster cache stream
         const currentList = this.installedSetsSubject.getValue();
@@ -207,6 +212,72 @@ export class SetService implements OnDestroy {
         console.error(`[SetService] Failed executing atomic uninstall for set ${set.code}:`, err);
         return throwError(() => err);
       })
+    );
+  }
+
+  // ==========================================================
+  // 🌟 INTERNAL MTG BUSINESS PATH CALCULATORS
+  // ==========================================================
+
+  /**
+   * Business Domain Rule: Defines the structural disk directory layout for a card set.
+   * Isolates local assets safely inside an explicit folder block clear of generic mixing.
+   */
+  public getSetDirectoryPath(setCode: string): string {
+    return `cached_art/${setCode.toLowerCase()}`;
+  }
+
+  /**
+   * Business Domain Rule: Defines the structural filename for a set's cover graphic banner.
+   */
+  public getSetCoverArtPath(setCode: string): string {
+    return `${this.getSetDirectoryPath(setCode)}/cover.jpg`;
+  }
+
+  /**
+   * Business Domain Rule: Defines the filename scheme for individual in-game card crops.
+   */
+  public getCardArtPath(setCode: string, arenaId: number): string {
+    return `${this.getSetDirectoryPath(setCode)}/${arenaId}.png`;
+  }
+
+  /**
+   * Assembles a cross-platform authorized WebView URI token for rendering the set cover background.
+   * Defers cleanly to the dumb file system service to process native path resolutions.
+   */
+  public getSetCoverWebViewUri(setCode: string): Observable<string> {
+    const targetPath = this.getSetCoverArtPath(setCode);
+
+    // Hand the explicit target path string downstream to the blind file utility service
+    return this.fileService.resolvePlatformWebViewUri(targetPath).pipe(
+      catchError(() => {
+        // Fall back quietly to your standard global package assets if the cover isn't downloaded yet
+        return of('assets/covers/default-mtg.jpg');
+      })
+    );
+  }
+
+  // ==========================================================
+  // 🌟 DUMB FILE STREAM DOWNLOAD DISPATCHERS
+  // ==========================================================
+
+  /**
+   * Explicit downloader proxy that handles passing constructed MTG file tracks down to your I/O layer.
+   */
+  public triggerCardAssetDownload(url: string, setCode: string, arenaId: number): Observable<string> {
+    const destinationPath = this.getCardArtPath(setCode, arenaId);
+    return this.fileService.downloadRemoteUrlToDisk(url, destinationPath);
+  }
+
+  /**
+   * Explicit downloader proxy that handles fetching and mapping custom premium cover banners.
+   */
+  public triggerCoverAssetDownload(remoteServerUrl: string, setCode: string): Observable<string> {
+    const destinationPath = this.getSetCoverArtPath(setCode);
+    const fullRemoteUrl = `${remoteServerUrl}/api/assets/covers/${setCode.toLowerCase()}.jpg`;
+
+    return this.fileService.downloadRemoteUrlToDisk(fullRemoteUrl, destinationPath).pipe(
+      catchError(() => of('assets/covers/default-mtg.jpg')) // Absorb network miss flags gracefully
     );
   }
 
@@ -236,31 +307,24 @@ export class SetService implements OnDestroy {
   }
 
   /**
-   * 🌟 AUTHORITATIVE MASTER FLUSH
-   * Directly calls the downstream sub-feature domain's flush method on demand
-   * without creating standard constructor compiler circular lookup loops.
+   * AUTHORITATIVE CATALOG FLUSH
+   * Synchronizes active parent set metadata records cleanly down to SQLite.
+   * Completely decoupled from downward deck child service dependencies!
    */
   public flush(): Observable<void> {
     const current = this.currentWorkspaceSnapshot;
     if (!current) return of(void 0);
 
-    // 1. Flush core set layout updates to disk if required
-    const setUpdate$ = this.dataWire.update(sets, current.setInfo.id, {
-      name: current.setInfo.name,
-      code: current.setInfo.code
-    });
-
-    return setUpdate$.pipe(
-      switchMap(() => {
-        console.log('[SetService] Base catalog flush complete. Invoking deferred downward sub-feature flush...');
-
-        // 2. Resolve DeckService from memory dynamically on demand
-        const deckService = this.injector.get(DeckService);
-
-        // 3. Direct execution routing
-        return deckService.flush();
+    // Write core set metadata mutations safely using your standard two-parameter contract
+    return this.dataWire.update<MtgSet, MtgSet>(sets, current.setInfo).pipe(
+      tap(() => {
+        console.log(`[SetService] Database catalog sync complete for expansion: ${current.setInfo.name}`);
       }),
-      map(() => void 0)
+      map(() => void 0),
+      catchError((err) => {
+        console.error(`[SetService] Catalog database flush aborted:`, err);
+        return throwError(() => err);
+      })
     );
   }
 

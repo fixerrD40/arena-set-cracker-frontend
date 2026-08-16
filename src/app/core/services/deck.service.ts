@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { SetService } from './set.service';
 import { MtgCard } from '../../shared/models/card/card';
 import { MtgDeck } from '../../shared/models/deck/deck';
-import { decks } from '../sqlite/sqlite.schema';
+import { decks, deckCards } from '../sqlite/sqlite.schema';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 export interface DisplayedCardLine {
@@ -153,30 +153,59 @@ export class DeckService {
   // ─── 🌟 AUTHORITATIVE UNIFIED FLUSH ENGINE ─────────────────────────
   /**
    * Commits current scratchpad modifications down to your storage layer wire.
-   * Can be executed by workspace save buttons or invoked dynamically by SetService.
+   * Invoked directly by active workspace save controllers or structural route transaction guards.
    */
   public flush(): Observable<void> {
     const deckToSave = this.scratchpadSource.value;
     if (!deckToSave) return of(void 0);
 
-    const cardsPayload = Object.fromEntries(deckToSave.cards);
-
-    return this.dataWire.update(decks, deckToSave.id, {
+    // 1. Structure the parent entity matching your exact Drizzle 'decks' schema insert layout
+    // This allows your data wire to extract your unique identification token (.id) internally
+    const parentDeckPayload = {
+      id: deckToSave.id,
+      setId: deckToSave.setId,
       name: deckToSave.name,
       notes: deckToSave.notes,
-      tags: deckToSave.tags,
-      cards: cardsPayload
-    }).pipe(
+      tags: [...deckToSave.tags]
+    };
+
+    // 2. 🚀 TWO-PARAMETER HOOK: Satisfies your contract's reflection logic perfectly
+    return this.dataWire.update(decks, parentDeckPayload).pipe(
+
+      // 3. Chain your secondary relational card collection synchronization pass next
+      switchMap(() => {
+        // Clear out the stale card matrix rows belonging to this specific deck first
+        return this.dataWire.delete(deckCards, deckToSave.id);
+      }),
+
+      switchMap(() => {
+        // Transform your memory map allocations back into flat SQLite array inserts
+        const relationsPayloads = Array.from(deckToSave.cards.entries()).map(([cardId, qty]) => ({
+          deckId: deckToSave.id,
+          cardId: cardId,
+          quantity: qty
+        }));
+
+        if (relationsPayloads.length === 0) return of([]);
+
+        // Perform a high-performance transactional batch ingestion block using your data wire
+        return this.dataWire.insertBulk(deckCards, relationsPayloads);
+      }),
+
       tap(() => {
         console.log(`[DeckService] Local database map serialization update complete for "${deckToSave.name}".`);
 
-        // 1. Establish the newly saved data as the pristine baseline (resets isDirty$)
+        // 1. Establish the newly saved data as the pristine baseline (resets your isDirty$ trackers)
         this.setActiveDeck(deckToSave);
 
         // 2. Synchronize the change into SetService's memory layout stream instantly
         this.setService.updateDeckInWorkspaceMemory(deckToSave);
       }),
-      map(() => void 0)
+      map(() => void 0),
+      catchError((err) => {
+        console.error(`[DeckService] Atomic database workspace commit failure on "${deckToSave.name}":`, err);
+        return throwError(() => err);
+      })
     );
   }
 }

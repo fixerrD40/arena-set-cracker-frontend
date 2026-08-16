@@ -1,0 +1,56 @@
+<div class="wrapper">
+  <mat-card appearance="raised">
+    <h2 class="card-title">Cloud Login</h2>
+
+    <form [formGroup]="form" (ngSubmit)="login()">
+
+      <!-- 🌟 FORM CONTROL REALIGNMENT: Target formControlName="email" matching your backend keys -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email Address</mat-label>
+        <input
+          matInput
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          placeholder="e.g., Planeswalker@domain.com"
+          required />
+        @if (form.get('email')?.hasError('email')) {
+          <mat-error>Please supply a valid email format string.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          required />
+      </mat-form-field>
+
+      <!-- 🌟 BUILT-IN CONTROL FLOW: Replaced deprecated *ngIf with high-performance @if block -->
+      @if (error) {
+        <div class="error-banner">{{ error }}</div>
+      }
+
+      <div class="actions-panel">
+        <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isLoading">
+          @if (isLoading) {
+            <!-- 🌟 SPINNER HOOK CORRECTION: Unified Material spinner tag usage -->
+            <mat-spinner diameter="20" color="accent" class="inline-spinner"></mat-spinner>
+          } @else {
+            <span>Restore Cloud Workspace</span>
+          }
+        </button>
+      </div>
+    </form>
+
+    <p class="helper-text">
+      <a routerLink="/request-password-reset">Forgot your password?</a>
+    </p>
+    <p class="helper-text">
+      New to this device? <a routerLink="/welcome">Set up your workspace profile</a>
+    </p>
+  </mat-card>
+</div>

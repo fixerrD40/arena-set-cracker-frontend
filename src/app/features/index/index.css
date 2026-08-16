@@ -1,8 +1,12 @@
-.wrapper {
+.landing-page-wrapper {
   max-width: 550px;
   margin: 80px auto;
   padding: 0 24px;
 }
+
+/* ==========================================================
+   ANGULAR MATERIAL HOOK OVERRIDES
+   ========================================================== */
 
 mat-card-header {
   margin-bottom: 16px;

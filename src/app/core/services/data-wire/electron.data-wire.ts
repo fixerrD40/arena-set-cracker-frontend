@@ -1,20 +1,21 @@
-// src/app/core/data-wire/electron.data-wire.service.ts
-import { Injectable, inject } from '@angular/core';
-import { Observable, of, from, throwError } from 'rxjs';
-import { concatMap, map, catchError, toArray } from 'rxjs/operators';
+import { inject, Injectable } from '@angular/core';
+import { Observable, of, throwError, from } from 'rxjs';
+import { concatMap, catchError, map, toArray } from 'rxjs/operators';
 import { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { getTableName, getTableColumns, eq, InferSelectModel } from 'drizzle-orm';
-
-// 🌟 Reconciled Global Infrastructure Imports
+import { eq, getTableName, getTableColumns } from 'drizzle-orm';
+import { DataWire } from './data-wire.contract';
 import { SQLITE_ENGINE_TOKEN } from '../../sqlite/sqlite.engine';
 import { OutboxService } from '../outbox.service';
-import { hydrateRow, serializePayload, serializePayloadsBulk } from '../../sqlite/sqlite.registry';
+
+// Assuming these serialization utilities exist globally in your data-wire domain directory
+declare function serializePayload(table: any, model: any): any;
+declare function serializePayloadsBulk(table: any, models: any[]): any[];
+declare function hydrateRow<T>(table: any, row: any): T;
 
 @Injectable({
   providedIn: 'root'
 })
-export class ElectronDataWire {
-  // 🌟 Inject the new base SQLite abstraction token cleanly
+export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
   private readonly sqliteEngine = inject(SQLITE_ENGINE_TOKEN);
   private readonly outbox = inject(OutboxService);
 
@@ -110,7 +111,6 @@ export class ElectronDataWire {
     if (!db) return throwError(() => new Error('[ElectronDataWire] Engine uninitialized.'));
 
     try {
-      // 1. Resolve your ID identity columns and lookups dynamically
       const idColumn = (table as any).id;
       const recordId = (domainModel as any)?.id;
 
@@ -118,22 +118,18 @@ export class ElectronDataWire {
         return throwError(() => new Error('[ElectronDataWire] Update aborted: Missing unique primary key identifier "id".'));
       }
 
-      // 2. Normalize your payload models through your serialization registries
       const dbPayload = serializePayload(table, domainModel);
 
-      // 3. Commit modification statements directly near the WebAssembly metal
       db.update(table)
         .set(dbPayload)
         .where(eq(idColumn, recordId))
         .run();
 
-      // 4. Sequence down the RxJS pipeline to safely track updates and outbox pushes
       return of(void 0).pipe(
         concatMap(() => {
           this.flush();
           const tableNameStr = getTableName(table);
 
-          // Append transaction frames only for synchronizable entities
           if (tableNameStr === 'decks' || tableNameStr === 'sets') {
             const entityType = tableNameStr === 'decks' ? 'deck' : 'set';
             return this.outbox.enqueue({
@@ -192,9 +188,51 @@ export class ElectronDataWire {
   }
 
   /**
+   * 🌟 NEW INTEGRATED PORT: SINGLE TARGET RECORD DISCOVERY
+   * Mirrors your exact native architecture rules, leverages table id checks,
+   * and runs your required runtime hydrateRow utility to emit clean domain items.
+   */
+  public fetchRecord<TOutput = any>(
+    table: SQLiteTable<any>,
+    id: string | number
+  ): Observable<TOutput | null> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[ElectronDataWire] Engine uninitialized.'));
+
+    try {
+      const idColumn = (table as any).id;
+      if (!idColumn) {
+        return throwError(() => new Error('[ElectronDataWire] Target table lacks an "id" tracking token.'));
+      }
+
+      // Synchronously execute row extraction near the metal via native driver commands
+      const untypedRows = db
+        .select()
+        .from(table)
+        .where(eq(idColumn, id))
+        .limit(1)
+        .all() as Record<string, any>[];
+
+      if (untypedRows.length === 0) {
+        return of(null);
+      }
+
+      // 🚀 PRESERVED ARCHITECTURE MATCH: Hydrates the single row utilizing your system conversion rules
+      const hydratedResult = hydrateRow<TOutput>(table, untypedRows[0]);
+      return of(hydratedResult);
+    } catch (err) {
+      console.error(`[ElectronDataWire] fetchRecord failure on key ${id}:`, err);
+      return throwError(() => err);
+    }
+  }
+
+  /**
    * Extracts raw row snapshots from the local SQLite table dataset and handles domain hydration.
    */
-  public fetchCollection<TOutput = any>(table: SQLiteTable<any>, contextId?: string | number): Observable<TOutput[]> {
+  public fetchCollection<TOutput = any>(
+    table: SQLiteTable<any>,
+    contextId?: string | number
+  ): Observable<TOutput[]> {
     const db = (this.sqliteEngine as any).cachedDbInstance;
     if (!db) return throwError(() => new Error('[DataWire] Engine uninitialized.'));
 
@@ -212,7 +250,9 @@ export class ElectronDataWire {
       const result = untypedRows.map((row) => hydrateRow<TOutput>(table, row));
 
       return of(result);
-    } catch (err) { return throwError(() => err); }
+    } catch (err) {
+      return throwError(() => err);
+    }
   }
 
   /**

@@ -21,7 +21,7 @@ import { DeckService } from './core/services/deck.service';
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
-export class App {
+export class AppComponent {
   private readonly router = inject(Router);
   protected readonly setService = inject(SetService);
   protected readonly deckService = inject(DeckService);
@@ -43,7 +43,7 @@ export class App {
 
   public navigateToLibraryLayer(): void {
     this.setService.unloadWorkspace();
-    this.router.navigate(['/']);
+    this.router.navigate(['/library']);
   }
 
   public handleHomeClick(): void {

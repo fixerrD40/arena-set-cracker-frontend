@@ -1,116 +1,175 @@
-import { Inject, inject, Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
-import { FileSystemService } from './file-system.service';
+// src/app/core/services/user-profile.service.ts
+import { Injectable, inject, Inject } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
+import { systemConfig } from '../sqlite/sqlite.schema';
+import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 import { APP_CONFIG } from '../config/config.model';
-
-export interface UserProfile {
-  user_uuid: string;
-  display_name: string;
-  is_cloud_synced: boolean;
-  last_sync_timestamp: string | null;
-}
+import { mapProfileToInsert } from '../../shared/models/user/user.mappers';
+import { UserProfile } from '../../shared/models/user/user';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserProfileService {
-  private readonly fileSystem = inject(FileSystemService);
-  private readonly USER_FILE = 'user_profile.json';
-  public readonly onboardingTargetRoute;
+  private readonly dataWire = inject(DATA_WIRE_TOKEN);
+  private readonly authService = inject(AuthService);
+
+  public readonly onboardingTargetRoute: string;
 
   private readonly configSubject = new BehaviorSubject<UserProfile | null>(null);
   public readonly config$ = this.configSubject.asObservable();
 
-  public readonly displayName$ = this.config$.pipe(map(c => c?.display_name || null));
+  public readonly displayName$ = this.config$.pipe(map(c => c?.displayName || null));
+  public readonly isCloudSynced$ = this.config$.pipe(map(c => !!c?.isCloudSynced));
+  public readonly lastSync$ = this.config$.pipe(map(c => c?.lastSyncTimestamp || null));
 
-  // 🌟 CLOUD AWARENESS STATE STRINGS
-  public readonly isCloudSynced$ = this.config$.pipe(map(c => !!c?.is_cloud_synced));
-  public readonly lastSync$ = this.config$.pipe(map(c => c?.last_sync_timestamp || null));
+  public get isCloudSynced(): boolean {
+    return this.getSnapshot()?.isCloudSynced || false;
+  }
 
-  constructor(
-    @Inject(APP_CONFIG) appConfig: any
-  ) {
+  constructor(@Inject(APP_CONFIG) appConfig: any) {
+    // Standard routing target fallback parameters across all client environments
     this.onboardingTargetRoute = appConfig.isElectron ? '/welcome' : '/login';
   }
 
-  /**
-   * Initializes the configuration on application startup.
-   * Resolves true if a valid identity exists, false if onboarding is required.
-   */
   public initializeConfig(): Observable<boolean> {
-    return this.fileSystem.readJsonFile<UserProfile>(this.USER_FILE).pipe(
-      tap((config) => this.configSubject.next(config)),
-      map((config) => !!(config && config.user_uuid && config.display_name)),
+    return this.dataWire.fetchRecord<any>(systemConfig, 'active_user').pipe(
+      map((row) => {
+        if (!row || !row.displayName) return null;
+        return {
+          displayName: row.displayName,
+          sessionToken: row.sessionToken,
+          isCloudSynced: row.isCloudSynced,
+          lastSyncTimestamp: row.lastSyncTimestamp
+        } as UserProfile;
+      }),
+      tap((config) => {
+        this.configSubject.next(config);
+
+        // 🚀 CONVERGED SYNCHRONIZATION: Sync your AuthService state to match your database row health!
+        const hasActiveSession = !!(config && config.sessionToken);
+        this.authService.setAuthenticationState(hasActiveSession);
+      }),
+      map((config) => !!(config && config.displayName)),
       catchError(() => {
         this.configSubject.next(null);
+        this.authService.clearAuthenticationState();
         return of(false);
       })
     );
   }
 
   /**
-   * Creates a fresh local profile (called from Welcome screen)
+   * Scenario A: First-Time Desktop Local Profile Creation
    */
   public establishIdentity(name: string): Observable<void> {
-    const newConfig: UserProfile = {
-      user_uuid: crypto.randomUUID(),
-      display_name: name.trim(),
-      is_cloud_synced: false, // Desktop local-first start state
-      last_sync_timestamp: null
+    const domainModel: UserProfile = {
+      displayName: name.trim(),
+      sessionToken: null,
+      isCloudSynced: false,
+      lastSyncTimestamp: null
     };
 
-    return this.fileSystem.writeJsonFile(this.USER_FILE, newConfig).pipe(
-      tap(() => this.configSubject.next(newConfig))
+    // 🚀 Converts our domain model straight to a Drizzle payload using the output mapper
+    const dbPayload = mapProfileToInsert(domainModel);
+
+    return this.dataWire.insert(systemConfig, dbPayload).pipe(
+      tap(() => this.configSubject.next(domainModel)),
+      map(() => void 0)
     );
   }
 
   /**
-   * Promotes a local profile to a cloud-linked state (called from Login/Register)
+   * Scenario B: Promoting an Existing Local Identity to Cloud Tracking
    */
-  public saveCloudIdentity(uuid: string, name: string): Observable<void> {
-    const syncedConfig: UserProfile = {
-      user_uuid: uuid,
-      display_name: name.trim(),
-      is_cloud_synced: true, // Web default state / Desktop promoted state
-      last_sync_timestamp: new Date().toISOString()
+  public linkLocalProfileToCloud(sessionToken: string): Observable<void> {
+    const current = this.getSnapshot();
+    if (!current) return of(void 0);
+
+    const updatedProfile: UserProfile = {
+      ...current,
+      sessionToken: sessionToken,
+      isCloudSynced: true,
+      lastSyncTimestamp: new Date().toISOString()
     };
 
-    return this.fileSystem.writeJsonFile(this.USER_FILE, syncedConfig).pipe(
-      tap(() => this.configSubject.next(syncedConfig))
+    const dbPayload = mapProfileToInsert(updatedProfile);
+
+    return this.dataWire.update(systemConfig, dbPayload).pipe(
+      tap(() => this.configSubject.next(updatedProfile)),
+      map(() => void 0)
     );
   }
 
   /**
-   * 🌟 CLOUD TRANSACTION LANE: Marks a local profile as uploaded to cloud
-   * Use this when an offline Electron user pushes their data to the server for the first time.
+   * Scenario C: Cold Rehydration Recovery from Cloud Server Payload
+   */
+  public restoreCloudIdentity(serverPayload: { token: string; name: string }): Observable<void> {
+    const restoredProfileRow = {
+      id: 'active_user',
+      displayName: serverPayload.name.trim(),
+      sessionToken: serverPayload.token,
+      isCloudSynced: true,
+      lastSyncTimestamp: new Date().toISOString()
+    };
+
+    const domainModel: UserProfile = {
+      displayName: restoredProfileRow.displayName,
+      sessionToken: restoredProfileRow.sessionToken,
+      isCloudSynced: true,
+      lastSyncTimestamp: restoredProfileRow.lastSyncTimestamp
+    };
+
+    // Insert acts as an overwrite due to the hardcoded primary key 'active_user'
+    return this.dataWire.insert(systemConfig, restoredProfileRow).pipe(
+      tap(() => this.configSubject.next(domainModel)),
+      map(() => void 0)
+    );
+  }
+
+  /**
+   * Updates timestamp flags inside your database tracking schemas post-sync completion
    */
   public updateCloudSyncStatus(timestamp: string = new Date().toISOString()): Observable<void> {
     const current = this.getSnapshot();
     if (!current) return of(void 0);
 
-    const updatedConfig: UserProfile = {
+    // 1. Construct the complete, unified domain model profile snapshot
+    const updatedProfile: UserProfile = {
       ...current,
-      is_cloud_synced: true,
-      last_sync_timestamp: timestamp
+      isCloudSynced: true,
+      lastSyncTimestamp: timestamp
     };
 
-    return this.fileSystem.writeJsonFile(this.USER_FILE, updatedConfig).pipe(
-      tap(() => this.configSubject.next(updatedConfig))
+    // 2. Map the domain model directly to the schema insert layout required by Drizzle
+    // This injects the required primary key constraint "id: 'active_user'" automatically
+    const dbPayload = mapProfileToInsert(updatedProfile);
+
+    // 3. Pass EXACTLY two parameters to the data wire to satisfy your contract's reflection logic
+    return this.dataWire.update(systemConfig, dbPayload).pipe(
+      tap(() => this.configSubject.next(updatedProfile)),
+      map(() => void 0)
     );
   }
 
-  /**
-   * Synchronous lookups for edge cases or guards
-   */
   public getSnapshot(): UserProfile | null {
     return this.configSubject.getValue();
   }
 
   /**
-   * Deletes config profile data (called during hard factory resets)
+   * FACTORY MASTER RESET
+   * Destroys the active row, flushing the configuration profile state completely.
    */
   public clearConfig(): Observable<void> {
-    this.configSubject.next(null);
-    return this.fileSystem.writeJsonFile(this.USER_FILE, {});
+    return this.dataWire.delete(systemConfig, 'active_user').pipe(
+      tap(() => this.configSubject.next(null)),
+      map(() => void 0),
+      catchError(() => {
+        this.configSubject.next(null);
+        return of(void 0);
+      })
+    );
   }
 }

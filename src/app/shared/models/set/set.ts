@@ -1,23 +1,25 @@
 // src/app/shared/models/set/set.ts
 
 /**
- * Idiomatic Domain Interface
- * Reflects your rich application UI state, clean of database audit columns.
+ * Pure, decoupled application UI domain model.
+ * Reflects your rich application expansion states natively with twin asset tracking paths.
  */
 export interface MtgSet {
   id: string;
-  code: string; // Unified uppercase formatting throughout the client views
+  code: string;       // Unified uppercase formatting throughout client views (e.g., "LTR")
   name: string;
+  iconSvgUri: string; // Keeps the official Scryfall vector symbol paths
+  localArtUri: string; // Tracks the localized sandboxed cover background binary disk link
 }
 
 /**
- * Cloud Payload Interface
- * Reflects an incoming over-the-wire raw JSON REST/Scryfall endpoint response.
+ * Over-the-wire JSON REST endpoint contract.
+ * Cleaned of device-specific filesystem paths and third-party Scryfall URL noise.
+ * Mirrors the exact properties your cloud database table actually needs to persist.
  */
 export interface CloudSetPayload {
   id: string;
-  code: string;
+  code: string;       // Unified formatting (e.g., "LTR")
   name: string;
-  uri?: string;
-  search_uri?: string;
+  iconSvgUri: string;
 }

@@ -16,7 +16,7 @@ import { SetService } from '../../core/services/set.service';
 import { DeckValidationResult } from '../../shared/models/deck/deck';
 
 @Component({
-  selector: 'app-deck-component',
+  selector: 'app-deck',
   standalone: true,
   imports: [
     CommonModule,
@@ -30,8 +30,8 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
     MatInputModule,
     NgxTippyModule
   ],
-  templateUrl: './deck.component.html', // Points straight to your updated clean HTML wireframe file
-  styleUrls: ['./deck.component.css']
+  templateUrl: './deck.html', // Points straight to your updated clean HTML wireframe file
+  styleUrls: ['./deck.css']
 })
 export class DeckComponent implements OnInit, OnDestroy {
   private readonly deckService = inject(DeckService);

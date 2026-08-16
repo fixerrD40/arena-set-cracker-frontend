@@ -14,7 +14,7 @@ export const DATA_WIRE_TOKEN = new InjectionToken<DataWire>('MTG_DATA_WIRE_SYSTE
  */
 export interface DataWire<TTableBase = any> {
   insert<TInput = any, TOutput = any>(
-    table: TTableBase, // 🌟 Bound directly to the root configuration parameter
+    table: TTableBase,
     payload: TInput
   ): Observable<TOutput>;
 
@@ -23,8 +23,20 @@ export interface DataWire<TTableBase = any> {
     payloads: TInput[]
   ): Observable<TOutput[]>;
 
-  update(table: TTableBase, id: string | number, payload: any): Observable<void>;
-  delete(table: TTableBase, id: string | number): Observable<void>;
+  update<TInput = any, TOutput = any>(
+    table: TTableBase,
+    domainModel: TInput
+  ): Observable<TOutput>;
+
+  delete(
+    table: TTableBase,
+    id: string | number
+  ): Observable<void>;
+
+  fetchRecord<TOutput = any>(
+    table: TTableBase,
+    id: string | number
+  ): Observable<TOutput | null>;
 
   fetchCollection<TOutput = any>(
     table: TTableBase,

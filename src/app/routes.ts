@@ -9,7 +9,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    canActivate: [welcomeGuard], // 🌟 Redirects configured users to /library immediately
+    canActivate: [welcomeGuard],
     loadComponent: () => import('./features/index/index.component').then(m => m.IndexComponent)
   },
 
@@ -48,7 +48,7 @@ export const routes: Routes = [
   {
     path: 'add-set',
     canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/set/add/add.set.component').then(m => m.AddSetComponent)
+    loadComponent: () => import('./features/set/add/set-add.component').then(m => m.SetAddComponent)
   },
   {
     path: 'set/:id',
@@ -58,7 +58,7 @@ export const routes: Routes = [
   {
     path: 'add-deck',
     canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/deck/add/add.deck.component').then(m => m.AddDeckComponent)
+    loadComponent: () => import('./features/deck/add/deck-add.component').then(m => m.DeckAddComponent)
   },
   {
     path: 'deck/:id',
