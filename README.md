@@ -1,11 +1,15 @@
-# ArenaSetCracker
+# Arena Set Cracker
 
-Angular frontend for Arena Set Cracker (browser, Electron desktop, Capacitor mobile).
+Angular frontend for an offline-first **Magic: The Gathering Arena** deck store: install a set, paste Arena exports, and keep decks in local SQLite—**one set in focus** at a time.
+
+Targets: browser (`ng serve`), Electron desktop, and Capacitor mobile.
+
+Agent-oriented project context lives in [`.cursor/rules/`](.cursor/rules/) (always applied in Cursor).
 
 ## Prerequisites
 
 - Node.js + npm
-- A running backend API (default `http://localhost:8080` from `src/assets/config.json`) for login, register, password reset, and cloud sync
+- Optional: backend API at `http://localhost:8080` (see `src/assets/config.json`) for login, register, password reset, and cloud sync. Local set install and deck persistence work without it.
 
 ## Development server
 
@@ -16,7 +20,14 @@ npm start
 
 Open `http://localhost:4200/`.
 
-Local SQLite is bootstrapped in-browser via sql.js + IndexedDB. Cloud features still need the backend on `:8080`.
+Local SQLite is bootstrapped in-browser via sql.js + IndexedDB.
+
+## Typical local flow
+
+1. Welcome / create a workspace profile  
+2. Library → add a set (Scryfall)  
+3. Open the set → **Import / Add Deck** → paste an MTG Arena export for that set  
+4. Cards that do not resolve in the focused set are stripped (UI notice); the rest persist across reload  
 
 ## Desktop (Electron)
 
@@ -24,7 +35,7 @@ Local SQLite is bootstrapped in-browser via sql.js + IndexedDB. Cloud features s
 npm run desktop:run
 ```
 
-Uses a native SQLite file named by `sqliteDbName` in `src/assets/config.json` (default `mtg_vault.db`).
+Uses a SQLite file named by `sqliteDbName` in `src/assets/config.json` (default `mtg_vault.db`).
 
 ## Build
 
@@ -50,3 +61,12 @@ npm run mobile:build-ios
 ```
 
 Capacitor `webDir` points at `dist/arena-set-cracker/browser`.
+
+## Layout (short)
+
+| Area | Role |
+|------|------|
+| `src/app/core/` | Config, SQLite engines, data wire, domain services |
+| `src/app/features/` | Routes/UI (library, set, deck, auth) |
+| `src/app/shared/` | Models, mappers, Arena utils, shared CSS |
+| `public/drizzle/` | SQL migrations |

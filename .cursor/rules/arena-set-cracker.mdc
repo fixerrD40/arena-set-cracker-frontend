@@ -1,0 +1,43 @@
+---
+description: Arena Set Cracker product vision, architecture map, and git conventions
+alwaysApply: true
+---
+
+# Arena Set Cracker (frontend)
+
+## Product
+
+Offline-first Angular app for managing **Magic: The Gathering Arena** decks within **one installed set at a time**.
+
+Happy path: install a set (Scryfall) → open it → paste an Arena deck export → persist locally → reload and still see the list.
+
+**Invariant:** decks and Arena imports resolve only against the focused set’s catalog. Lines that do not match that catalog are stripped; notify the user. Do not design for multi-set decklists.
+
+## Stack map
+
+- Angular 20 standalone + Material
+- Local DB: Drizzle schema → sql.js (browser IndexedDB / Electron file)
+- Platform wiring: `SQLITE_ENGINE_TOKEN`, `DATA_WIRE_TOKEN` (`CloudDataWire` vs `ElectronDataWire`)
+- Also: Capacitor mobile, optional cloud API via `src/assets/config.json` (`baseUrl`)
+
+## Where the brain lives
+
+| Concern | Owner |
+|---------|--------|
+| Installed sets + active workspace (set, cards, decks) | `SetService` |
+| Active deck scratchpad + flush/persist | `DeckService` |
+| Arena parse + name resolve within catalog | `shared/models/deck/deck.utils.ts` |
+| SQLite schema / migrations | `core/sqlite/sqlite.schema.ts`, `public/drizzle/` |
+| Shared CSS shell (auth/forms) | `shared/styles/auth-shell.css`, tokens in `styles.css` |
+
+## Commits
+
+Title: `Hideaway`.
+
+Body: prefer **class/file-level** notes on what changed (e.g. `DeckService` persist path, `deck.utils` Arena resolve)—not only a single end-to-end product sentence. Multiple bullets are fine when several units moved.
+
+Only commit when the user asks.
+
+## Session scope
+
+Treat cloud sync polish, art download/Capacitor filesystem, and similar as **in or out of scope only when the user says so** for that session—do not assume they are permanent non-goals.
