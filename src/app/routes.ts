@@ -41,6 +41,20 @@ export const routes: Routes = [
     path: 'register',
     loadComponent: () => import('./features/index/register/register.component').then(m => m.RegisterComponent)
   },
+  {
+    path: 'request-password-reset',
+    loadComponent: () =>
+      import('./features/index/request-password-reset/request-password-reset.component').then(
+        (m) => m.RequestPasswordResetComponent
+      )
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/index/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent
+      )
+  },
 
   // ==========================================
   // 4. SECURED DATA SUBSYSTEMS

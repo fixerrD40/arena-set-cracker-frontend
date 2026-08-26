@@ -1,14 +1,12 @@
-// src/app/core/storage/browser-wasm.sqlite.engine.ts
 import { Injectable, Injector, runInInjectionContext, inject } from '@angular/core';
 import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sql-js';
+import initSqlJs from 'sql.js';
 
 import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { APP_CONFIG } from '../config/config.model';
-
-declare const initSqlJs: any;
 
 @Injectable({
   providedIn: 'root'
@@ -16,10 +14,7 @@ declare const initSqlJs: any;
 export class BrowserWasmSqliteEngine extends SqliteEngine {
   public rawSqliteClient?: any;
   public cachedDbInstance?: any;
-
-  // ==========================================================
-  // TYPE-SAFE DRIVER OVERRIDES
-  // ==========================================================
+  private activeDbKey?: string;
 
   public override async bootstrap(injector: Injector): Promise<void> {
     if (this.cachedDbInstance) return;
@@ -29,15 +24,14 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
       return { sqliteDbName: appConfig.sqliteDbName };
     });
 
-    // 🌟 TRUE LOCAL VARIABLE: Scoped tightly near the boot thread canvas line
     const dbKey = `arena_cache_${runtimeConfig.sqliteDbName.replace(/^file:/, '')}`;
+    this.activeDbKey = dbKey;
 
     try {
       console.log('[BrowserWasmSqliteEngine] Bootstrapping browser WebAssembly SQLite instance...');
       const SQL = await initSqlJs({ locateFile: (file: string) => `assets/${file}` });
 
-      // 🌟 INLINED INDEXED_DB READ PASS
-      let savedBinary: Uint8Array | null = await new Promise((resolve) => {
+      const savedBinary: Uint8Array | null = await new Promise((resolve) => {
         const request = indexedDB.open('ArenaWebCacheDB', 1);
         request.onupgradeneeded = () => request.result.createObjectStore('kv_store');
         request.onsuccess = () => {
@@ -62,13 +56,12 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
 
       if (!savedBinary) {
         await this.generateWebDatabaseSchema(this.rawSqliteClient);
-
-        // 🌟 Simply forward the local key context string down to the init flush loop
         await this.commitSnapshotToIndexedDb(dbKey);
       }
       console.log('[BrowserWasmSqliteEngine] Browser web storage sandbox successfully active.');
     } catch (error) {
       console.error('[BrowserWasmSqliteEngine] Boot breakdown:', error);
+      throw error;
     }
   }
 
@@ -122,26 +115,16 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
     }
   }
 
-  // ==========================================================
-  // PHYSICAL BUFFER STORAGE SYNCHRONIZERS
-  // ==========================================================
+  /** Alias used by CloudDataWire.flush() — matches NativeSqliteEngine.flush naming. */
+  public flush(): void {
+    void this.flushToIndexedDb();
+  }
 
-  /**
-   * Proxied flush trigger called directly by your CloudDataWire pipelines.
-   * Resolves the key name dynamically inside the thread execution scope.
-   */
   public async flushToIndexedDb(): Promise<void> {
-    // Web targets can read the local config reference safely right at the moment of flushing
-    const fallbackDbName = 'app_database.sqlite'; // Matches your base config fallback defaults
-    const currentDbKey = `arena_cache_${fallbackDbName}`;
-
+    const currentDbKey = this.activeDbKey ?? 'arena_cache_mtg_vault.db';
     await this.commitSnapshotToIndexedDb(currentDbKey);
   }
 
-  /**
-   * 🌟 INLINED WRITE PASS:
-   * Commits current binary memory chunks directly down to the browser IndexedDB host storage.
-   */
   private async commitSnapshotToIndexedDb(targetDbKey: string): Promise<void> {
     if (!this.rawSqliteClient) return;
 
@@ -169,13 +152,30 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
 
   private async generateWebDatabaseSchema(db: any): Promise<void> {
     try {
-      const response = await fetch('drizzle/0000_initial_schema.sql');
-      if (!response.ok) throw new Error('Schema migration file missing from app assets.');
+      const journalResponse = await fetch('drizzle/meta/_journal.json');
+      if (!journalResponse.ok) {
+        throw new Error('Drizzle journal missing from app assets.');
+      }
+
+      const journal = await journalResponse.json();
+      const tag = journal?.entries?.[0]?.tag;
+      if (!tag) {
+        throw new Error('Drizzle journal has no initial migration tag.');
+      }
+
+      const response = await fetch(`drizzle/${tag}.sql`);
+      if (!response.ok) {
+        throw new Error(`Schema migration file missing: drizzle/${tag}.sql`);
+      }
 
       const ddlStatementsScript = await response.text();
-      db.run(ddlStatementsScript);
+      // sql.js can run multi-statement scripts; strip drizzle breakpoints
+      const cleaned = ddlStatementsScript.replace(/-->\s*statement-breakpoint/g, '');
+      db.run(cleaned);
+      console.log(`[BrowserWasmSqliteEngine] Schema initialized via: [${tag}.sql].`);
     } catch (error) {
       console.error('[BrowserWasmSqliteEngine] Could not initialize web DDL rules:', error);
+      throw error;
     }
   }
 }

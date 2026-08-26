@@ -17,7 +17,7 @@
     "desktop:package": "ng build && npx electron-builder",
     "mobile:build-android": "ng build && npx cap sync android && npx cap open android",
     "mobile:build-ios": "ng build && npx cap sync ios && npx cap open ios",
-    "db:generate": "drizzle-kit generate --dialect=sqlite --schema=src/app/core/storage/sqlite/sqlite.schema.ts --out=public/drizzle"
+    "db:generate": "drizzle-kit generate --dialect=sqlite --schema=src/app/core/sqlite/sqlite.schema.ts --out=public/drizzle"
   },
   "build": {
     "appId": "com.github.fixerrD40.arenasetcracker",
@@ -38,6 +38,7 @@
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "20.0.2",
     "@angular/cdk": "^20.0.2",
     "@angular/common": "^20.0.0",
     "@angular/compiler": "^20.0.0",

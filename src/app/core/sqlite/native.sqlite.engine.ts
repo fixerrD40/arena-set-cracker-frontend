@@ -1,14 +1,12 @@
 // src/app/core/storage/sqlite/sqlite.engine.ts
 import { Injectable, Injector, runInInjectionContext, inject } from '@angular/core';
-import { APP_CONFIG } from '../config/config.model'; // 🌟 Consolidated Configuration
+import { APP_CONFIG } from '../config/config.model';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sql-js';
+import initSqlJs from 'sql.js';
 import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
-
-// Declare standard initialization signatures for external window objects
-declare const initSqlJs: any;
 
 @Injectable({
   providedIn: 'root'
@@ -201,8 +199,9 @@ export class NativeSqliteEngine extends SqliteEngine { // 🌟 Explicit Contract
 
       const sqlScriptPath = path.join(targetDirectory, initMigrationFile);
       const ddlStatementsScript = fs.readFileSync(sqlScriptPath, 'utf8');
+      const cleaned = ddlStatementsScript.replace(/-->\s*statement-breakpoint/g, '');
 
-      db.run(ddlStatementsScript);
+      db.run(cleaned);
       console.log(`[SqliteEngine] Database schema successfully initialized via: [${initMigrationFile}].`);
     } catch (ddlError: any) {
       console.error('[SqliteEngine] Error initializing database schema:', ddlError?.message || ddlError);

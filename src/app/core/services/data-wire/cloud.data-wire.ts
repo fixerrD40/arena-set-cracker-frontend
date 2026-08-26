@@ -6,11 +6,11 @@ import { eq, getTableName, getTableColumns } from 'drizzle-orm';
 import { DataWire } from './data-wire.contract';
 import { SQLITE_ENGINE_TOKEN } from '../../sqlite/sqlite.engine';
 import { OutboxService } from '../outbox.service';
-
-// Shared utility descriptors
-declare function serializePayload(table: any, model: any): any;
-declare function serializePayloadsBulk(table: any, models: any[]): any[];
-declare function hydrateRow<T>(table: any, row: any): T;
+import {
+  serializePayload,
+  serializePayloadsBulk,
+  hydrateRow
+} from '../../sqlite/sqlite.registry';
 
 @Injectable({
   providedIn: 'root'
@@ -207,7 +207,7 @@ export class CloudDataWire implements DataWire<SQLiteTable<any>> { // 🌟 Bound
         return of(null);
       }
 
-      const hydratedResult = hydrateRow<TOutput>(table, untypedRows);
+      const hydratedResult = hydrateRow<TOutput>(table, untypedRows[0]);
       return of(hydratedResult);
     } catch (err) {
       console.error(`[CloudDataWire] fetchRecord failure on key ${id}:`, err);
