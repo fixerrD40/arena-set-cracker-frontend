@@ -187,6 +187,29 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
+  public deleteWhere(
+    table: SQLiteTable<any>,
+    columnKey: string,
+    value: string | number
+  ): Observable<void> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[ElectronDataWire] Engine not bootstrapped.'));
+
+    try {
+      const columns = getTableColumns(table);
+      const column = columns[columnKey];
+      if (!column) {
+        return throwError(() => new Error(`[ElectronDataWire] Column "${columnKey}" not found on table.`));
+      }
+
+      db.delete(table).where(eq(column, value)).run();
+      this.flush();
+      return of(void 0);
+    } catch (err) {
+      return throwError(() => err);
+    }
+  }
+
   /**
    * 🌟 NEW INTEGRATED PORT: SINGLE TARGET RECORD DISCOVERY
    * Mirrors your exact native architecture rules, leverages table id checks,

@@ -33,6 +33,15 @@ export interface DataWire<TTableBase = any> {
     id: string | number
   ): Observable<void>;
 
+  /**
+   * Deletes all rows where a named column equals value (e.g. deck_cards by deckId).
+   */
+  deleteWhere(
+    table: TTableBase,
+    columnKey: string,
+    value: string | number
+  ): Observable<void>;
+
   fetchRecord<TOutput = any>(
     table: TTableBase,
     id: string | number

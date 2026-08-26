@@ -15,10 +15,11 @@ import { ScryfallCard } from './api/scryfall/models/card.scryfall';
 import { mapScryfallToCard } from '../../shared/models/card/card.mappers';
 
 // Headless Database Schema Tokens and Behavioral Command Services
-import { sets, cards, decks } from '../sqlite/sqlite.schema';
+import { sets, cards, decks, deckCards, DeckCardRow, DeckRow } from '../sqlite/sqlite.schema';
 import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
 import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';
+import { mapRowToDeck } from '../../shared/models/deck/deck.mappers';
 
 /**
  * Service-Owned Aggregate Workspace Snapshot.
@@ -84,25 +85,47 @@ export class SetService implements OnDestroy {
       this.loadSubscription.unsubscribe();
     }
 
-    // 🌟 FIX: Remove the table reflection generic constraints from all three forkJoin prongs.
     this.loadSubscription = forkJoin({
       setModels: this.dataWire.fetchCollection<MtgSet>(sets, 'all'),
-      deckModels: this.dataWire.fetchCollection<MtgDeck>(decks, setId),
-      cardModels: this.dataWire.fetchCollection<MtgCard>(cards, setId) // Safely emits [] in web clients
+      deckModels: this.dataWire.fetchCollection<any>(decks, setId),
+      cardModels: this.dataWire.fetchCollection<MtgCard>(cards, setId),
+      deckCardRows: this.dataWire.fetchCollection<DeckCardRow>(deckCards, 'all')
     }).pipe(
-      switchMap(({ setModels, deckModels, cardModels }) => {
-        const setInfo = setModels.find(s => s.id === setId);
+      switchMap(({ setModels, deckModels, cardModels, deckCardRows }) => {
+        const setInfo = setModels.find((s) => s.id === setId);
         if (!setInfo) throw new Error(`[SetService] Set configuration missing on ID: ${setId}`);
 
-        // RESILIENT FALLBACK: If strategy returned an empty card array, pull fresh from Scryfall API on the fly!
-        const cardSource$ = cardModels.length > 0
-          ? of(cardModels)
-          : this.scryfallService.getCardsBySet(setCode.toLowerCase()).pipe(
-              map(apiCards => apiCards.map(apiCard => mapScryfallToCard(apiCard, setId, ''))) // Ensure signature matches your card mapper requirements
-            );
+        const linesByDeckId = new Map<string, DeckCardRow[]>();
+        for (const row of deckCardRows || []) {
+          const key = String(row.deckId);
+          const bucket = linesByDeckId.get(key) || [];
+          bucket.push(row);
+          linesByDeckId.set(key, bucket);
+        }
+
+        const userDecks: MtgDeck[] = (deckModels || []).map((deckLike: any) => {
+          const id = String(deckLike.id);
+          const lines = linesByDeckId.get(id) || [];
+          const asRow = {
+            id: deckLike.id,
+            setId: deckLike.setId,
+            name: deckLike.name,
+            notes: deckLike.notes || '',
+            tags: Array.isArray(deckLike.tags) ? deckLike.tags : [],
+            createdAt: deckLike.createdAt || new Date().toISOString()
+          } as DeckRow;
+          return mapRowToDeck(asRow, lines);
+        });
+
+        const cardSource$ =
+          cardModels.length > 0
+            ? of(cardModels)
+            : this.scryfallService.getCardsBySet(setCode.toLowerCase()).pipe(
+                map((apiCards) => apiCards.map((apiCard) => mapScryfallToCard(apiCard, setId, '')))
+              );
 
         return cardSource$.pipe(
-          map((finalCards) => ({ setInfo, userDecks: deckModels, finalCards }))
+          map((finalCards) => ({ setInfo, userDecks, finalCards }))
         );
       }),
       tap(({ setInfo, userDecks, finalCards }) => {
@@ -282,27 +305,34 @@ export class SetService implements OnDestroy {
   }
 
   /**
+   * Inserts or replaces a deck in the live workspace cache (used after create).
+   */
+  public upsertDeckInWorkspaceMemory(deck: MtgDeck): void {
+    const current = this.currentWorkspaceSnapshot;
+    if (!current) return;
+
+    const exists = current.decks.some((d) => String(d.id) === String(deck.id));
+    const updatedDecks = exists
+      ? current.decks.map((d) =>
+          String(d.id) === String(deck.id)
+            ? { ...deck, tags: [...deck.tags], cards: new Map(deck.cards) }
+            : d
+        )
+      : [...current.decks, { ...deck, tags: [...deck.tags], cards: new Map(deck.cards) }];
+
+    this.activeContextSubject.next({
+      ...current,
+      decks: updatedDecks
+    });
+  }
+
+  /**
    * 🌟 WORKSPACE MEMORY MODIFIER
    * Allows sub-feature domains (like DeckService) to update a specific deck element
    * inside the live in-memory workspace cache array without forcing a slow disk reload.
    */
   public updateDeckInWorkspaceMemory(updatedDeck: MtgDeck): void {
-    const current = this.currentWorkspaceSnapshot;
-    if (!current) return;
-
-    // Swap out only the deck that was modified, cloning references cleanly
-    const updatedDecks = current.decks.map(deck =>
-      String(deck.id) === String(updatedDeck.id)
-        ? { ...updatedDeck, tags: [...updatedDeck.tags], cards: new Map(updatedDeck.cards) }
-        : deck
-    );
-
-    // Push the updated matrix state back down the public stream line
-    this.activeContextSubject.next({
-      ...current,
-      decks: updatedDecks
-    });
-
+    this.upsertDeckInWorkspaceMemory(updatedDeck);
     console.log(`[SetService] Workspace memory cache updated locally for deck: ${updatedDeck.name}`);
   }
 

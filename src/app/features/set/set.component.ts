@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, map, tap } from 'rxjs';
 
 import { SetChartComponent } from './set-chart.component';
@@ -39,8 +40,10 @@ export class SetComponent implements OnInit {
   readonly TriState = TriState;
   public Math = Math;
 
-  // 🌟 Clean context access: SetService owns the single source of truth matrix [INDEX]
   private readonly setService = inject(SetService);
+  private readonly router = inject(Router);
+
+  public readonly workspace$ = this.setService.activeContext$;
 
   // Synchronous local memory view buffers
   public allAggregatedCards: AggregatedCard[] = [];
@@ -366,14 +369,14 @@ export class SetComponent implements OnInit {
   nextPage(): void {
     if (this.hasNextPage) {
       this.currentPage++;
-      this.updateChart(); // Correctly synchronizes the view segment manually on action clicks
+      this.updateChart();
     }
   }
 
   prevPage(): void {
     if (this.hasPrevPage) {
       this.currentPage--;
-      this.updateChart(); // Correctly synchronizes the view segment manually on action clicks
+      this.updateChart();
     }
   }
 
@@ -388,5 +391,21 @@ export class SetComponent implements OnInit {
 
   get hasPrevPage(): boolean {
     return this.currentPage > 0;
+  }
+
+  public deckCardCount(deck: MtgDeck): number {
+    let total = 0;
+    deck.cards.forEach((qty) => {
+      total += qty;
+    });
+    return total;
+  }
+
+  public goToAddDeck(): void {
+    this.router.navigate(['/add-deck']);
+  }
+
+  public openDeck(deckId: string): void {
+    this.router.navigate(['/deck', deckId]);
   }
 }

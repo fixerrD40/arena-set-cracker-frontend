@@ -23,5 +23,15 @@
 .error-message {
   color: var(--asc-error);
   font-size: 14px;
-  margin-bottom: 1em;
+  margin-top: 1em;
+}
+
+.stripped-notice {
+  color: #8a6d3b;
+  background: #fcf8e3;
+  border: 1px solid #faebcc;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-top: 1em;
+  padding: 10px 12px;
 }

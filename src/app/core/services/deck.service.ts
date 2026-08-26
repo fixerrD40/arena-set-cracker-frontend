@@ -19,14 +19,12 @@ export class DeckService {
   private readonly dataWire = inject(DATA_WIRE_TOKEN);
   private readonly setService = inject(SetService);
 
-  // ─── 🌟 GLOBAL SOURCE OF TRUTH WORKSPACE MATRICES ──────────────────
   private readonly activeDeckSource = new BehaviorSubject<MtgDeck | null>(null);
   public readonly activeDeck$ = this.activeDeckSource.asObservable();
 
   private readonly scratchpadSource = new BehaviorSubject<MtgDeck | null>(null);
   public readonly scratchpadDeck$ = this.scratchpadSource.asObservable();
 
-  // 🌟 AUTOMATIC STRUCTURAL DIRTY STREAM
   public readonly isDirty$ = combineLatest([
     this.activeDeck$,
     this.scratchpadDeck$
@@ -52,7 +50,6 @@ export class DeckService {
     })
   );
 
-  // 🌟 CONNECT CATALOG DATA DIRECTLY TO ACTIVE QUANTITIES
   public readonly displayedCards$: Observable<DisplayedCardLine[]> = combineLatest({
     workspace: this.setService.activeContext$,
     currentScratchpad: this.scratchpadDeck$
@@ -72,17 +69,13 @@ export class DeckService {
     })
   );
 
-  // ─── UTILITY READ SYNCHRONIZERS ────────────────────────────────────
-  public get scratchpadValue(): MtgDeck | null { return this.scratchpadSource.value; }
-  public get activeDeckSnapshot(): MtgDeck | null { return this.activeDeckSource.value; }
+  public get scratchpadValue(): MtgDeck | null {
+    return this.scratchpadSource.value;
+  }
+  public get activeDeckSnapshot(): MtgDeck | null {
+    return this.activeDeckSource.value;
+  }
 
-  // ─── STATE HYDRATION & LIFECYCLES ──────────────────────────────────
-
-  /**
-   * 🌟 ROUTE RESOLVER TARGET
-   * Triggered directly by the routed component's parameter map subscription loop.
-   * Pulls the clean record out of SetService snapshot data independently.
-   */
   public loadDeckByIdFromWorkspace(deckId: string): void {
     const currentWorkspace = this.setService.currentWorkspaceSnapshot;
 
@@ -91,7 +84,7 @@ export class DeckService {
       return;
     }
 
-    const foundDeck = currentWorkspace.decks.find(d => String(d.id) === String(deckId));
+    const foundDeck = currentWorkspace.decks.find((d) => String(d.id) === String(deckId));
 
     if (foundDeck) {
       this.setActiveDeck(foundDeck);
@@ -114,7 +107,6 @@ export class DeckService {
     this.scratchpadSource.next(modifiedDeck);
   }
 
-  // ─── PURE IN-MEMORY MAP OPERATIONS ─────────────────────────────────
   public incrementInMap(cardsMap: Map<string, number>, cardId: string): Map<string, number> {
     const updated = new Map(cardsMap);
     updated.set(cardId, (updated.get(cardId) || 0) + 1);
@@ -128,12 +120,20 @@ export class DeckService {
     return updated;
   }
 
-  // ─── DATABASE WRITE PERSISTENCE CHANNELERS ─────────────────────────
+  /**
+   * Creates a new deck row + card lines, then activates it in memory.
+   */
   public createDeck(setId: string, setCode: string, name: string): Observable<MtgDeck> {
-    const freshDeck: MtgDeck = { id: crypto.randomUUID(), setId, name: name.trim(), tags: [], notes: '', cards: new Map() };
-    const payload = { ...freshDeck, cards: Object.fromEntries(freshDeck.cards) };
+    const freshDeck: MtgDeck = {
+      id: crypto.randomUUID(),
+      setId,
+      name: name.trim(),
+      tags: [],
+      notes: '',
+      cards: new Map()
+    };
 
-    return this.dataWire.insert<any, MtgDeck>(decks, payload).pipe(
+    return this.persistDeck(freshDeck, { isNew: true }).pipe(
       tap(() => {
         this.setService.loadSetWorkspace(setId, setCode);
         this.setActiveDeck(freshDeck);
@@ -142,63 +142,29 @@ export class DeckService {
     );
   }
 
+  /**
+   * Inserts a fully formed deck (including optional Arena-resolved card map).
+   */
   public insertNewDeckPayload(deck: MtgDeck): Observable<MtgDeck> {
-    const payload = { ...deck, cards: Object.fromEntries(deck.cards) };
-    return this.dataWire.insert<any, MtgDeck>(decks, payload).pipe(
-      tap(() => this.setActiveDeck(deck)),
+    return this.persistDeck(deck, { isNew: true }).pipe(
+      tap(() => {
+        this.setService.upsertDeckInWorkspaceMemory(deck);
+        this.setActiveDeck(deck);
+      }),
       map(() => deck)
     );
   }
 
-  // ─── 🌟 AUTHORITATIVE UNIFIED FLUSH ENGINE ─────────────────────────
   /**
-   * Commits current scratchpad modifications down to your storage layer wire.
-   * Invoked directly by active workspace save controllers or structural route transaction guards.
+   * Commits scratchpad modifications (parent + card lines) to SQLite.
    */
   public flush(): Observable<void> {
     const deckToSave = this.scratchpadSource.value;
     if (!deckToSave) return of(void 0);
 
-    // 1. Structure the parent entity matching your exact Drizzle 'decks' schema insert layout
-    // This allows your data wire to extract your unique identification token (.id) internally
-    const parentDeckPayload = {
-      id: deckToSave.id,
-      setId: deckToSave.setId,
-      name: deckToSave.name,
-      notes: deckToSave.notes,
-      tags: [...deckToSave.tags]
-    };
-
-    // 2. 🚀 TWO-PARAMETER HOOK: Satisfies your contract's reflection logic perfectly
-    return this.dataWire.update(decks, parentDeckPayload).pipe(
-
-      // 3. Chain your secondary relational card collection synchronization pass next
-      switchMap(() => {
-        // Clear out the stale card matrix rows belonging to this specific deck first
-        return this.dataWire.delete(deckCards, deckToSave.id);
-      }),
-
-      switchMap(() => {
-        // Transform your memory map allocations back into flat SQLite array inserts
-        const relationsPayloads = Array.from(deckToSave.cards.entries()).map(([cardId, qty]) => ({
-          deckId: deckToSave.id,
-          cardId: cardId,
-          quantity: qty
-        }));
-
-        if (relationsPayloads.length === 0) return of([]);
-
-        // Perform a high-performance transactional batch ingestion block using your data wire
-        return this.dataWire.insertBulk(deckCards, relationsPayloads);
-      }),
-
+    return this.persistDeck(deckToSave, { isNew: false }).pipe(
       tap(() => {
-        console.log(`[DeckService] Local database map serialization update complete for "${deckToSave.name}".`);
-
-        // 1. Establish the newly saved data as the pristine baseline (resets your isDirty$ trackers)
         this.setActiveDeck(deckToSave);
-
-        // 2. Synchronize the change into SetService's memory layout stream instantly
         this.setService.updateDeckInWorkspaceMemory(deckToSave);
       }),
       map(() => void 0),
@@ -206,6 +172,41 @@ export class DeckService {
         console.error(`[DeckService] Atomic database workspace commit failure on "${deckToSave.name}":`, err);
         return throwError(() => err);
       })
+    );
+  }
+
+  /**
+   * Writes decks row + replaces deck_cards for that deck id.
+   */
+  private persistDeck(deck: MtgDeck, options: { isNew: boolean }): Observable<MtgDeck> {
+    const parentDeckPayload = {
+      id: deck.id,
+      setId: deck.setId,
+      name: deck.name,
+      notes: deck.notes,
+      tags: [...deck.tags]
+    };
+
+    const writeParent$ = options.isNew
+      ? this.dataWire.insert(decks, parentDeckPayload)
+      : this.dataWire.update(decks, parentDeckPayload);
+
+    return writeParent$.pipe(
+      switchMap(() => this.dataWire.deleteWhere(deckCards, 'deckId', deck.id)),
+      switchMap(() => {
+        const relationsPayloads = Array.from(deck.cards.entries()).map(([cardId, qty]) => ({
+          deckId: deck.id,
+          cardId,
+          quantity: qty
+        }));
+
+        if (relationsPayloads.length === 0) return of([]);
+        return this.dataWire.insertBulk(deckCards, relationsPayloads);
+      }),
+      tap(() => {
+        console.log(`[DeckService] Persisted deck "${deck.name}" with ${deck.cards.size} unique card lines.`);
+      }),
+      map(() => deck)
     );
   }
 }

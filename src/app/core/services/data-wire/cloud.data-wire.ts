@@ -178,6 +178,29 @@ export class CloudDataWire implements DataWire<SQLiteTable<any>> { // 🌟 Bound
     }
   }
 
+  public deleteWhere(
+    table: SQLiteTable<any>,
+    columnKey: string,
+    value: string | number
+  ): Observable<void> {
+    const db = (this.sqliteEngine as any).cachedDbInstance;
+    if (!db) return throwError(() => new Error('[CloudDataWire] Browser engine not bootstrapped.'));
+
+    try {
+      const columns = getTableColumns(table);
+      const column = columns[columnKey];
+      if (!column) {
+        return throwError(() => new Error(`[CloudDataWire] Column "${columnKey}" not found on table.`));
+      }
+
+      db.delete(table).where(eq(column, value)).run();
+      this.flush();
+      return of(void 0);
+    } catch (err) {
+      return throwError(() => err);
+    }
+  }
+
   /**
    * 🌟 NEW PORT HOOK: SINGLE ROW SNAPSHOT (WEB SANDBOX)
    * Runs identically to the electron driver, ensuring synchronous WebAssembly Wasm outputs

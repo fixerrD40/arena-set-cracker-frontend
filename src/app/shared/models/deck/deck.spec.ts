@@ -1,5 +1,6 @@
 // src/app/shared/models/deck/deck.utils.spec.ts
-import { parseArenaTextToDeckMap } from './deck.utils';
+import { parseArenaText, parseArenaTextToDeckMap, resolveArenaLinesToCardMap } from './deck.utils';
+import { MtgCard } from '../card/card';
 
 describe('Deck Domain Engine (Pure Functional)', () => {
   const exampleRaw = `
@@ -34,34 +35,101 @@ Malformed Line Without Brackets Or Numbers
 Another Stray Text Line 1234
 `;
 
-  describe('parseArenaTextToDeckMap Clipboard Parser', () => {
-
-    it('successfully translates valid card lines into a structured Map', () => {
-      const cardMap = parseArenaTextToDeckMap(exampleRaw);
-      expect(cardMap.size).toBe(22);
-      expect(cardMap.get('5')).toBe(1);
-      expect(cardMap.get('266')).toBe(9);
-      expect(cardMap.get('263')).toBe(10);
-      expect(cardMap.get('78')).toBe(2);
+  describe('parseArenaText', () => {
+    it('tokenizes valid Arena lines including the Deck header skip', () => {
+      const lines = parseArenaText(exampleRaw);
+      expect(lines.length).toBe(22);
+      expect(lines[0].name).toBe('Dawn of a New Age');
+      expect(lines[0].set).toBe('LTR');
+      expect(lines[0].collectorNumber).toBe(5);
+      expect(lines[0].quantity).toBe(1);
     });
 
-    it('returns an empty Map container when handed a blank or empty string', () => {
-      const cardMap = parseArenaTextToDeckMap('');
-      expect(cardMap.size).toBe(0);
+    it('returns empty for blank input', () => {
+      expect(parseArenaText('').length).toBe(0);
     });
 
-    it('safely skips malformed text structures without crashing the loop thread', () => {
-      const cardMap = parseArenaTextToDeckMap(badRaw);
-      expect(cardMap.size).toBe(0);
+    it('skips malformed lines', () => {
+      expect(parseArenaText(badRaw).length).toBe(0);
     });
 
-    it('correctly aggregates quantities if duplicate card lines exist in text', () => {
+    it('aggregates via resolve when duplicate lines share a catalog name', () => {
       const duplicateLinesRaw = `
         1 Dawn of a New Age (LTR) 5
         3 Dawn of a New Age (LTR) 5
       `;
-      const cardMap = parseArenaTextToDeckMap(duplicateLinesRaw);
-      expect(cardMap.get('5')).toBe(4);
+      const catalog: MtgCard[] = [
+        {
+          id: 'scry-dawn',
+          setId: 'set-ltr',
+          arenaId: 1,
+          scryfallId: 'scry-dawn',
+          name: 'Dawn of a New Age',
+          localArtUri: '',
+          typeLine: 'Enchantment',
+          colors: ['W'],
+          rarity: 'rare',
+          manaCost: '{1}{W}'
+        }
+      ];
+      const { cards, unmatched } = resolveArenaLinesToCardMap(
+        parseArenaText(duplicateLinesRaw),
+        catalog
+      );
+      expect(unmatched.length).toBe(0);
+      expect(cards.get('scry-dawn')).toBe(4);
+    });
+  });
+
+  describe('resolveArenaLinesToCardMap', () => {
+    const catalog: MtgCard[] = [
+      {
+        id: 'id-swamp',
+        setId: 'set-ltr',
+        arenaId: 10,
+        scryfallId: 'id-swamp',
+        name: 'Swamp',
+        localArtUri: '',
+        typeLine: 'Basic Land — Swamp',
+        colors: [],
+        rarity: 'common',
+        manaCost: ''
+      },
+      {
+        id: 'id-dawn',
+        setId: 'set-ltr',
+        arenaId: 5,
+        scryfallId: 'id-dawn',
+        name: 'Dawn of a New Age',
+        localArtUri: '',
+        typeLine: 'Enchantment',
+        colors: ['W'],
+        rarity: 'rare',
+        manaCost: '{1}{W}'
+      }
+    ];
+
+    it('maps matched names to catalog ids and strips outsiders', () => {
+      const paste = `
+1 Dawn of a New Age (LTR) 5
+9 Swamp (LTR) 266
+1 Outside Card (XYZ) 99
+`;
+      const { cards, unmatched } = resolveArenaLinesToCardMap(parseArenaText(paste), catalog);
+      expect(cards.size).toBe(2);
+      expect(cards.get('id-dawn')).toBe(1);
+      expect(cards.get('id-swamp')).toBe(9);
+      expect(unmatched.length).toBe(1);
+      expect(unmatched[0].name).toBe('Outside Card');
+    });
+  });
+
+  describe('parseArenaTextToDeckMap (legacy)', () => {
+    it('still keys by collector number for backward compatibility', () => {
+      const cardMap = parseArenaTextToDeckMap(exampleRaw);
+      expect(cardMap.size).toBe(22);
+      expect(cardMap.get('5')).toBe(1);
+      expect(cardMap.get('266')).toBe(9);
     });
   });
 });

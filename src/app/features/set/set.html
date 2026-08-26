@@ -1,5 +1,35 @@
 <div class="set-detail-container" style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
 
+  <!-- Deck store for this set -->
+  <section class="set-decks-panel" style="border: 1px solid #ddd; padding: 1rem; border-radius: 6px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+      <h2 style="margin: 0; font-size: 1.15rem;">Decks</h2>
+      <button mat-raised-button color="primary" type="button" (click)="goToAddDeck()">
+        <mat-icon>add</mat-icon>
+        Import / Add Deck
+      </button>
+    </div>
+
+    @if (workspace$ | async; as workspace) {
+      <ul class="set-deck-list" style="list-style: none; margin: 1rem 0 0; padding: 0;">
+        @for (deck of workspace.decks; track deck.id) {
+          <li style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
+            <button type="button" class="deck-open-link" (click)="openDeck(deck.id)" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--asc-primary, #3f51b5); font-weight: 500; text-align: left;">
+              {{ deck.name }}
+            </button>
+            <span style="font-size: 0.85rem; color: #666;">
+              {{ deckCardCount(deck) }} cards
+            </span>
+          </li>
+        } @empty {
+          <li style="padding: 0.75rem 0; color: #666; font-style: italic;">
+            No decks yet. Import an Arena list for this set to get started.
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
   <!-- Top section: Filters and Chart side-by-side -->
   <div style="display: flex; gap: 1rem; flex-grow: 0;">
 

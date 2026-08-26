@@ -1,40 +1,86 @@
 // src/app/shared/models/deck/deck.utils.ts
+import { MtgCard } from '../card/card';
+import { ParsedArenaLine } from './deck';
+
+const ARENA_LINE_REGEX = /^(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)$/i;
 
 /**
- * PURE UTILITY FUNCTION: parseArenaTextToDeckMap
- * Translates a raw copy-pasted MTG Arena text string buffer cleanly into
- * a structured, case-insensitive card assignment dictionary map.
- *
- * Example Arena Input Pattern:
- * "4 Island (LTR) 264" -> Maps cardId "264" or Name to quantity 4.
+ * Tokenizes a raw MTG Arena export into structured lines.
+ * Skips section headers (e.g. "Deck") and malformed rows.
  */
-export function parseArenaTextToDeckMap(textBlob: string): Map<string, number> {
-  const cardMap = new Map<string, number>();
-  if (!textBlob?.trim()) return cardMap;
+export function parseArenaText(textBlob: string): ParsedArenaLine[] {
+  if (!textBlob?.trim()) return [];
 
-  // Split lines, strip whitespace blocks, and discard empty strings
-  const lines = textBlob.split('\n').map(line => line.trim()).filter(Boolean);
+  const lines = textBlob.split('\n').map((line) => line.trim()).filter(Boolean);
+  const parsed: ParsedArenaLine[] = [];
 
-  // High-reliability regular expression tracking standard MTG Arena exports:
-  // ^(\d+)\s+      -> Group 1: Capture digit strings (Quantity)
-  // (.+?)\s+       -> Group 2: Capture everything up to the set block (Card Name)
-  // \(([A-Z0-9]+)\)\s+ -> Group 3: Capture alpha-numeric expansion keys (Set Code, e.g., LTR)
-  // (\d+)$         -> Group 4: Capture digit strings (Collector Number / Arena ID identifier)
-  const arenaLineRegex = /^(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)$/;
-
-  for (const line of lines) {
-    const match = arenaLineRegex.exec(line);
+  for (const raw of lines) {
+    const match = ARENA_LINE_REGEX.exec(raw);
     if (!match) continue;
 
     const quantity = parseInt(match[1], 10);
-    const cardIdentifier = match[4]; // Uses the native unique Arena ID token key
+    const name = match[2].trim();
+    const set = match[3].toUpperCase();
+    const collectorNumber = parseInt(match[4], 10);
 
-    if (isNaN(quantity) || !cardIdentifier) continue;
+    if (isNaN(quantity) || !name || isNaN(collectorNumber)) continue;
 
-    // Accumulate values cleanly to prevent line duplicates overriding weights
-    const existingQuantity = cardMap.get(cardIdentifier) || 0;
-    cardMap.set(cardIdentifier, existingQuantity + quantity);
+    parsed.push({ quantity, name, set, collectorNumber, raw });
   }
 
+  return parsed;
+}
+
+/**
+ * @deprecated Prefer parseArenaText + resolveArenaLinesToCardMap.
+ * Kept for any leftover callers; keys by collector number (not catalog id).
+ */
+export function parseArenaTextToDeckMap(textBlob: string): Map<string, number> {
+  const cardMap = new Map<string, number>();
+  for (const line of parseArenaText(textBlob)) {
+    const key = String(line.collectorNumber);
+    cardMap.set(key, (cardMap.get(key) || 0) + line.quantity);
+  }
   return cardMap;
+}
+
+export interface ArenaResolveResult {
+  cards: Map<string, number>;
+  unmatched: ParsedArenaLine[];
+}
+
+/**
+ * Resolves Arena lines against the focused set catalog by case-insensitive name.
+ * Unmatched lines are returned for UI stripping notices; they are not stored.
+ */
+export function resolveArenaLinesToCardMap(
+  lines: ParsedArenaLine[],
+  catalogCards: MtgCard[]
+): ArenaResolveResult {
+  const cards = new Map<string, number>();
+  const unmatched: ParsedArenaLine[] = [];
+
+  const byName = new Map<string, MtgCard>();
+  for (const card of catalogCards) {
+    const key = normalizeCardName(card.name);
+    if (!byName.has(key)) {
+      byName.set(key, card);
+    }
+  }
+
+  for (const line of lines) {
+    const match = byName.get(normalizeCardName(line.name));
+    if (!match) {
+      unmatched.push(line);
+      continue;
+    }
+
+    cards.set(match.id, (cards.get(match.id) || 0) + line.quantity);
+  }
+
+  return { cards, unmatched };
+}
+
+function normalizeCardName(name: string): string {
+  return name.trim().toLowerCase();
 }
