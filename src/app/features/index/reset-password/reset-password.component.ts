@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,7 +13,6 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-reset-password',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     RouterModule,
     MatFormFieldModule,
@@ -21,7 +20,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatCardModule,
     MatButtonModule,
     MatProgressSpinner
-  ],
+],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css'
 })

@@ -1,7 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 import { routes } from './routes';
 import { runConfigAndStorageInitialization } from './core/config/config.initializer';
@@ -20,7 +19,6 @@ import { CloudDataWire } from './core/services/data-wire/cloud.data-wire';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideAnimationsAsync(),
     provideHttpClient(withInterceptors([tokenInterceptor])),
     provideRouter(routes),
 
@@ -46,7 +44,6 @@ export const appConfig: ApplicationConfig = {
     },
 
     provideAppInitializer(async () => {
-      await inject(AppConfigService).load();
       await runConfigAndStorageInitialization();
     })
   ]

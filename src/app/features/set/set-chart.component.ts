@@ -1,12 +1,12 @@
 import { Component, Input, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 
 @Component({
   selector: 'app-set-chart',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
   template: `
     <div style="display: block; width: 100%; height: 300px;">

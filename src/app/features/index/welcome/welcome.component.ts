@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -13,14 +13,13 @@ import { SetService } from '../../../core/services/set.service';
   selector: 'app-welcome',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     RouterModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule
-  ],
+],
   templateUrl: './welcome.html',
   styleUrl: './welcome.css'
 })
