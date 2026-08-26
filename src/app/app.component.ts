@@ -1,4 +1,3 @@
-// app.component.ts
 import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -27,12 +26,10 @@ export class AppComponent {
   protected readonly deckService = inject(DeckService);
   public readonly userProfileService = inject(UserProfileService);
 
-  // Core stream mappings
   protected readonly profile$ = this.userProfileService.config$;
   protected readonly workspace$ = this.setService.activeContext$;
-  protected readonly activeDeck$ = this.deckService.activeDeck$; // 🌟 Expose live deck stream
+  protected readonly activeDeck$ = this.deckService.activeDeck$;
 
-  /** Checks if the user is currently sitting inside the deck route view context */
   protected isCurrentRouteDeck(): boolean {
     return this.router.url.includes('/deck/');
   }

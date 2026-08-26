@@ -1,4 +1,3 @@
-// src/app/core/services/api/backend.service.ts
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -15,18 +14,12 @@ export class BackendService {
     return this.config.config.baseUrl || 'https://yourdomain.com';
   }
 
-  /**
-   * PWA / Web Client Initialization: Fetches a historic snapshot from a remote collection
-   * to hydrate the browser's fresh in-memory SQLite sandbox upon initial login.
-   */
+  /** Hydrates browser SQLite from a remote collection snapshot after login. */
   public fetchCollectionFromServer<T>(segment: string, contextId: string | number): Observable<T[]> {
     return this.http.get<T[]>(`${this.baseUrl}/api/${segment}?contextId=${contextId}`);
   }
 
-  /**
-   * HIGH-PERFORMANCE GLOBAL CHUNK INGESTOR (NDJSON)
-   * Streams mixed table transaction ledgers over a single HTTP request connection.
-   */
+  /** Streams outbox rows as NDJSON to the bulk-sync endpoint. */
   public streamJsonRecordsToServer(recordObservable$: Observable<any>): Observable<void> {
     return new Observable<void>((subscriber) => {
       const encoder = new TextEncoder();
@@ -47,7 +40,6 @@ export class BackendService {
         }
       });
 
-      // Simple, absolute stream entry point to feed your backend outbox processor
       fetch(`${this.baseUrl}/api/outbox/bulk-sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-ndjson' },

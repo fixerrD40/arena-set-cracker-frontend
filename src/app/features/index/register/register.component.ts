@@ -12,7 +12,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-  selector: 'app-set-register', // 🌟 Modernized to follow your noun-first naming conventions
+  selector: 'app-set-register',
   standalone: true,
   imports: [
     CommonModule,
@@ -23,7 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
     MatIconModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
+    MatProgressSpinnerModule
   ],
   templateUrl: './register.html',
   styleUrl: './register.css'
@@ -43,13 +43,11 @@ export class RegisterComponent implements OnInit {
   public isLoading = false;
 
   public ngOnInit(): void {
-    // Read the pre-loaded username straight from the central memory cache stream
     this.userProfileService.displayName$.subscribe({
       next: (name) => {
         if (name) {
           this.form.patchValue({ username: name });
         } else {
-          // If no local state name stream resolves, fallback redirect to welcome onboarding page
           this.router.navigate(['/welcome']);
         }
       },
@@ -65,10 +63,9 @@ export class RegisterComponent implements OnInit {
     this.errorMessage = null;
     this.isLoading = true;
 
-    // Extract your form values using getRawValue() so disabled fields are included
+    // getRawValue includes disabled controls (username)
     const { email, password } = this.form.getRawValue();
 
-    // Fetch the hidden local configuration snapshot from your central cache
     const profileSnapshot = this.userProfileService.getSnapshot();
 
     if (!profileSnapshot) {
@@ -78,19 +75,14 @@ export class RegisterComponent implements OnInit {
       return;
     }
 
-    // 🚀 PRIVACY STRATEGY MATCH: Send exactly TWO credentials up over the wire request lines.
-    // Your backend server registers this email and returns an opaque session token.
+    // Register with email + password only; link returned token to local SQLite profile
     this.authService
       .claimOfflineAccount({ email: email!, password: password! })
       .subscribe({
         next: (response: { token: string; displayName: string }) => {
-
-          // 🌟 CONVERGED SYSTEM PASS: Promotes your local profile row inside SQLite to a cloud state
           this.userProfileService.linkLocalProfileToCloud(response.token).subscribe({
             next: () => {
               this.isLoading = false;
-
-              // 🚀 Transition views directly to the main workspace grid safely
               this.router.navigate(['/library']);
             },
             error: (dbErr) => {

@@ -49,7 +49,7 @@ export class RequestPasswordResetComponent {
       next: () => {
         this.success = true;
         this.isLoading = false;
-        this.form.reset(); // 🚀 Best practice: Reset the input field upon network dispatch completion
+        this.form.reset();
       },
       error: (err) => {
         this.error = err.message;

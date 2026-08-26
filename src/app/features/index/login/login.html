@@ -4,7 +4,6 @@
 
     <form [formGroup]="form" (ngSubmit)="login()">
 
-      <!-- 🌟 FORM CONTROL REALIGNMENT: Target formControlName="email" matching your backend keys -->
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Email Address</mat-label>
         <input
@@ -29,7 +28,6 @@
           required />
       </mat-form-field>
 
-      <!-- 🌟 BUILT-IN CONTROL FLOW: Replaced deprecated *ngIf with high-performance @if block -->
       @if (error) {
         <div class="error-banner">{{ error }}</div>
       }
@@ -37,7 +35,6 @@
       <div class="actions-panel">
         <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isLoading">
           @if (isLoading) {
-            <!-- 🌟 SPINNER HOOK CORRECTION: Unified Material spinner tag usage -->
             <mat-spinner diameter="20" color="accent" class="inline-spinner"></mat-spinner>
           } @else {
             <span>Restore Cloud Workspace</span>

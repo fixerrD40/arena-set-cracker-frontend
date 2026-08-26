@@ -1,4 +1,3 @@
-// src/app/core/config/config.model.ts
 import { InjectionToken } from '@angular/core';
 
 export interface ScryfallConfigData {
@@ -9,11 +8,10 @@ export interface ScryfallConfigData {
 
 export interface AppConfigData {
   production: boolean;
-  baseUrl: string;       // Outbox-facing cloud backend endpoint
-  sqliteDbName: string;  // Local desktop database file name
+  baseUrl: string;       // Cloud backend for outbox sync
+  sqliteDbName: string;  // Local desktop DB filename
   scryfall: ScryfallConfigData;
-  isElectron: boolean;   // 🌟 Central environment indicator evaluated at boot
+  isElectron: boolean;
 }
 
-// The single, definitive token for your entire configuration ecosystem
 export const APP_CONFIG = new InjectionToken<AppConfigData>('APP_CONFIG');

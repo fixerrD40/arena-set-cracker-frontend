@@ -48,7 +48,7 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
         console.log(`[BrowserWasmSqliteEngine] Container cache [${dbKey}] hydrated successfully.`);
         this.rawSqliteClient = new SQL.Database(savedBinary);
       } else {
-        console.log('[BrowserWasmSqliteEngine] Container cache missing. Building fresh structural schema layout...');
+        console.log('[BrowserWasmSqliteEngine] Container cache missing. Initializing schema...');
         this.rawSqliteClient = new SQL.Database();
       }
 

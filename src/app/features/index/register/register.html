@@ -3,7 +3,6 @@
     <h2 class="card-title">Link Account to Cloud</h2>
     <form [formGroup]="form" (ngSubmit)="register()">
 
-      <!-- Email Field Block with Native Suffix Tooltip -->
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Email Address</mat-label>
         <input
@@ -13,7 +12,6 @@
           autocomplete="email"
           required />
 
-        <!-- 🌟 MATSUFFIX: Keeps custom privacy alerts inline inside the Material outline bounds cleanly -->
         <span matSuffix class="tooltip-wrapper-suffix">
           <mat-icon class="info-icon">info</mat-icon>
           <span class="tooltip-text">
@@ -34,7 +32,6 @@
         <mat-hint>Pulled from your local application profile configuration</mat-hint>
       </mat-form-field>
 
-      <!-- Password Field Block -->
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Password</mat-label>
         <input
@@ -45,18 +42,15 @@
           required />
       </mat-form-field>
 
-      <!-- 🌟 BUILT-IN CONTROL FLOW: High-performance error alerting context -->
       @if (errorMessage) {
         <div class="error-banner">
           {{ errorMessage }}
         </div>
       }
 
-      <!-- Action Footer Submission Button -->
       <div class="actions-panel">
         <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || isLoading">
           @if (isLoading) {
-            <!-- 🌟 SPINNER HOOK CORRECTION: Swapped to unified core spinner tag -->
             <mat-spinner diameter="20" color="accent" class="inline-spinner"></mat-spinner>
           } @else {
             <span>Secure Backup Workspace</span>

@@ -1,4 +1,3 @@
-// src/app/shared/models/deck/deck.utils.spec.ts
 import { parseArenaText, parseArenaTextToDeckMap, resolveArenaLinesToCardMap } from './deck.utils';
 import { MtgCard } from '../card/card';
 

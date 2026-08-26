@@ -1,17 +1,13 @@
-<!-- app.component.html -->
 <mat-toolbar color="primary" class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
 
-  <!-- Left Side: Interactive Main Brand Logo Link -->
   <span class="logo" (click)="handleHomeClick()" style="cursor: pointer; font-weight: 700; font-size: 20px; white-space: nowrap;">
     Arena Set Cracker
   </span>
 
-  <!-- Center Area: Progressive Filtering Hierarchy Tabs Component -->
   @if (profile$ | async) {
     @if (workspace$ | async; as workspace) {
       <nav mat-tab-nav-bar [tabPanel]="tabPanel" style="border-bottom: none; margin-left: 24px; flex-grow: 1;">
 
-        <!-- LAYER 1 BOOKMARK: Base System Library Index Grid -->
         <a mat-tab-link
            (click)="navigateToLibraryLayer()"
            [active]="!workspace.setInfo">
@@ -19,7 +15,6 @@
            Library
         </a>
 
-        <!-- LAYER 2 BOOKMARK: Target Active MTG Expansion Set Profile -->
         @if (workspace.setInfo) {
           <a mat-tab-link
              (click)="navigateToSetLayer(workspace.setInfo.id)"
@@ -29,10 +24,7 @@
           </a>
         }
 
-        <!-- LAYER 3 BOOKMARK: Target Deep Unsaved Scratchpad Deck View Workspace -->
         @if (isCurrentRouteDeck()) {
-          <!-- We inspect the active router state URL path to grab the string parameters if required, -->
-          <!-- but checking if the deck route is true tells us a deck view layout card is actively mounted -->
           <a mat-tab-link
              [active]="true"
              style="opacity: 1;">
@@ -46,7 +38,6 @@
 
   <span class="spacer" style="flex-grow: 1;" @if (!(workspace$ | async)) { style="display: block;" }></span>
 
-  <!-- Right Side: Secondary Public Utility Navigation Links Tray and Account Switches -->
   <nav style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
     <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
 
@@ -75,10 +66,9 @@
   </nav>
 </mat-toolbar>
 
-<!-- Required Anchor structural container mapping for Material Nav Bar layouts -->
+<!-- Required for mat-tab-nav-bar / mat-tab-nav-panel pairing -->
 <mat-tab-nav-panel #tabPanel></mat-tab-nav-panel>
 
-<!-- 2. Primary Page Rendering Anchor Frame Viewport -->
 <main class="page-content-wrapper" style="min-height: calc(100vh - 64px); display: block; position: relative;">
   <router-outlet></router-outlet>
 </main>

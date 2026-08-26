@@ -1,4 +1,3 @@
-// src/app/shared/models/deck/deck.utils.ts
 import { MtgCard } from '../card/card';
 import { ParsedArenaLine } from './deck';
 

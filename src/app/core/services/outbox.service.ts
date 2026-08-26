@@ -1,10 +1,9 @@
-// src/app/core/services/outbox.service.ts
 import { Injectable, inject } from '@angular/core';
 import { merge, of, fromEvent, EMPTY, Subscription, Observable, defer, from } from 'rxjs';
 import { exhaustMap, catchError, map, switchMap, tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { BackendService } from './backend.service';
-import { SQLITE_ENGINE_TOKEN, OutboxEnvelope } from '../sqlite/sqlite.engine'; // 🌟 Import your clean envelope type
+import { SQLITE_ENGINE_TOKEN, OutboxEnvelope } from '../sqlite/sqlite.engine';
 import { SyncQueueRow } from '../sqlite/sqlite.schema';
 
 @Injectable({
@@ -12,15 +11,11 @@ import { SyncQueueRow } from '../sqlite/sqlite.schema';
 })
 export class OutboxService {
   private readonly auth = inject(AuthService);
-  private readonly sqlite = inject(SQLITE_ENGINE_TOKEN); // 🌟 Abstracts away your active platform database driver
+  private readonly sqlite = inject(SQLITE_ENGINE_TOKEN);
   private readonly backend = inject(BackendService);
 
   private activeSyncSubscription?: Subscription;
   private engineInitialized = false;
-
-  // ==========================================================
-  // CORE STORAGE RUNTIME LIFECYCLE INITIALIZER
-  // ==========================================================
 
   public initializeEngine(): void {
     if (this.engineInitialized) return;
@@ -39,26 +34,17 @@ export class OutboxService {
     ).subscribe();
   }
 
-  // ==========================================================
-  // ATOMIC BANDWIDTH SQUASHING ENQUEUE ROUTINE
-  // ==========================================================
-
-  /**
-   * 🌟 RESTORED: Registers offline data mutations down to your active SQLite driver.
-   * Delegates complex conflict handling (upsert squashing) straight to the platform engine layer.
-   */
+  /** Queues an offline mutation; upsert/conflict handling lives in the SQLite engine. */
   public enqueue(item: OutboxEnvelope): Observable<void> {
-    // Convert the asynchronous driver Promise cleanly back into an Angular RxJS stream
     return from(this.sqlite.enqueueSyncItem(item)).pipe(
       tap(() => {
-        // Optimistically trigger background streaming if connection state allows
         if (typeof navigator !== 'undefined' && navigator.onLine && this.auth.isAuthenticated()) {
           this.triggerOutboxSync();
         }
       }),
       map(() => void 0),
       catchError((err) => {
-        console.error('[OutboxService] Failed to register outbox sync item envelope safely:', err);
+        console.error('[OutboxService] Failed to register outbox sync item:', err);
         return of(void 0);
       })
     );
@@ -71,10 +57,6 @@ export class OutboxService {
     }
     this.activeSyncSubscription = this.executeBulkSyncPipelineStream().subscribe();
   }
-
-  // ==========================================================
-  // HIGH-PERFORMANCE DATA TRANSMISSION LOG PIPELINE
-  // ==========================================================
 
   public executeBulkSyncPipelineStream(): Observable<void> {
     if (!this.auth.isAuthenticated()) {
@@ -91,7 +73,6 @@ export class OutboxService {
 
           const targetBatchIds = rawRecords.map(r => r.id);
 
-          // Map payload formatting natively down a low-overhead data stream
           const outboxDataStream$: Observable<SyncQueueRow> = from(rawRecords).pipe(
             map((queueItem: SyncQueueRow) => {
               const resolvedPayload = typeof queueItem.payload === 'string'
@@ -107,12 +88,9 @@ export class OutboxService {
 
           console.log(`[OutboxService] Piping ${targetBatchIds.length} sequential operations down the NDJSON channel...`);
 
-          // Pipe the data stream directly to the catch-all ingest endpoint
           return this.backend.streamJsonRecordsToServer(outboxDataStream$).pipe(
             switchMap(() => {
               if (targetBatchIds.length === 0) return of(void 0);
-
-              // Evict the synced items from the active engine (Native Disk or Browser WASM memory)
               return from(this.sqlite.clearSyncItemsBatch(targetBatchIds));
             }),
             tap(() => {

@@ -1,5 +1,3 @@
-// src/app/shared/models/card/card.ts
-
 /**
  * Pure, decoupled application UI domain model.
  */

@@ -1,5 +1,3 @@
-// src/app/shared/models/set/set.ts
-
 /**
  * Pure, decoupled application UI domain model.
  * Reflects your rich application expansion states natively with twin asset tracking paths.

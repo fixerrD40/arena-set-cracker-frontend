@@ -11,7 +11,7 @@ import { UserProfileService } from '../../../core/services/user-profile.service'
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
-  selector: 'app-login', // 🌟 Matches your modern noun-first naming standards
+  selector: 'app-login',
   standalone: true,
   imports: [
     CommonModule,
@@ -21,17 +21,15 @@ import { AuthService } from '../../../core/services/auth.service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
+    MatProgressSpinnerModule
   ],
   templateUrl: './login.html'
 })
 export class LoginComponent {
-  // Use pure standalone inject parameters instead of mixing constructor assignments
   private readonly userProfileService = inject(UserProfileService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  // 🌟 REFACTORED FORM FIELDS: Replaced legacy "username" with strict, validation-safe "email"
   public readonly form = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', Validators.required)
@@ -48,19 +46,14 @@ export class LoginComponent {
 
     const { email, password } = this.form.value;
 
-    // 🚀 Send the plain-text email safely over the active network stream context line
     this.authService.login({ email: email!, password: password! }).subscribe({
       next: (response: { token: string; displayName: string }) => {
-
-        // 🌟 ARCHITECTURE MATCH: Commits the server session credentials directly into the unified SQLite brain
         this.userProfileService.restoreCloudIdentity({
           token: response.token,
           name: response.displayName
         }).subscribe({
           next: () => {
             this.isLoading = false;
-
-            // 🚀 Explicitly route directly to your library page to bypass guard loop re-evaluations
             this.router.navigate(['/library']);
           },
           error: (dbErr) => {

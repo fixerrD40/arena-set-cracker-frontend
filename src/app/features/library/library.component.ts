@@ -9,17 +9,17 @@ import { SetService } from '../../core/services/set.service';
 import { MtgSet } from '../../shared/models/set/set';
 import { Observable, switchMap, of, map, forkJoin } from 'rxjs';
 
-// Define a crisp UI model extension that holds our safely resolved image link
+/** Set row plus a platform-resolved cover art URI for the template. */
 export interface UIMtgSet extends MtgSet {
   resolvedCoverArt: string;
 }
 
 @Component({
-  selector: 'app-library-component', // 🌟 Matches your component selector naming pattern
+  selector: 'app-library-component',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule, // 🌟 Ensure this is explicitly available for your about/welcome links
+    RouterModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -32,21 +32,18 @@ export class LibraryComponent implements OnInit {
   protected readonly setService = inject(SetService);
   private readonly router = inject(Router);
 
-  // 🌟 STRATEGY SHIFT: Self-contained presentation matrix stream driven by reactive changes
   public uiInstalledSets$: Observable<UIMtgSet[]> | null = null;
   public isProcessing = false;
 
   ngOnInit(): void {
     this.setService.syncInstalledCache();
 
-    // 🚀 ATOMIC PATH COMBINATOR: Intercepts core state changes and resolves platform asset URIs dynamically
     this.uiInstalledSets$ = this.setService.installedSets$.pipe(
       switchMap((setsArray: MtgSet[]) => {
         if (!setsArray || setsArray.length === 0) {
           return of([]);
         }
 
-        // Map every installed set code to its respective platform-authorized file layout channel
         const asyncMappings = setsArray.map((set) =>
           this.setService.getSetCoverWebViewUri(set.code).pipe(
             map((resolvedPath) => ({
@@ -67,7 +64,6 @@ export class LibraryComponent implements OnInit {
 
     this.isProcessing = true;
 
-    // 🌟 FIX: Updated method signature string lookup to match your exact 'getSetByCode' implementation!
     this.setService['scryfallService'].getSetByCode(setCode.trim().toLowerCase()).subscribe({
       next: (scryfallSet) => {
         this.setService.install(scryfallSet);

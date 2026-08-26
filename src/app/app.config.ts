@@ -1,4 +1,3 @@
-// src/app/app.config.ts
 import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';

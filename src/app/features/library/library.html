@@ -8,7 +8,6 @@
     </button>
   </header>
 
-  <!-- Visual blocker layout frame for active pipeline threads -->
   @if (isProcessing) {
     <div class="loading-overlay">
       <mat-spinner diameter="40"></mat-spinner>
@@ -16,11 +15,9 @@
     </div>
   }
 
-  <!-- Resolving the dynamic UI asset combinator stream asynchronously -->
   @if (uiInstalledSets$ | async; as installedSets) {
     <div class="sets-grid">
 
-      <!-- Safe loop mapping utilizing our non-blocking UIMtgSet model extension -->
       @for (set of installedSets; track set.id) {
         <div
           class="set-tile-card"
@@ -28,16 +25,13 @@
           (click)="onSelectSet(set)"
           [class.active]="(setService.activeContext$ | async)?.setInfo?.id === set.id">
 
-          <!-- Overlay linear gradient scrim guarantees typography legibility -->
           <div class="tile-scrim"></div>
 
-          <!-- Discrete removal trigger overlay anchor -->
           <button class="delete-btn" (click)="onDeleteSet($event, set)" [disabled]="isProcessing" title="Uninstall Set">
             <mat-icon>close</mat-icon>
           </button>
 
           <div class="tile-body">
-            <!-- Converts the raw SVG emblem cleanly into a crisp white graphic vector -->
             <img [src]="set.iconSvgUri" class="set-icon-vector" alt="Set Emblem" />
             <div class="set-details">
               <h3>{{ set.name }}</h3>
@@ -46,7 +40,6 @@
           </div>
         </div>
       } @empty {
-        <!-- Structural fallback state if no tables have rows loaded -->
         <div class="empty-state">
           <p>No expansions installed yet. Click the button above to add an MTG Arena set repository.</p>
         </div>

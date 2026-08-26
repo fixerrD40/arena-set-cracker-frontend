@@ -1,4 +1,3 @@
-// src/app/core/storage/sqlite/sqlite.engine.ts
 import { Injectable, Injector, runInInjectionContext, inject } from '@angular/core';
 import { APP_CONFIG } from '../config/config.model';
 import { syncQueue } from './sqlite.schema';
@@ -11,19 +10,14 @@ import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
 @Injectable({
   providedIn: 'root'
 })
-export class NativeSqliteEngine extends SqliteEngine { // 🌟 Explicit Contract Adherence
+export class NativeSqliteEngine extends SqliteEngine {
   public rawSqliteClient?: any;
   public cachedDbInstance?: any;
   public activeFileName?: string;
 
-  // ==========================================================
-  // STORAGE PROVIDER CONTRACT IMPLEMENTATION
-  // ==========================================================
-
   public override async bootstrap(injector: Injector): Promise<void> {
     if (this.cachedDbInstance) return;
 
-    // Streamlined: Pull setup variables exclusively from our consolidated configuration payload
     const runtimeConfig = runInInjectionContext(injector, () => {
       const appConfig = inject(APP_CONFIG);
       return {
@@ -78,7 +72,6 @@ export class NativeSqliteEngine extends SqliteEngine { // 🌟 Explicit Contract
       return [];
     }
     try {
-      // Retain your precise chronological sorting query layout
       return db.select().from(syncQueue).orderBy(syncQueue.id).all() as SyncQueueItem[];
     } catch (error) {
       console.error('[SqliteEngine] Failed to read pending outbox logs:', error);
@@ -90,7 +83,6 @@ export class NativeSqliteEngine extends SqliteEngine { // 🌟 Explicit Contract
     const db = this.cachedDbInstance;
     if (!db || ids.length === 0) return;
     try {
-      // Your high-performance Drizzle-compliant atomic purge query
       db.delete(syncQueue)
         .where(inArray(syncQueue.id, ids))
         .run();
@@ -145,10 +137,6 @@ export class NativeSqliteEngine extends SqliteEngine { // 🌟 Explicit Contract
       throw err;
     }
   }
-
-  // ==========================================================
-  // CORE ENGINE RUNTIME LIFECYCLE
-  // ==========================================================
 
   public flush(): void {
     const rawDb = this.rawSqliteClient;

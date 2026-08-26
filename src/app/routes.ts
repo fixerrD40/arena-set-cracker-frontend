@@ -3,38 +3,27 @@ import { deckGuard } from './core/guards/deck.guard';
 import { welcomeGuard } from './core/guards/welcome.guard';
 
 export const routes: Routes = [
-  // ==========================================
-  // 1. GLOBAL ROOT LANDING (The First-Boot Welcome Card)
-  // ==========================================
   {
     path: '',
     pathMatch: 'full',
     canActivate: [welcomeGuard],
     loadComponent: () => import('./features/index/index.component').then(m => m.IndexComponent)
   },
-
-  // ==========================================
-  // 2. CONFIGURED CORE DASHBOARD HOME
-  // ==========================================
   {
     path: 'library',
-    canActivate: [welcomeGuard], // 🌟 Protects against manual URL entry if unconfigured
+    canActivate: [welcomeGuard],
     loadComponent: () => import('./features/library/library.component').then(m => m.LibraryComponent)
   },
-
-  // ==========================================
-  // 3. PUBLIC ENTRY FLOWS (Unguarded targets for the Index button)
-  // ==========================================
   {
     path: 'about',
     loadComponent: () => import('./features/index/about/about.component').then(m => m.AboutComponent)
   },
   {
-    path: 'welcome', // Desktop offline initialization endpoint
+    path: 'welcome', // Desktop offline first-run
     loadComponent: () => import('./features/index/welcome/welcome.component').then(m => m.WelcomeComponent)
   },
   {
-    path: 'login', // Cloud web/mobile login endpoint
+    path: 'login',
     loadComponent: () => import('./features/index/login/login.component').then(m => m.LoginComponent)
   },
   {
@@ -55,10 +44,6 @@ export const routes: Routes = [
         (m) => m.ResetPasswordComponent
       )
   },
-
-  // ==========================================
-  // 4. SECURED DATA SUBSYSTEMS
-  // ==========================================
   {
     path: 'add-set',
     canActivate: [welcomeGuard],
@@ -80,9 +65,5 @@ export const routes: Routes = [
     canDeactivate: [deckGuard],
     loadComponent: () => import('./features/deck/deck.component').then(m => m.DeckComponent)
   },
-
-  // ==========================================
-  // 5. CATCH-ALL WILDCARD REDIRECT
-  // ==========================================
   { path: '**', redirectTo: '' }
 ];

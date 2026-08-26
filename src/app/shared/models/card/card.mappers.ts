@@ -1,12 +1,7 @@
-// src/app/shared/models/card/card.mappers.ts
 import { CardRow, CardInsert } from '../../../core/sqlite/sqlite.schema';
 import { MtgCard } from './card';
 import { ScryfallCard } from '../../../core/services/api/scryfall/models/card.scryfall';
 
-/**
- * DATABASE INPUT WIRE:
- * Translates a raw SQLite row read from disk into your pure application domain structure.
- */
 export function mapRowToCard(row: CardRow): MtgCard {
   return {
     id: row.id,
@@ -16,16 +11,12 @@ export function mapRowToCard(row: CardRow): MtgCard {
     name: row.name,
     localArtUri: row.localArtUri,
     typeLine: row.typeLine,
-    colors: row.colors, // Drizzle mode: 'json' automatically parses this column into a string[]
+    colors: row.colors,
     rarity: row.rarity,
     manaCost: row.manaCost
   };
 }
 
-/**
- * DATABASE OUTPUT WIRE:
- * Serializes your core domain card model into the flat schema layout your Drizzle database write layer requires.
- */
 export function mapCardToInsert(card: MtgCard): CardInsert {
   return {
     id: card.id,
@@ -35,16 +26,12 @@ export function mapCardToInsert(card: MtgCard): CardInsert {
     name: card.name,
     localArtUri: card.localArtUri,
     typeLine: card.typeLine,
-    colors: card.colors, // Drizzle mode: 'json' stringifies this array automatically on write
+    colors: card.colors,
     rarity: card.rarity,
     manaCost: card.manaCost
   };
 }
 
-/**
- * NETWORK INPUT WIRE (SCRYFALL REST API):
- * Translates a raw incoming card chunk payload from Scryfall directly into your pure application domain structure.
- */
 export function mapScryfallToCard(
   apiCard: ScryfallCard,
   generatedSetId: string,

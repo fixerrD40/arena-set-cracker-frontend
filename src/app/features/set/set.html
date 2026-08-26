@@ -1,6 +1,5 @@
 <div class="set-detail-container" style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
 
-  <!-- Deck store for this set -->
   <section class="set-decks-panel" style="border: 1px solid #ddd; padding: 1rem; border-radius: 6px;">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
       <h2 style="margin: 0; font-size: 1.15rem;">Decks</h2>
@@ -30,16 +29,13 @@
     }
   </section>
 
-  <!-- Top section: Filters and Chart side-by-side -->
   <div style="display: flex; gap: 1rem; flex-grow: 0;">
 
     <aside class="filters-sidebar">
       <div class="filters">
 
-        <!-- Colors Filter -->
         <div>
           <strong>Colors:</strong>
-          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
           @for (color of filters['colors'].options; track color) {
             <button
               (click)="toggleFilter('colors', color)"
@@ -54,10 +50,8 @@
           }
         </div>
 
-        <!-- Types Filter -->
         <div>
           <strong>Types:</strong>
-          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
           @for (type of filters['types'].options; track type) {
             <button
               (click)="toggleFilter('types', type)"
@@ -71,10 +65,8 @@
           }
         </div>
 
-        <!-- Rarities Filter -->
         <div>
           <strong>Rarities:</strong>
-          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
           @for (rarity of filters['rarities'].options; track rarity) {
             <button
               (click)="toggleFilter('rarities', rarity)"
@@ -88,10 +80,8 @@
           }
         </div>
 
-        <!-- Costs Filter -->
         <div>
           <strong>Costs (CMC):</strong>
-          <!-- 🌟 NATIVE FLOW: Replaced *ngFor with clean @for loop. Fixed index signature brackets style [LTR] -->
           @for (cost of filters['costs'].options; track cost) {
             <button
               (click)="toggleFilter('costs', cost)"
@@ -110,9 +100,7 @@
 
   <main class="chart-main" style="flex: 1; display: flex; flex-direction: column; min-height: 500px;">
 
-    <!-- Search Input and Pagination Info -->
     <div class="header" style="margin-bottom: 1rem;">
-      <!-- Cleaned up: Removed (input) function execution completely -->
       <input
         type="text"
         placeholder="Search cards..."
@@ -128,7 +116,6 @@
       </div>
     </div>
 
-    <!-- Chart Canvas: Structurally Identical and Bound to reactive state updates -->
     <div class="chart-wrapper" style="flex-grow: 1; min-height: 300px;">
       @defer (on timer(150ms)) {
         <app-set-chart [chartData]="barChartData" />
@@ -139,7 +126,6 @@
       }
     </div>
 
-    <!-- Pagination Controls -->
     <div class="pagination-controls" style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;">
       <button (click)="prevPage()" [disabled]="!hasPrevPage">Previous</button>
       <span>Page {{ currentPage + 1 }} / {{ Math.ceil(filteredCards.length / pageSize) || 1 }}</span>
@@ -150,7 +136,6 @@
 
   </div>
 
-  <!-- Bottom section: Underutilized cards -->
   <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
     <h3>Underutilized Cards</h3>
 
@@ -158,7 +143,6 @@
       @for (card of underutilizedCards; track card.id) {
         <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
 
-          <!-- 🌟 FIXED: Replaced legacy *ngIf with clean native @if flow block -->
           @if (card.localArtUri) {
             <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
           }
@@ -173,7 +157,6 @@
     </div>
   </section>
 
-  <!-- Bottom section: Overutilized cards -->
   <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
     <h3>Overutilized Cards</h3>
 
@@ -181,7 +164,6 @@
       @for (card of overutilizedCards; track card.id) {
         <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
 
-          <!-- 🌟 FIXED: Replaced legacy *ngIf with clean native @if flow block -->
           @if (card.localArtUri) {
             <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
           }

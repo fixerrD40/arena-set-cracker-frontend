@@ -1,4 +1,3 @@
-// src/app/core/config/config.service.ts
 import { Injectable } from '@angular/core';
 import { AppConfigData } from './config.model';
 

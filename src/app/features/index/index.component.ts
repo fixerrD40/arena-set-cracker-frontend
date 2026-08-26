@@ -23,11 +23,10 @@ export class IndexComponent implements OnInit {
   private readonly userProfile = inject(UserProfileService);
   private readonly setService = inject(SetService);
 
-  // 🛡️ Hidden initially to prevent action flickers while loading config from disk
+  // Hidden until config check finishes to avoid action flicker
   public readonly showDefaultAction = signal<boolean>(false);
 
   public ngOnInit(): void {
-    // Check if your central profile state subject is already holding a valid active memory configuration
     const currentProfile = this.userProfile.getSnapshot();
 
     if (currentProfile && currentProfile.displayName) {
@@ -35,18 +34,13 @@ export class IndexComponent implements OnInit {
       this.setService.syncInstalledCache();
       this.router.navigate(['/library']);
     } else {
-      // 🚀 FIX: Let your welcomeGuard handle cold-boot initialization, and safely reveal actions here without duplicate queries
       this.showDefaultAction.set(true);
     }
   }
 
-  /**
-   * Primary action dispatcher for onboarding destinations.
-   */
   public handleGetStartedClick(): void {
     const currentProfile = this.userProfile.getSnapshot();
 
-    // 🌟 PRIVACY REFACTOR: Check if displayName string exists instead of checking the deleted user_uuid key!
     if (currentProfile && currentProfile.displayName) {
       this.setService.syncInstalledCache();
       this.router.navigate(['/library']);

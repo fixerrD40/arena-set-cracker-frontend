@@ -1,7 +1,5 @@
-<!-- 🌟 FIX: Unroll your stateful service observable stream to keep it as your single template truth -->
 @if (scratchpadDeck$ | async; as deck) {
 
-  <!-- ======== Authoritative Workspace Action Banner ======== -->
   <div class="workspace-toolbar">
     <div class="toolbar-info">
       @if (isDirty$ | async) {
@@ -11,7 +9,6 @@
       }
     </div>
     <div class="toolbar-actions">
-      <!-- Only activate button workflows when structural matrices differ from disk -->
       <button
         mat-flat-button
         color="primary"
@@ -31,7 +28,6 @@
 
   <div class="deck-wrapper">
 
-    <!-- ======== Deck Meta Section ======== -->
     <div class="deck-meta">
       <div class="deck-tags">
         <h3>Tags:</h3>
@@ -64,10 +60,8 @@
       </div>
     </div>
 
-    <!-- ======== Deck List Section ======== -->
     <div class="deck-list">
 
-      <!-- 🌟 REFACTORED INLINE EDITING WORKFLOW -->
       @if (editing) {
         <div class="inline-rename-container">
           <mat-form-field appearance="outline" class="full-width">
@@ -94,7 +88,6 @@
         </h2>
 
         <div class="decklist-cards">
-          <!-- Bind the loop cleanly to the unified displayedCards$ stream -->
           @for (item of displayedCards$ | async; track item.card.id) {
             <div
               class="decklist-card"
@@ -123,7 +116,6 @@
     </div>
   </div>
 } @else {
-  <!-- Fallback loader block triggers smoothly while route param changes execute resolution transitions -->
   <div class="loading-workspace-spinner">
     Initializing assignment profile context matrices...
   </div>

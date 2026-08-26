@@ -19,9 +19,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
   private readonly sqliteEngine = inject(SQLITE_ENGINE_TOKEN);
   private readonly outbox = inject(OutboxService);
 
-  /**
-   * DYNAMIC DOMAIN INSERT CONDUCTOR
-   */
   public insert<TInput = any, TOutput = any>(
     table: SQLiteTable<any>,
     domainModel: TInput
@@ -56,9 +53,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * Performs a high-performance batch row mutation transaction block.
-   */
   public insertBulk<TInput = any, TOutput = any>(
     table: SQLiteTable<any>,
     payloads: TInput[]
@@ -99,10 +93,7 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * Updates an existing database row synchronously by unique primary key,
-   * flushes data arrays to disk, and pushes an UPDATE frame context straight to outbox logs.
-   */
+  /** Updates by primary key, flushes to disk, and enqueues outbox UPDATE for decks/sets. */
   public update<TInput = any, TOutput = any>(
     table: SQLiteTable<any>,
     domainModel: TInput
@@ -147,9 +138,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * Deletes a record from the local SQLite database by unique identity lookup.
-   */
   public delete(
     table: SQLiteTable<any>,
     id: string | number
@@ -210,11 +198,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * 🌟 NEW INTEGRATED PORT: SINGLE TARGET RECORD DISCOVERY
-   * Mirrors your exact native architecture rules, leverages table id checks,
-   * and runs your required runtime hydrateRow utility to emit clean domain items.
-   */
   public fetchRecord<TOutput = any>(
     table: SQLiteTable<any>,
     id: string | number
@@ -228,7 +211,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
         return throwError(() => new Error('[ElectronDataWire] Target table lacks an "id" tracking token.'));
       }
 
-      // Synchronously execute row extraction near the metal via native driver commands
       const untypedRows = db
         .select()
         .from(table)
@@ -240,7 +222,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
         return of(null);
       }
 
-      // 🚀 PRESERVED ARCHITECTURE MATCH: Hydrates the single row utilizing your system conversion rules
       const hydratedResult = hydrateRow<TOutput>(table, untypedRows[0]);
       return of(hydratedResult);
     } catch (err) {
@@ -249,9 +230,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * Extracts raw row snapshots from the local SQLite table dataset and handles domain hydration.
-   */
   public fetchCollection<TOutput = any>(
     table: SQLiteTable<any>,
     contextId?: string | number
@@ -278,9 +256,6 @@ export class ElectronDataWire implements DataWire<SQLiteTable<any>> {
     }
   }
 
-  /**
-   * Synchronizes memory heap changes safely to native disk frames.
-   */
   public flush(): void {
     if (typeof (this.sqliteEngine as any).flush === 'function') {
       (this.sqliteEngine as any).flush();

@@ -1,4 +1,3 @@
-// src/app/core/sqlite/sqlite.registry.ts
 import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { getTableName } from 'drizzle-orm';
 import { serializeSetToSqlite, mapRowToSet } from '../../shared/models/set/set.mappers';

@@ -1,4 +1,3 @@
-// src/app/core/platform/platform.contract.ts
 import { InjectionToken } from '@angular/core';
 
 export interface PlatformContext {

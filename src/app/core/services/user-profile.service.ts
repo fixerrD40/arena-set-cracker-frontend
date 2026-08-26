@@ -1,4 +1,3 @@
-// src/app/core/services/user-profile.service.ts
 import { Injectable, inject, Inject } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
@@ -30,7 +29,6 @@ export class UserProfileService {
   }
 
   constructor(@Inject(APP_CONFIG) appConfig: any) {
-    // Standard routing target fallback parameters across all client environments
     this.onboardingTargetRoute = appConfig.isElectron ? '/welcome' : '/login';
   }
 
@@ -47,8 +45,6 @@ export class UserProfileService {
       }),
       tap((config) => {
         this.configSubject.next(config);
-
-        // 🚀 CONVERGED SYNCHRONIZATION: Sync your AuthService state to match your database row health!
         const hasActiveSession = !!(config && config.sessionToken);
         this.authService.setAuthenticationState(hasActiveSession);
       }),
@@ -61,9 +57,7 @@ export class UserProfileService {
     );
   }
 
-  /**
-   * Scenario A: First-Time Desktop Local Profile Creation
-   */
+  /** First-time local profile (desktop onboarding). */
   public establishIdentity(name: string): Observable<void> {
     const domainModel: UserProfile = {
       displayName: name.trim(),
@@ -72,7 +66,6 @@ export class UserProfileService {
       lastSyncTimestamp: null
     };
 
-    // 🚀 Converts our domain model straight to a Drizzle payload using the output mapper
     const dbPayload = mapProfileToInsert(domainModel);
 
     return this.dataWire.insert(systemConfig, dbPayload).pipe(
@@ -81,9 +74,7 @@ export class UserProfileService {
     );
   }
 
-  /**
-   * Scenario B: Promoting an Existing Local Identity to Cloud Tracking
-   */
+  /** Promote local profile after cloud register returns a session token. */
   public linkLocalProfileToCloud(sessionToken: string): Observable<void> {
     const current = this.getSnapshot();
     if (!current) return of(void 0);
@@ -103,9 +94,7 @@ export class UserProfileService {
     );
   }
 
-  /**
-   * Scenario C: Cold Rehydration Recovery from Cloud Server Payload
-   */
+  /** Cold restore from login response (overwrite singleton config row). */
   public restoreCloudIdentity(serverPayload: { token: string; name: string }): Observable<void> {
     const restoredProfileRow = {
       id: 'active_user',
@@ -122,32 +111,25 @@ export class UserProfileService {
       lastSyncTimestamp: restoredProfileRow.lastSyncTimestamp
     };
 
-    // Insert acts as an overwrite due to the hardcoded primary key 'active_user'
+    // Insert overwrites via fixed primary key 'active_user'
     return this.dataWire.insert(systemConfig, restoredProfileRow).pipe(
       tap(() => this.configSubject.next(domainModel)),
       map(() => void 0)
     );
   }
 
-  /**
-   * Updates timestamp flags inside your database tracking schemas post-sync completion
-   */
   public updateCloudSyncStatus(timestamp: string = new Date().toISOString()): Observable<void> {
     const current = this.getSnapshot();
     if (!current) return of(void 0);
 
-    // 1. Construct the complete, unified domain model profile snapshot
     const updatedProfile: UserProfile = {
       ...current,
       isCloudSynced: true,
       lastSyncTimestamp: timestamp
     };
 
-    // 2. Map the domain model directly to the schema insert layout required by Drizzle
-    // This injects the required primary key constraint "id: 'active_user'" automatically
     const dbPayload = mapProfileToInsert(updatedProfile);
 
-    // 3. Pass EXACTLY two parameters to the data wire to satisfy your contract's reflection logic
     return this.dataWire.update(systemConfig, dbPayload).pipe(
       tap(() => this.configSubject.next(updatedProfile)),
       map(() => void 0)
@@ -158,10 +140,6 @@ export class UserProfileService {
     return this.configSubject.getValue();
   }
 
-  /**
-   * FACTORY MASTER RESET
-   * Destroys the active row, flushing the configuration profile state completely.
-   */
   public clearConfig(): Observable<void> {
     return this.dataWire.delete(systemConfig, 'active_user').pipe(
       tap(() => this.configSubject.next(null)),

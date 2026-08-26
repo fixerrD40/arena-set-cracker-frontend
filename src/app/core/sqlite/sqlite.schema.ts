@@ -1,26 +1,17 @@
-// src/app/core/sqlite/sqlite.schema.ts
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, index, primaryKey, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
-// ==========================================
-// SYSTEM LAYERS & MACHINE STATE CONFIG (Singleton)
-// ==========================================
+// Singleton local profile / session row
 export const systemConfig = sqliteTable('system_config', {
-  // Hardcoded key constraint guarantees only one configuration context exists inside SQLite
+  // Single-row table keyed by fixed id
   id: text('id').primaryKey().default('active_user'),
   displayName: text('display_name').notNull(),
-
-  // 🔑 The sole cryptographically secure gatekeeper string needed for data syncing
   sessionToken: text('session_token'),
-
   isCloudSynced: integer('is_cloud_synced', { mode: 'boolean' }).notNull().default(false),
   lastSyncTimestamp: text('last_sync_timestamp'),
   createdAt: text('created_at').notNull().default(sql`(strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))`)
 });
 
-// ==========================================
-// STATIC RELATIONAL CORE
-// ==========================================
 export const sets = sqliteTable('sets', {
   id: text('id').primaryKey(),
   code: text('code').notNull().unique(), // e.g., "dsk", "blb", "ltr"
@@ -42,9 +33,6 @@ export const cards = sqliteTable('cards', {
   manaCost: text('mana_cost').notNull(),
 });
 
-// ==========================================
-// DYNAMIC USER CORE
-// ==========================================
 export const decks = sqliteTable('decks', {
   id: text('id').primaryKey(),
   setId: text('set_id').notNull().references(() => sets.id, { onDelete: 'cascade' }),
@@ -62,9 +50,7 @@ export const deckCards = sqliteTable('deck_cards', {
   primaryKey({ columns: [table.deckId, table.cardId] }),
 ]);
 
-// ==========================================
-// OFFLINE SYNC QUEUE (Outbox Pattern)
-// ==========================================
+// Offline sync outbox; unique per entity so later ops squash earlier ones
 export const syncQueue = sqliteTable('sync_queue', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   entityType: text('entity_type').$type<'set' | 'deck'>().notNull(),
@@ -76,20 +62,14 @@ export const syncQueue = sqliteTable('sync_queue', {
   uniqueIndex('sync_queue_entity_record_idx').on(table.entityType, table.entityId)
 ]);
 
-// ==========================================
-// INFERRED DATABASE DATA SHAPES
-// ==========================================
-
-/** Selection Records (What comes OUT of the database) */
-export type SystemConfigRow = typeof systemConfig.$inferSelect; // 🌟 Added
+export type SystemConfigRow = typeof systemConfig.$inferSelect;
 export type SetRow = typeof sets.$inferSelect;
 export type CardRow = typeof cards.$inferSelect;
 export type DeckRow = typeof decks.$inferSelect;
 export type DeckCardRow = typeof deckCards.$inferSelect;
 export type SyncQueueRow = typeof syncQueue.$inferSelect;
 
-/** Insertion Payloads (What goes IN to the database) */
-export type SystemConfigInsert = typeof systemConfig.$inferInsert; // 🌟 Added
+export type SystemConfigInsert = typeof systemConfig.$inferInsert;
 export type SetInsert = typeof sets.$inferInsert;
 export type CardInsert = typeof cards.$inferInsert;
 export type DeckInsert = typeof decks.$inferInsert;

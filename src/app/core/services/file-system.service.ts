@@ -1,4 +1,3 @@
-// src/app/core/services/file-system.service.ts
 import { Injectable } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
@@ -10,10 +9,7 @@ import { Capacitor } from '@capacitor/core';
 })
 export class FileSystemService {
 
-  /**
-   * PLUG-AND-PLAY VIEW TRANSLATOR
-   * Evaluates a target string and converts its raw path pointer into a safe link format for <img> tags.
-   */
+  /** Converts a Data-directory path into a WebView-safe URI for img tags. */
   public resolvePlatformWebViewUri(targetPath: string): Observable<string> {
     return from(
       Filesystem.getUri({
@@ -26,10 +22,7 @@ export class FileSystemService {
     );
   }
 
-  /**
-   * DOMAIN-BLIND BINARY DOWNLOAD STREAMER
-   * Fetches an external URL endpoint asset, encodes it, and commits it cleanly to a target file path destination.
-   */
+  /** Downloads a remote URL into Directory.Data at destinationPath; returns WebView URI. */
   public downloadRemoteUrlToDisk(url: string, destinationPath: string): Observable<string> {
     return from(fetch(url)).pipe(
       switchMap((response) => {
@@ -53,26 +46,25 @@ export class FileSystemService {
     );
   }
 
-  /**
-   * Cleanly wipes an entire directory branch (called during uninstalls)
-   */
+  /** Used on set uninstall; missing directories are ignored. */
   public deleteDirectory(path: string): Observable<void> {
     return from(
       Filesystem.rmdir({
         path,
         directory: Directory.Data,
-        recursive: true  // Wipes all nested card artwork assets and covers concurrently
+        recursive: true
       })
     ).pipe(
       map(() => void 0),
-      catchError(() => of(void 0)) // Absorb failures quietly if the directory is already gone
+      catchError(() => of(void 0))
     );
   }
 
   private blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve((reader.result as string).split(',')[1]); // Strip data url headers cleanly
+      // Capacitor writeFile expects raw base64 without the data: URL prefix
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });

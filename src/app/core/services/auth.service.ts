@@ -16,8 +16,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly authUrl: string;
 
-  // 🌟 CONVERGED AUTH STATE: Initialized false on startup.
-  // The UserProfileService will push 'true' to this channel when it loads the SQLite config row.
+  // Starts false; UserProfileService sets true when a SQLite config row with a session loads
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public readonly isAuthenticated$: Observable<boolean> = this.isAuthenticatedSubject.asObservable();
 
@@ -29,17 +28,11 @@ export class AuthService {
     return this.isAuthenticatedSubject.getValue();
   }
 
-  /**
-   * Pushes manual authentication flags into your stream channels
-   */
   public setAuthenticationState(state: boolean): void {
     this.isAuthenticatedSubject.next(state);
   }
 
-  /**
-   * Called on a fresh device setup to restore a pre-existing cloud workspace.
-   * 🌟 FIX: Uses "email" parameters matching your form inputs, and strips out localStorage loops.
-   */
+  /** Restores an existing cloud session on a fresh device. */
   public login(credentials: { email: string; password: string }): Observable<CloudSessionResponse> {
     return this.http
       .post<CloudSessionResponse>(`${this.authUrl}/login`, credentials)
@@ -49,11 +42,7 @@ export class AuthService {
       );
   }
 
-  /**
-   * Bridges a local identity to the cloud.
-   * 🌟 PRIVACY SECURITY FIX: Stripped out the tracking userUuid parameters entirely!
-   * The server infers who the user is through their verified email credential context.
-   */
+  /** Links a local offline profile to the cloud via email + password (no userUuid). */
   public claimOfflineAccount(credentials: { email: string; password: string }): Observable<CloudSessionResponse> {
     return this.http
       .post<CloudSessionResponse>(`${this.authUrl}/register`, credentials)
@@ -77,9 +66,6 @@ export class AuthService {
       .pipe(catchError(this.handleError));
   }
 
-  /**
-   * Synchronous flush trigger to purge internal stream flags
-   */
   public clearAuthenticationState(): void {
     this.isAuthenticatedSubject.next(false);
   }

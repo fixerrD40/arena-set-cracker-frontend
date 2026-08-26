@@ -2,15 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-
-// Angular Material Imports
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinner } from '@angular/material/progress-spinner'; // Standardized Component Link
-
-// Custom Local Services
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -19,12 +15,12 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule, // Added to support your new template routerLink transitions safely
+    RouterModule,
     MatFormFieldModule,
     MatInputModule,
     MatCardModule,
     MatButtonModule,
-    MatProgressSpinner // Swapped from Module wrapper format
+    MatProgressSpinner
   ],
   templateUrl: './reset-password.html',
   styleUrl: './reset-password.css'
@@ -35,7 +31,7 @@ export class ResetPasswordComponent implements OnInit {
   private readonly auth = inject(AuthService);
 
   public readonly form: FormGroup = this.fb.group({
-    newPassword: ['', [Validators.required, Validators.minLength(8)]] // Added a baseline length constraint for safety
+    newPassword: ['', [Validators.required, Validators.minLength(8)]]
   });
 
   public token: string | null = null;
@@ -44,7 +40,6 @@ export class ResetPasswordComponent implements OnInit {
   public isLoading = false;
 
   public ngOnInit(): void {
-    // Extracts the url string parameter e.g., /reset-password?token=XYZ
     this.token = this.route.snapshot.queryParamMap.get('token');
     if (!this.token) {
       this.error = 'Invalid, expired, or missing security token link.';

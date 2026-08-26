@@ -45,7 +45,6 @@ export class SetComponent implements OnInit {
 
   public readonly workspace$ = this.setService.activeContext$;
 
-  // Synchronous local memory view buffers
   public allAggregatedCards: AggregatedCard[] = [];
   public filteredCards: AggregatedCard[] = [];
   public underutilizedCards: AggregatedCard[] = [];
@@ -54,14 +53,12 @@ export class SetComponent implements OnInit {
   public pageSize = 20;
   public currentPage = 0;
 
-  // Reactive Input Control Subjects
   private readonly searchTermSubject = new BehaviorSubject<string>('');
   private readonly filterTriggerSubject = new BehaviorSubject<void>(undefined);
 
   public set searchTerm(value: string) { this.searchTermSubject.next(value); }
   public get searchTerm(): string { return this.searchTermSubject.getValue(); }
 
-  // Tri-State Filter Configurations Matrix
   public filters: Record<string, FilterCategory> = {
     colors: { options: Object.values(Color), states: new Map() },
     types: {
@@ -72,11 +69,9 @@ export class SetComponent implements OnInit {
     costs: { options: ['1', '2', '3', '4', '5', '6+'], states: new Map() },
   };
 
-  // Chart configuration structures
   public barChartData = { labels: [] as string[], datasets: [{ data: [] as number[] }] };
 
   constructor() {
-    // Initialize all criteria matrix toggles to plain Unselected baseline states
     for (const categoryKey of Object.keys(this.filters)) {
       const category = this.filters[categoryKey];
       for (const option of category.options) {
@@ -86,7 +81,6 @@ export class SetComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    // UNIFIED REACTIVE WORKSPACE STREAM
     combineLatest({
       workspace: this.setService.activeContext$,
       searchTerm: this.searchTermSubject.asObservable(),
@@ -95,27 +89,20 @@ export class SetComponent implements OnInit {
       map(({ workspace, searchTerm }) => {
         if (!workspace) return { sortedAggregated: [], searchTerm };
 
-        // Step A: Aggregate counts on domain models extracted out of the unified stream snapshot
         const aggregated = this.aggregateCards(workspace.decks, workspace.cards);
         const sortedAggregated = aggregated.sort((a, b) => b.quantity - a.quantity);
 
-        // Pass both the total aggregate pool and current search term down the stream line
         return { sortedAggregated, searchTerm };
       }),
       tap(({ sortedAggregated, searchTerm }) => {
-        // 🌟 FIX: Commit the unfiltered aggregate list to the class property so the template tracks it!
         this.allAggregatedCards = sortedAggregated;
-
-        // Step B: Execute your filtering passes against the baseline cached total collection
         this.filteredCards = this.executeFiltering(this.allAggregatedCards, searchTerm);
 
-        // Step C: Inline Page Index Guard Rails
         const maxPage = Math.max(0, Math.ceil(this.filteredCards.length / this.pageSize) - 1);
         if (this.currentPage > maxPage) {
           this.currentPage = maxPage;
         }
 
-        // Step D: Trigger downstream metrics calculations automatically entirely in memory RAM
         this.classifyUtilization();
         this.updateChart();
       })
@@ -126,22 +113,17 @@ export class SetComponent implements OnInit {
     return ColorDisplayNames[code as Color];
   }
 
-  /**
-   * HIGH-PERFORMANCE FLAT AGGREGATION MOTOR
-   * Spreads all native card metadata flatly into memory entries and sums up deck weights.
-   */
+  /** Sums deck quantities onto each catalog card (keyed by name, with id fallback). */
   private aggregateCards(decks: MtgDeck[], cards: MtgCard[]): AggregatedCard[] {
     const cardUsageMap = new Map<string, AggregatedCard>();
 
-    // 1. Pre-populate your hash dictionary by flat-spreading every single card row
     for (const card of cards) {
       cardUsageMap.set(card.name, {
-        ...card,     // Spreads name, rarity, typeLine, localArtUri flatly!
-        quantity: 0  // Base initialization weight
+        ...card,
+        quantity: 0
       });
     }
 
-    // 2. Iterate through live workspace user decks, accumulating counts by name or identifier
     for (const deck of decks) {
       deck.cards.forEach((quantity, cardIdentifier) => {
         const match = cardUsageMap.get(cardIdentifier) ||
@@ -160,12 +142,10 @@ export class SetComponent implements OnInit {
     const cleanSearch = activeSearch.trim().toLowerCase();
 
     return aggregatedCards.filter((card) => {
-      // 1. Search Query String Match Pass
       if (cleanSearch && !card.name.toLowerCase().includes(cleanSearch)) {
         return false;
       }
 
-      // 🌟 Clean call-sites passing ONLY the category key and the matching predicate function! [INDEX]
       if (!this.passesTriStateFilter('colors', (option) => card.colors.includes(option))) {
         return false;
       }
@@ -186,26 +166,17 @@ export class SetComponent implements OnInit {
     });
   }
 
-
-  /**
-   * UI CLICK HANDLER
-   * Cycles a filter setting through Unselected -> Required -> Excluded, then kicks off the stream layout recalculation.
-   */
+  /** Cycles Unselected → Include → Exclude, then refilters. */
   public toggleFilter(categoryKey: keyof typeof this.filters, option: string): void {
     const category = this.filters[categoryKey];
     if (!category) return;
 
     const current = category.states.get(option) ?? TriState.Unselected;
-
-    // Cycle state natively: 0 (Unselected) -> 1 (Required) -> 2 (Excluded) -> 0
     const nextState = (current + 1) % 3 as TriState;
     category.states.set(option, nextState);
-
-    // Kick-start the stream calculation chain instantly!
     this.filterTriggerSubject.next();
   }
 
-  // === New helper: compute quantiles (q1, median, q3) robustly ===
   private getQuantiles(numbers: number[]) {
     if (numbers.length === 0) return { q1: 0, median: 0, q3: 0 };
     const sorted = numbers.slice().sort((a, b) => a - b);
@@ -226,27 +197,22 @@ export class SetComponent implements OnInit {
     };
   }
 
-  // === New: compute thresholds per rarity and classify cards ===
+  /** Classifies cards by rarity: fixed thresholds for mythic/common, median for others. */
   private classifyUtilization(): void {
-    // Group filteredCards by rarity
     const cardsByRarity = new Map<string, AggregatedCard[]>();
     for (const card of this.filteredCards) {
       if (!cardsByRarity.has(card.rarity)) cardsByRarity.set(card.rarity, []);
       cardsByRarity.get(card.rarity)!.push(card);
     }
 
-    // Clear previous arrays
     this.underutilizedCards = [];
     this.overutilizedCards = [];
 
-    // For each rarity group, compute thresholds and classify
     cardsByRarity.forEach((cards, rarity) => {
       const quantities = cards.map((c) => c.quantity);
-      const { q1, median, q3 } = this.getQuantiles(quantities);
+      const { median } = this.getQuantiles(quantities);
 
       // TODO: haha this is garbage fix it
-
-      // We handle this with an override for these two rarities, else generic quartiles
 
       cards.forEach((card) => {
         let utilization: 'underutilized' | 'standard' | 'overutilized' = 'standard';
@@ -260,47 +226,40 @@ export class SetComponent implements OnInit {
           else if (card.quantity === 3 || card.quantity === 4) utilization = 'standard';
           else utilization = 'overutilized';
         } else {
-          // Use quartile-based thresholds for other rarities
           if (card.quantity < median) utilization = 'underutilized';
           else if (card.quantity > median) utilization = 'overutilized';
-          else utilization = 'standard'; // exactly median
+          else utilization = 'standard';
         }
 
         if (utilization === 'underutilized') this.underutilizedCards.push(card);
         else if (utilization === 'overutilized') this.overutilizedCards.push(card);
-        // standard cards we do not store separately here
       });
     });
   }
 
   /**
-   * COMPREHENSIVE TRI-STATE INVARIANT EVALUATOR
-   * Gathers active filters into subsets to guarantee flawless multi-attribute sorting.
+   * Tri-state filter: exclude wins; if any Include is set, card must match at least one.
    */
   private passesTriStateFilter(
     categoryKey: keyof typeof this.filters,
-    matchesOption: (option: string) => boolean // 🌟 Clean: optionsToTest safely deleted!
+    matchesOption: (option: string) => boolean
   ): boolean {
     const states = this.filters[categoryKey].states;
 
     const included = new Set<string>();
     const excluded = new Set<string>();
 
-    // 1. Separate options into strict active Include and Exclude subsets dynamically
     for (const [option, state] of states.entries()) {
       if (state === TriState.Include) included.add(option);
       else if (state === TriState.Exclude) excluded.add(option);
     }
 
-    // Guard A: If no explicit filter criteria are active, the row is automatically valid
     if (included.size === 0 && excluded.size === 0) return true;
 
-    // Guard B: Check EXCLUSIONS first. If ANY excluded option matches your predicate, drop the row
     for (const option of excluded) {
       if (matchesOption(option)) return false;
     }
 
-    // Guard C: Check INCLUSIONS. If any options are marked as Include, the card MUST satisfy at least one
     if (included.size > 0) {
       const satisfiesAtLeastOne = Array.from(included).some(option => matchesOption(option));
       if (!satisfiesAtLeastOne) return false;
@@ -332,7 +291,6 @@ export class SetComponent implements OnInit {
   }
 
   updateChart(): void {
-    // 1. Grab base dataset reference to preserve styling attributes
     const baseDataset = this.barChartData?.datasets?.[0] ?? {
       label: 'Card Utilization',
       backgroundColor: 'rgba(75,192,192,0.6)',
@@ -340,7 +298,6 @@ export class SetComponent implements OnInit {
       borderWidth: 1,
     };
 
-    // 2. Guard Clause: Safely handle empty data states without erasing configuration properties
     if (!this.filteredCards || this.filteredCards.length === 0) {
       this.barChartData = {
         labels: [],
@@ -349,12 +306,10 @@ export class SetComponent implements OnInit {
       return;
     }
 
-    // 3. Process current page view slices
     const start = this.currentPage * this.pageSize;
     const end = start + this.pageSize;
     const pageCards = this.filteredCards.slice(start, end);
 
-    // 4. Update the chart configuration package
     this.barChartData = {
       labels: pageCards.map((c) => c.name),
       datasets: [

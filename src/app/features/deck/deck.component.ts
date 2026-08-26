@@ -30,7 +30,7 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
     MatInputModule,
     NgxTippyModule
   ],
-  templateUrl: './deck.html', // Points straight to your updated clean HTML wireframe file
+  templateUrl: './deck.html',
   styleUrls: ['./deck.css']
 })
 export class DeckComponent implements OnInit, OnDestroy {
@@ -40,40 +40,28 @@ export class DeckComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
 
-  // ─── CENTRALIZED DATA PIPELINES ────────────────────────────────────
   public readonly scratchpadDeck$ = this.deckService.scratchpadDeck$;
   public readonly displayedCards$ = this.deckService.displayedCards$;
   public readonly isDirty$ = this.deckService.isDirty$;
 
-  // ─── LOCAL UI PROPERTY FIELDS ──────────────────────────────────────
   public editing = false;
   public readonly separatorKeysCodes: number[] = [ENTER, COMMA];
 
   public ngOnInit(): void {
-    /**
-     * URL PARAMETER HOOK
-     * Continuously monitors route changes. If a user navigates to a new
-     * identifier string or reloads, this triggers a fresh service lookup loop.
-     */
     this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const id = params.get('id');
       if (id) {
         this.editing = false;
-
-        // Command our stateful coordinator service to map out data subjects
         this.deckService.loadDeckByIdFromWorkspace(id);
       }
     });
   }
 
   public ngOnDestroy(): void {
-    // Teardown allocated properties to clear indexing titles across your application shell shell layouts
     this.deckService.clearActiveDeck();
     this.destroy$.next();
     this.destroy$.complete();
   }
-
-  // ─── INLINE RENAME LAYER MUTATIONS ──────────────────────────────────
 
   public toggleEdit(): void {
     this.editing = !this.editing;
@@ -93,8 +81,6 @@ export class DeckComponent implements OnInit, OnDestroy {
     this.editing = false;
   }
 
-  // ─── CARD MATRIX VALUE QUANTITY MANAGEMENT ──────────────────────────
-
   public handleIncrementCard(cardId: string): void {
     const current = this.deckService.scratchpadValue;
     if (!current) return;
@@ -110,8 +96,6 @@ export class DeckComponent implements OnInit, OnDestroy {
     const updatedMap = this.deckService.decrementInMap(current.cards, cardId);
     this.deckService.updateScratchpad({ ...current, cards: updatedMap });
   }
-
-  // ─── IN-MEMORY TAG & CHIP MANAGEMENT ────────────────────────────────
 
   public addTag(event: MatChipInputEvent): void {
     const current = this.deckService.scratchpadValue;
@@ -139,16 +123,12 @@ export class DeckComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── IN-MEMORY NOTES MANAGEMENT ────────────────────────────────────
-
   public saveNotes(text: string): void {
     const current = this.deckService.scratchpadValue;
     if (!current || current.notes === text) return;
 
     this.deckService.updateScratchpad({ ...current, notes: text });
   }
-
-  // ─── AUTHORITATIVE DATABASE PERSISTENCE COMMAND ROUTERS ────────────
 
   public handleSaveChanges(): void {
     this.deckService.flush().subscribe({
@@ -162,13 +142,10 @@ export class DeckComponent implements OnInit, OnDestroy {
   public handleCancelChanges(): void {
     const original = this.deckService.activeDeckSnapshot;
     if (original) {
-      // Re-hydrate matching baseline variables to drop temporary memory strings
       this.deckService.setActiveDeck(original);
     }
     this.editing = false;
   }
-
-  // ─── VIEW PRESENTATION FORMATTING HELPERS ──────────────────────────
 
   public getCardTooltip(cardId: string): string {
     const workspace = this.setService.currentWorkspaceSnapshot;

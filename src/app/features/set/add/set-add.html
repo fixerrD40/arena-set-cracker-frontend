@@ -6,7 +6,6 @@
              [matAutocomplete]="auto" />
 
       <mat-autocomplete #auto="matAutocomplete" [displayWith]="displaySet">
-        <!-- 🌟 Clean modern loop (Safe from JIT compilation issues) -->
         @for (set of (filteredSets$ | async); track set.code) {
           <mat-option [value]="set">
             {{ set.name }} ({{ set.code.toUpperCase() }})
@@ -14,7 +13,6 @@
         }
       </mat-autocomplete>
 
-      <!-- 🌟 Clean conditional block -->
       @if (isLoading) {
         <mat-progress-spinner
           matSuffix
