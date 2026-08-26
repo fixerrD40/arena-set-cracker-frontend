@@ -20,10 +20,9 @@ import { AuthService } from '../../../core/services/auth.service';
     MatInputModule,
     MatCardModule,
     MatButtonModule,
-    MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
+    MatProgressSpinnerModule
   ],
-  templateUrl: './request-password-reset.html',
-  styleUrls: ['./request-password-reset.css', '../auth.css', '../../features.css'] as any
+  templateUrl: './request-password-reset.html'
 })
 export class RequestPasswordResetComponent {
   private readonly fb = inject(FormBuilder);

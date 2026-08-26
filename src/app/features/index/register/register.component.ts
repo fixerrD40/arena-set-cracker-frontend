@@ -26,7 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
     MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
   ],
   templateUrl: './register.html',
-  styleUrls: ['register.css', '../auth.css', '../../features.css']
+  styleUrl: './register.css'
 })
 export class RegisterComponent implements OnInit {
   private readonly userProfileService = inject(UserProfileService);

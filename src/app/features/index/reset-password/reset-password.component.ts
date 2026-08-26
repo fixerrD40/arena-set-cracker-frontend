@@ -27,7 +27,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatProgressSpinner // Swapped from Module wrapper format
   ],
   templateUrl: './reset-password.html',
-  styleUrls: ['./reset-password.css', '../auth.css', '../../features.css']
+  styleUrl: './reset-password.css'
 })
 export class ResetPasswordComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

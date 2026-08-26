@@ -1,10 +1,8 @@
-/* Container for layout and scroll safety */
 .deck-container {
   width: 100%;
   overflow-x: auto;
 }
 
-/* Main layout wrapper */
 .deck-wrapper {
   display: flex;
   flex-wrap: nowrap;
@@ -17,7 +15,6 @@
   background-color: #fafafa;
 }
 
-/* Left side: meta info */
 .deck-meta {
   flex: 1 1 0;
   min-width: 0;
@@ -26,7 +23,6 @@
   color: #333;
 }
 
-/* Meta section headers */
 .deck-tags h3,
 .deck-notes h3 {
   font-size: 1.1rem;
@@ -36,15 +32,10 @@
   padding-bottom: 4px;
 }
 
-/* Tags section spacing alignment */
 .deck-tags {
   margin-bottom: 1.5rem;
 }
 
-/*
- * FIXED: Target Angular Material internal layouts via native class hooks.
- * Prevents duplications by matching Material's shadow styling patterns.
- */
 .mat-mdc-chip-grid {
   padding: 6px;
   background: #fff;
@@ -54,7 +45,6 @@
   box-sizing: border-box;
 }
 
-/* Custom styled inputs inside the Material grid */
 input[matChipInputFor] {
   border: none;
   outline: none;
@@ -64,7 +54,6 @@ input[matChipInputFor] {
   background: transparent;
 }
 
-/* Notes Section */
 .deck-notes {
   margin-top: 1.5rem;
   display: flex;
@@ -85,16 +74,14 @@ input[matChipInputFor] {
 }
 
 .deck-notes textarea:focus {
-  border-color: #3f51b5;
+  border-color: var(--asc-primary);
   box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
   outline: none;
 }
 
-/* Right side: deck list workspace container */
 .deck-list {
-  /* FIXED: Changed to flex: 1 0 320px to allow card views or edit forms to expand naturally */
   flex: 1 0 320px;
-  max-width: 460px; /* Binds column width gracefully on wide viewports */
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -102,7 +89,7 @@ input[matChipInputFor] {
   border: 1px solid #ddd;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  max-height: 75vh; /* Responsive height boundary linked to viewport sizing bounds */
+  max-height: 75vh;
   overflow-y: auto;
 }
 
@@ -117,7 +104,6 @@ input[matChipInputFor] {
   justify-content: space-between;
 }
 
-/* Layout header actions inside edit panels */
 .form-header {
   display: flex;
   align-items: center;
@@ -133,7 +119,6 @@ input[matChipInputFor] {
   padding: 0;
 }
 
-/* Card layout list container row frames */
 .decklist-cards {
   display: flex;
   flex-direction: column;
@@ -154,7 +139,7 @@ input[matChipInputFor] {
 }
 
 .decklist-card:hover {
-  background: #f0f4f8; /* Soft blue color wash highlighting on cursor hover states */
+  background: #f0f4f8;
   border-color: #bfdbfe;
 }
 
@@ -172,7 +157,6 @@ input[matChipInputFor] {
   font-size: 0.8rem;
 }
 
-/* Empty or Loading view structural fallbacks */
 .empty-matrix-fallback,
 .loading-workspace-spinner {
   text-align: center;
@@ -182,7 +166,6 @@ input[matChipInputFor] {
   line-height: 1.5;
 }
 
-/* Responsive breakout rules for mobile optimization channels */
 @media (max-width: 900px) {
   .deck-wrapper {
     flex-direction: column;
@@ -198,6 +181,6 @@ input[matChipInputFor] {
 
   .deck-list {
     margin-top: 1.5rem;
-    max-height: none; /* Allows natural fluid document scrolling on devices */
+    max-height: none;
   }
 }

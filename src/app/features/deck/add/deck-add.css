@@ -1,14 +1,7 @@
-/* ─── deck-add.component.css ─── */
 .add-deck-card {
-  max-width: 440px; /* Added back to prevent the card from stretching full screen */
-  margin: 32px auto; /* Added back to center the card on the page */
+  max-width: 440px;
+  margin: 32px auto;
   padding: 24px;
-}
-
-.error-message {
-  color: #d32f2f;
-  font-size: 14px;
-  margin-bottom: 1em;
 }
 
 .add-deck-form {
@@ -18,11 +11,17 @@
   width: 100%;
 }
 
-.full-width {
-  width: 100%;
+.add-deck-form .full-width {
+  margin-bottom: 0;
 }
 
-button[type="submit"] {
+.add-deck-form button[type='submit'] {
   align-self: flex-end;
   margin-top: 8px;
+}
+
+.error-message {
+  color: var(--asc-error);
+  font-size: 14px;
+  margin-bottom: 1em;
 }

@@ -4,10 +4,6 @@
   padding: 0 24px;
 }
 
-/* ==========================================================
-   ANGULAR MATERIAL HOOK OVERRIDES
-   ========================================================== */
-
 mat-card-header {
   margin-bottom: 16px;
 }
@@ -32,7 +28,7 @@ mat-card-subtitle {
 mat-card-content {
   font-size: 15px;
   line-height: 1.6;
-  color: #333;
+  color: var(--asc-text-primary);
 }
 
 mat-card-content p {

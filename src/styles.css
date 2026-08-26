@@ -1,14 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
 @import 'tippy.js/dist/tippy.css';
 @import 'tippy.js/themes/light-border.css';
+@import './app/shared/styles/auth-shell.css';
 
-html, body {
+:root {
+  --asc-surface-low: var(--mat-sys-surface-container-low, #f5f5f5);
+  --asc-on-surface: var(--mat-sys-on-surface, #212121);
+  --asc-on-surface-variant: var(--mat-sys-on-surface-variant, #666666);
+  --asc-primary: var(--mdc-filled-button-container-color, #3f51b5);
+  --asc-error: var(--mat-sys-error, #d32f2f);
+  --asc-error-container: var(--mat-sys-error-container, #ffebee);
+  --asc-success: var(--mat-sys-on-primary-container, #2e7d32);
+  --asc-success-container: var(--mat-sys-primary-container, #e8f5e9);
+  --asc-border: var(--border-color, rgba(0, 0, 0, 0.12));
+  --asc-text-secondary: var(--text-secondary, #666666);
+  --asc-text-primary: var(--text-primary, #333333);
+  --asc-filter-include: #4bc0c0;
+  --asc-filter-include-border: #399999;
+  --asc-filter-exclude: #e66a6a;
+  --asc-filter-exclude-border: #b04141;
+}
+
+html,
+body {
   height: 100%;
 }
 
 body {
   margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
   background-color: var(--mat-sys-background, #f5f5f5);
   color: var(--mat-sys-on-background, #000);
 }

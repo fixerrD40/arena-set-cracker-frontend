@@ -10,14 +10,10 @@
   gap: 16px;
 }
 
-.full-width {
-  width: 100%;
+.add-set-form .full-width {
+  margin-bottom: 0;
 }
 
-button[type="submit"] {
+.add-set-form button[type='submit'] {
   align-self: flex-end;
-}
-
-.spinner {
-  margin-right: 8px;
 }

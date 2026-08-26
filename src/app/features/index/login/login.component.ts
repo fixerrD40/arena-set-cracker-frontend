@@ -23,8 +23,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatButtonModule,
     MatProgressSpinnerModule // 🌟 Use standard Module suffix to ensure clean compilation
   ],
-  templateUrl: './login.html',
-  styleUrls: ['login.css', '../auth.css', '../../features.css']
+  templateUrl: './login.html'
 })
 export class LoginComponent {
   // Use pure standalone inject parameters instead of mixing constructor assignments

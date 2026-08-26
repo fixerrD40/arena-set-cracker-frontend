@@ -1,7 +1,6 @@
-/* === Layout === */
 .filters-sidebar {
   width: 220px;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid var(--asc-border);
   padding-right: 1rem;
   overflow-y: auto;
   max-height: 600px;
@@ -18,7 +17,6 @@
   font-size: 1.1rem;
 }
 
-/* === Standard filter buttons (Types, Rarities, Costs) === */
 .filters button:not(.color-button) {
   margin: 0 0.25rem 0.25rem 0;
   padding: 0.3rem 0.6rem;
@@ -31,22 +29,21 @@
 }
 
 .filters button.include:not(.color-button) {
-  background: #4bc0c0;
+  background: var(--asc-filter-include);
   color: white;
-  border-color: #399999;
+  border-color: var(--asc-filter-include-border);
 }
 
 .filters button.exclude:not(.color-button) {
-  background: #e66a6a;
+  background: var(--asc-filter-exclude);
   color: white;
-  border-color: #b04141;
+  border-color: var(--asc-filter-exclude-border);
 }
 
 .filters button:hover:not(.color-button):not(.include):not(.exclude) {
   background: #e0f7f7;
 }
 
-/* === Color Buttons === */
 .color-button {
   display: inline-block;
   width: 32px;
@@ -61,13 +58,13 @@
 }
 
 .color-button.include {
-  background-color: #4bc0c0;
-  border-color: #399999;
+  background-color: var(--asc-filter-include);
+  border-color: var(--asc-filter-include-border);
 }
 
 .color-button.exclude {
-  background-color: #e66a6a;
-  border-color: #b04141;
+  background-color: var(--asc-filter-exclude);
+  border-color: var(--asc-filter-exclude-border);
 }
 
 .color-button:hover:not(.include):not(.exclude) {
