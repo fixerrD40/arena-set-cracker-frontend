@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection, provideAppInitializer, inject } from '@angular/core';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './routes';
@@ -19,7 +19,7 @@ import { CloudDataWire } from './core/services/data-wire/cloud.data-wire';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideHttpClient(withInterceptors([tokenInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([tokenInterceptor])),
     provideRouter(routes),
 
     {

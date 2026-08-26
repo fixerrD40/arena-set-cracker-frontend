@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -21,6 +21,7 @@ import { SetService } from '../../../core/services/set.service';
     MatButtonModule
 ],
   templateUrl: './welcome.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './welcome.css'
 })
 export class WelcomeComponent {

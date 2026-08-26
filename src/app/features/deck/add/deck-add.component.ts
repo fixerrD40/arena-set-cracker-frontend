@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -23,6 +23,7 @@ import { parseArenaText, resolveArenaLinesToCardMap } from '../../../shared/mode
     MatButtonModule
   ],
   templateUrl: './deck-add.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deck-add.css']
 })
 export class DeckAddComponent implements OnInit {

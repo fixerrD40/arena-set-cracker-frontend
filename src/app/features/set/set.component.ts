@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -34,6 +34,7 @@ interface FilterCategory {
   standalone: true,
   imports: [CommonModule, FormsModule, MatChipsModule, MatIconModule, MatButtonModule, NgxTippyModule, SetChartComponent],
   templateUrl: './set.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./set.css']
 })
 export class SetComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, Input, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, ViewChild, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
@@ -8,6 +8,7 @@ import { ChartConfiguration } from 'chart.js';
   standalone: true,
   imports: [BaseChartDirective],
   providers: [provideCharts(withDefaultRegisterables())],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div style="display: block; width: 100%; height: 300px;">
       <canvas baseChart

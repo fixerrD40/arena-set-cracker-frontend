@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -26,6 +26,7 @@ export interface UIMtgSet extends MtgSet {
     MatProgressSpinnerModule
   ],
   templateUrl: './library.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './library.css'
 })
 export class LibraryComponent implements OnInit {

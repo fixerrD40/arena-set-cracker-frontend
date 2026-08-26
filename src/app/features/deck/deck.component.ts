@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -31,6 +31,7 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
     NgxTippyModule
   ],
   templateUrl: './deck.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deck.css']
 })
 export class DeckComponent implements OnInit, OnDestroy {

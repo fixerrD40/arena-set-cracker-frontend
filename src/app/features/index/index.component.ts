@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +11,7 @@ import { UserProfileService } from '../../core/services/user-profile.service';
   standalone: true,
   templateUrl: './index.html',
   styleUrls: ['./index.css'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [
     RouterModule,
     MatCardModule,
