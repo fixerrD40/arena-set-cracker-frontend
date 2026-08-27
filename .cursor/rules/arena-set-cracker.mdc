@@ -7,11 +7,17 @@ alwaysApply: true
 
 ## Product
 
-Offline-first Angular app for managing **Magic: The Gathering Arena** decks within **one installed set at a time**.
+Offline-first Angular app for **cracking** one installed **Magic: The Gathering Arena** set at a time: WotC sells an assignment puzzle; every card in the set belongs in some deck, even when that is not printed on the box. The user assigns the catalog. The app supplies slices, not a verdict.
 
-Happy path: install a set (Scryfall) → open it → paste an Arena deck export → persist locally → reload and still see the list.
+Happy path today: install a set (Scryfall) → open it → paste an Arena export → persist locally → reload and still see the list.
 
 **Invariant:** decks and Arena imports resolve only against the focused set’s catalog. Lines that do not match that catalog are stripped; notify the user. Do not design for multi-set decklists.
+
+Color identity is not capped at two; do not bake guild/dual as the only shape of a deck.
+
+**Client** owns discovery tooling against the local catalog: oracle-text analysis and, later, real NLP. User-supplied source text (the work WotC adapted—e.g. a chapter the user provides, not a bundled book) is a valid slice against the focused set. Do not hide the catalog behind an emergence score.
+
+**Backend** is for community-aggregated insight (e.g. pairing rates: “60% of players put this card with a card already in your deck”), not for streaming Scryfall or running the user’s discovery job.
 
 ## Stack map
 
@@ -42,4 +48,4 @@ Only commit when the user asks.
 
 ## Session scope
 
-Treat cloud sync polish, art download/Capacitor filesystem, and similar as **in or out of scope only when the user says so** for that session—do not assume they are permanent non-goals.
+Treat community sync, art download/Capacitor filesystem, and similar as **in or out of scope only when the user says so** for that session—do not assume they are permanent non-goals.
