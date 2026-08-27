@@ -16,13 +16,16 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
+      // Renderer still window.require's fs (NativeSqliteEngine, FileSystemService) and loads file:// art.
       nodeIntegration: true,
       contextIsolation: false,
       webSecurity: false
     }
   });
 
-  win.webContents.openDevTools();
+  if (!app.isPackaged) {
+    win.webContents.openDevTools();
+  }
   win.loadFile(path.join(__dirname, 'dist/arena-set-cracker/browser/index.html'));
 }
 
