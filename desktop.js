@@ -1,22 +1,28 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
 
-// FORCE V8 ENGINE TO ALLOW 4GB OF HEAP MEMORY
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
 
 function createWindow() {
+  // Keep Chromium's Electron token in the UA; append a Scryfall-identifiable suffix.
+  // Replacing the UA entirely made navigator.userAgent miss "electron" and routed desktop to /login.
+  const scryfallTag = 'MtgVaultApp/1.0.0 (stafford.hank@gmail.com)';
+  const sessionUA = session.defaultSession.getUserAgent();
+  if (!sessionUA.includes('MtgVaultApp')) {
+    session.defaultSession.setUserAgent(`${sessionUA} ${scryfallTag}`);
+  }
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true, // Gives Angular direct access to Node.js features
-      contextIsolation: false
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false
     }
   });
 
   win.webContents.openDevTools();
-
-  // Load the compiled Angular index.html file
   win.loadFile(path.join(__dirname, 'dist/arena-set-cracker/browser/index.html'));
 }
 

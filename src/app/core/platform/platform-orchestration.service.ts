@@ -6,11 +6,7 @@ export class PlatformOrchestrationService {
   private context!: PlatformContext;
 
   public isElectronEnvironment(): boolean {
-    return !!(
-      typeof window !== 'undefined' &&
-      window.navigator &&
-      window.navigator.userAgent.toLowerCase().includes('electron')
-    );
+    return !!(typeof window !== 'undefined' && (window as any).process?.versions?.electron);
   }
 
   public async initializePlatformContext(injector: Injector): Promise<void> {

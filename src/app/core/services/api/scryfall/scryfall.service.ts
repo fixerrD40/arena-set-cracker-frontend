@@ -15,11 +15,10 @@ export class ScryfallService {
   // api. subdomain avoids an HTTP redirect that breaks some clients
   private readonly baseUrl = 'https://api.scryfall.com';
 
-  // Scryfall requires an identifiable User-Agent
+  // Chromium/Electron block User-Agent on renderer requests; Electron sets it in desktop.js.
   private readonly httpOptions = {
     headers: new HttpHeaders({
-      'Accept': 'application/json',
-      'User-Agent': 'MtgVaultApp/1.0.0 (contact@yourdomain.com)'
+      Accept: 'application/json'
     })
   };
 

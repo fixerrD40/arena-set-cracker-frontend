@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterModule } from '@angular/router';
-import { map, Observable, of, startWith } from 'rxjs';
+import { catchError, filter, map, Observable, of, startWith, switchMap, take, timeout } from 'rxjs';
 import { ScryfallService } from '../../../core/services/api/scryfall/scryfall.service';
 import { SetService } from '../../../core/services/set.service';
 import { ScryfallSet } from '../../../core/services/api/scryfall/models/set.scryfall';
@@ -42,15 +42,17 @@ export class SetAddComponent implements OnInit {
 
   allSets: ScryfallSet[] = [];
   filteredSets$: Observable<ScryfallSet[]> = of([]);
-  isLoading = false;
+  isLoadingCatalog = false;
+  isInstalling = false;
+  errorMessage: string | null = null;
 
   ngOnInit(): void {
-    this.isLoading = true;
+    this.isLoadingCatalog = true;
 
     this.scryfall.getAvailableSets().subscribe({
       next: (responseSets: ScryfallSet[]) => {
         this.allSets = responseSets;
-        this.isLoading = false;
+        this.isLoadingCatalog = false;
 
         this.filteredSets$ = this.form.controls.search.valueChanges.pipe(
           startWith(''),
@@ -64,8 +66,9 @@ export class SetAddComponent implements OnInit {
         );
       },
       error: (err) => {
-        console.error('Failed to load online expansion directory from Scryfall API:', err);
-        this.isLoading = false;
+        console.error('Failed to load Scryfall set directory:', err);
+        this.isLoadingCatalog = false;
+        this.errorMessage = 'Could not load the set directory from Scryfall.';
       }
     });
   }
@@ -76,10 +79,34 @@ export class SetAddComponent implements OnInit {
 
   submit(): void {
     const selected = this.form.value.search;
-
-    if (selected && typeof selected === 'object' && 'code' in selected) {
-      this.setService.install(selected);
-      this.router.navigate(['/']);
+    if (!selected || typeof selected !== 'object' || !('code' in selected) || this.isInstalling) {
+      return;
     }
+
+    this.errorMessage = null;
+    this.isInstalling = true;
+    this.form.disable();
+
+    this.setService.install(selected).pipe(
+      switchMap((installed) =>
+        this.setService.activeContext$.pipe(
+          filter((workspace) => workspace?.setInfo.id === installed.id),
+          take(1),
+          timeout({ first: 30_000 }),
+          map(() => installed),
+          catchError(() => of(installed))
+        )
+      )
+    ).subscribe({
+      next: (installed) => {
+        this.router.navigate(['/set', installed.id]);
+      },
+      error: (err) => {
+        console.error('[AddSet] Install failed:', err);
+        this.isInstalling = false;
+        this.form.enable();
+        this.errorMessage = 'Install failed. Check the network connection and try again.';
+      }
+    });
   }
 }

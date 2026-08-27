@@ -60,21 +60,7 @@ export class LibraryComponent implements OnInit {
   }
 
   public onInstallClick(): void {
-    const setCode = prompt('Enter a Magic Set Code to install (e.g., ltr, dsk, blb):');
-    if (!setCode || this.isProcessing) return;
-
-    this.isProcessing = true;
-
-    this.setService['scryfallService'].getSetByCode(setCode.trim().toLowerCase()).subscribe({
-      next: (scryfallSet) => {
-        this.setService.install(scryfallSet);
-        this.isProcessing = false;
-      },
-      error: () => {
-        alert(`Could not locate Scryfall set metadata for code: ${setCode}`);
-        this.isProcessing = false;
-      }
-    });
+    this.router.navigate(['/add-set']);
   }
 
   public onSelectSet(set: UIMtgSet): void {

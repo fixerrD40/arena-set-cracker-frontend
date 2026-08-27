@@ -127,12 +127,12 @@ export class SetService implements OnDestroy {
   }
 
   /** Installs a set: persist metadata, download Arena-only card art, bulk-insert cards. */
-  public install(scryfallSet: ScryfallSet): void {
+  public install(scryfallSet: ScryfallSet): Observable<MtgSet> {
     const cleanCode = scryfallSet.code.toLowerCase();
 
     const domainSet: MtgSet = mapScryfallToDomainSet(scryfallSet);
 
-    this.dataWire.insert<MtgSet, MtgSet>(sets, domainSet).pipe(
+    return this.dataWire.insert<MtgSet, MtgSet>(sets, domainSet).pipe(
       switchMap(() => this.scryfallService.getCardsBySet(cleanCode)),
 
       switchMap((scryfallCards: ScryfallCard[]) => {
@@ -151,7 +151,7 @@ export class SetService implements OnDestroy {
 
             return this.fileService.downloadRemoteUrlToDisk(imageUrl, destinationFilePath).pipe(
               map((localUri: string) => mapScryfallToCard(apiCard, domainSet.id, localUri)),
-              catchError(() => of(mapScryfallToCard(apiCard, domainSet.id, '')))
+              catchError(() => of(mapScryfallToCard(apiCard, domainSet.id, imageUrl)))
             );
           }),
           toArray()
@@ -169,11 +169,12 @@ export class SetService implements OnDestroy {
         }
         this.loadSetWorkspace(domainSet.id, domainSet.code.toLowerCase());
       }),
+      map(() => domainSet),
       catchError((err) => {
         console.error(`[SetService] Atomic install pipeline aborted for set ${scryfallSet.code}:`, err?.message || err);
         return throwError(() => err);
       })
-    ).subscribe();
+    );
   }
 
   /** Removes a set row and its on-disk art folder; clears workspace if that set was active. */

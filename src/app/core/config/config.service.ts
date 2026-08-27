@@ -7,15 +7,8 @@ import { AppConfigData } from './config.model';
 export class AppConfigService {
   private runtimeConfig!: AppConfigData;
 
-  /**
-   * Pure browser-safe environment flag boundary checker evaluating native user agent parameters.
-   */
   private evaluateIsElectron(): boolean {
-    return !!(
-      typeof window !== 'undefined' &&
-      window.navigator &&
-      window.navigator.userAgent.toLowerCase().includes('electron')
-    );
+    return !!(typeof window !== 'undefined' && (window as any).process?.versions?.electron);
   }
 
   /**
