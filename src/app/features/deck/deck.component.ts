@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,8 +9,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ENTER, COMMA } from '@angular/cdk/keycodes';
 import { NgxTippyModule } from 'ngx-tippy-wrapper';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
 import { DeckService } from '../../core/services/deck.service';
 import { SetService } from '../../core/services/set.service';
 import { DeckValidationResult } from '../../shared/models/deck/deck';
@@ -34,12 +32,10 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deck.css']
 })
-export class DeckComponent implements OnInit, OnDestroy {
+export class DeckComponent implements OnDestroy {
   private readonly deckService = inject(DeckService);
   private readonly setService = inject(SetService);
-  private readonly route = inject(ActivatedRoute);
-
-  private readonly destroy$ = new Subject<void>();
+  private readonly router = inject(Router);
 
   public readonly scratchpadDeck$ = this.deckService.scratchpadDeck$;
   public readonly displayedCards$ = this.deckService.displayedCards$;
@@ -48,20 +44,10 @@ export class DeckComponent implements OnInit, OnDestroy {
   public editing = false;
   public readonly separatorKeysCodes: number[] = [ENTER, COMMA];
 
-  public ngOnInit(): void {
-    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.editing = false;
-        this.deckService.loadDeckByIdFromWorkspace(id);
-      }
-    });
-  }
-
   public ngOnDestroy(): void {
-    this.deckService.clearActiveDeck();
-    this.destroy$.next();
-    this.destroy$.complete();
+    if (!this.router.url.includes('/deck/')) {
+      this.deckService.clearActiveDeck();
+    }
   }
 
   public toggleEdit(): void {

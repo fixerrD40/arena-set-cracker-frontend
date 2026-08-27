@@ -1,6 +1,12 @@
 import { Routes } from '@angular/router';
 import { deckGuard } from './core/guards/deck.guard';
 import { welcomeGuard } from './core/guards/welcome.guard';
+import {
+  deckWorkspaceGuard,
+  legacyAddDeckRedirectGuard,
+  legacyDeckRedirectGuard,
+  setWorkspaceGuard
+} from './core/guards/workspace.guard';
 
 export const routes: Routes = [
   {
@@ -51,19 +57,34 @@ export const routes: Routes = [
   },
   {
     path: 'set/:id',
-    canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/set/set.component').then(m => m.SetComponent)
+    canActivate: [welcomeGuard, setWorkspaceGuard],
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./features/set/set.component').then(m => m.SetComponent)
+      },
+      {
+        path: 'add-deck',
+        loadComponent: () => import('./features/deck/add/deck-add.component').then(m => m.DeckAddComponent)
+      },
+      {
+        path: 'deck/:deckId',
+        canActivate: [deckWorkspaceGuard],
+        canDeactivate: [deckGuard],
+        loadComponent: () => import('./features/deck/deck.component').then(m => m.DeckComponent)
+      }
+    ]
   },
   {
     path: 'add-deck',
-    canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/deck/add/deck-add.component').then(m => m.DeckAddComponent)
+    canActivate: [welcomeGuard, legacyAddDeckRedirectGuard],
+    children: []
   },
   {
     path: 'deck/:id',
-    canActivate: [welcomeGuard],
-    canDeactivate: [deckGuard],
-    loadComponent: () => import('./features/deck/deck.component').then(m => m.DeckComponent)
+    canActivate: [welcomeGuard, legacyDeckRedirectGuard],
+    children: []
   },
   { path: '**', redirectTo: '' }
 ];

@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, map, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, Subject, tap } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { SetChartComponent } from './set-chart.component';
 import { MtgCard } from '../../shared/models/card/card';
@@ -37,12 +38,13 @@ interface FilterCategory {
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./set.css']
 })
-export class SetComponent implements OnInit {
+export class SetComponent implements OnInit, OnDestroy {
   readonly TriState = TriState;
   public Math = Math;
 
   private readonly setService = inject(SetService);
   private readonly router = inject(Router);
+  private readonly destroy$ = new Subject<void>();
 
   public readonly workspace$ = this.setService.activeContext$;
 
@@ -87,6 +89,7 @@ export class SetComponent implements OnInit {
       searchTerm: this.searchTermSubject.asObservable(),
       filterEvent: this.filterTriggerSubject.asObservable()
     }).pipe(
+      takeUntil(this.destroy$),
       map(({ workspace, searchTerm }) => {
         if (!workspace) return { sortedAggregated: [], searchTerm };
 
@@ -108,6 +111,11 @@ export class SetComponent implements OnInit {
         this.updateChart();
       })
     ).subscribe();
+  }
+
+  public ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getColorName(code: string): string {
@@ -358,10 +366,14 @@ export class SetComponent implements OnInit {
   }
 
   public goToAddDeck(): void {
-    this.router.navigate(['/add-deck']);
+    const setId = this.setService.currentWorkspaceSnapshot?.setInfo.id;
+    if (!setId) return;
+    this.router.navigate(['/set', setId, 'add-deck']);
   }
 
   public openDeck(deckId: string): void {
-    this.router.navigate(['/deck', deckId]);
+    const setId = this.setService.currentWorkspaceSnapshot?.setInfo.id;
+    if (!setId) return;
+    this.router.navigate(['/set', setId, 'deck', deckId]);
   }
 }

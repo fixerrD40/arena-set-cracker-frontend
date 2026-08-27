@@ -76,23 +76,6 @@ export class DeckService {
     return this.activeDeckSource.value;
   }
 
-  public loadDeckByIdFromWorkspace(deckId: string): void {
-    const currentWorkspace = this.setService.currentWorkspaceSnapshot;
-
-    if (!currentWorkspace || !currentWorkspace.decks) {
-      console.warn('[DeckService] Unable to resolve deck selection. No active workspace loaded.');
-      return;
-    }
-
-    const foundDeck = currentWorkspace.decks.find((d) => String(d.id) === String(deckId));
-
-    if (foundDeck) {
-      this.setActiveDeck(foundDeck);
-    } else {
-      console.error(`[DeckService] Route target identifier "${deckId}" matches no active workspace records.`);
-    }
-  }
-
   public setActiveDeck(deck: MtgDeck): void {
     this.activeDeckSource.next({ ...deck, tags: [...deck.tags], cards: new Map(deck.cards) });
     this.scratchpadSource.next({ ...deck, tags: [...deck.tags], cards: new Map(deck.cards) });
@@ -135,7 +118,7 @@ export class DeckService {
 
     return this.persistDeck(freshDeck, { isNew: true }).pipe(
       tap(() => {
-        this.setService.loadSetWorkspace(setId, setCode);
+        this.setService.loadSetWorkspace(setId);
         this.setActiveDeck(freshDeck);
       }),
       map(() => freshDeck)

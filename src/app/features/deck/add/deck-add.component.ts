@@ -108,9 +108,7 @@ export class DeckAddComponent implements OnInit {
 
     this.deckService.insertNewDeckPayload(freshDomainDeck).subscribe({
       next: () => {
-        this.setService.loadSetWorkspace(this.activeSet!.id, this.activeSet!.code);
-        this.deckService.setActiveDeck(freshDomainDeck);
-        this.router.navigate(['/deck', freshDomainDeck.id]);
+        this.router.navigate(['/set', this.activeSet!.id, 'deck', freshDomainDeck.id]);
       },
       error: (err) => {
         console.error('[AddDeck] Mutation write block dropped downstream:', err);

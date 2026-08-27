@@ -64,7 +64,7 @@ export class LibraryComponent implements OnInit {
   }
 
   public onSelectSet(set: UIMtgSet): void {
-    this.setService.loadSetWorkspace(set.id, set.code.toLowerCase());
+    this.setService.loadSetWorkspace(set.id);
     this.router.navigate(['/set', set.id]);
   }
 

@@ -1,6 +1,6 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, from, Observable, of, Subscription, throwError, forkJoin } from 'rxjs';
-import { catchError, concatMap, map, switchMap, tap, toArray } from 'rxjs/operators';
+import { catchError, concatMap, map, shareReplay, switchMap, tap, toArray } from 'rxjs/operators';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 import { MtgSet } from '../../shared/models/set/set';
@@ -33,7 +33,10 @@ export class SetService implements OnDestroy {
   private readonly scryfallService = inject(ScryfallService);
   private readonly fileService = inject(FileSystemService);
 
-  private loadSubscription?: Subscription;
+  private rosterSubscription?: Subscription;
+  private workspaceSubscription?: Subscription;
+  private inFlightSetId: string | null = null;
+  private inFlightLoad$: Observable<WorkspaceState | null> | null = null;
 
   private readonly installedSetsSubject = new BehaviorSubject<MtgSet[]>([]);
   public readonly installedSets$: Observable<MtgSet[]> = this.installedSetsSubject.asObservable();
@@ -47,11 +50,9 @@ export class SetService implements OnDestroy {
 
   /** Rehydrates the installed-sets list from SQLite after boot. */
   public syncInstalledCache(): void {
-    if (this.loadSubscription) {
-      this.loadSubscription.unsubscribe();
-    }
+    this.rosterSubscription?.unsubscribe();
 
-    this.loadSubscription = this.dataWire.fetchCollection<MtgSet>(sets, 'all').pipe(
+    this.rosterSubscription = this.dataWire.fetchCollection<MtgSet>(sets, 'all').pipe(
       tap((domainSets: MtgSet[]) => this.installedSetsSubject.next(domainSets)),
       catchError((err) => {
         console.error('[SetService] Failed to sync local roster cache:', err?.message || err);
@@ -61,21 +62,59 @@ export class SetService implements OnDestroy {
     ).subscribe();
   }
 
+  /** Returns the current workspace if it already matches `setId`; otherwise loads it. */
+  public ensureSetWorkspace(setId: string): Observable<WorkspaceState | null> {
+    const current = this.currentWorkspaceSnapshot;
+    if (current?.setInfo.id === setId) {
+      return of(current);
+    }
+    return this.loadSetWorkspace(setId);
+  }
+
   /** Loads set + cards + decks into the active workspace; falls back to Scryfall if cards are missing. */
-  public loadSetWorkspace(setId: string, setCode: string): void {
-    if (this.loadSubscription) {
-      this.loadSubscription.unsubscribe();
+  public loadSetWorkspace(setId: string): Observable<WorkspaceState | null> {
+    if (this.inFlightSetId === setId && this.inFlightLoad$) {
+      return this.inFlightLoad$;
     }
 
-    this.loadSubscription = forkJoin({
-      setModels: this.dataWire.fetchCollection<MtgSet>(sets, 'all'),
-      deckModels: this.dataWire.fetchCollection<any>(decks, setId),
+    this.workspaceSubscription?.unsubscribe();
+
+    const load$ = this.assembleWorkspace(setId).pipe(
+      tap((workspace) => {
+        if (this.inFlightSetId === setId) {
+          this.activeContextSubject.next(workspace);
+        }
+      }),
+      catchError((err) => {
+        console.error(`[SetService] Coordinated workspace assembly failure for set ${setId}:`, err);
+        if (this.inFlightSetId === setId) {
+          this.activeContextSubject.next(null);
+        }
+        return of(null);
+      }),
+      tap({
+        complete: () => this.clearInFlight(setId)
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
+    );
+
+    this.inFlightSetId = setId;
+    this.inFlightLoad$ = load$;
+    this.workspaceSubscription = load$.subscribe();
+    return load$;
+  }
+
+  private assembleWorkspace(setId: string): Observable<WorkspaceState> {
+    return forkJoin({
+      setInfo: this.dataWire.fetchRecord<MtgSet>(sets, setId),
+      deckModels: this.dataWire.fetchCollection<DeckRow>(decks, setId),
       cardModels: this.dataWire.fetchCollection<MtgCard>(cards, setId),
       deckCardRows: this.dataWire.fetchCollection<DeckCardRow>(deckCards, 'all')
     }).pipe(
-      switchMap(({ setModels, deckModels, cardModels, deckCardRows }) => {
-        const setInfo = setModels.find((s) => s.id === setId);
-        if (!setInfo) throw new Error(`[SetService] Set configuration missing on ID: ${setId}`);
+      switchMap(({ setInfo, deckModels, cardModels, deckCardRows }) => {
+        if (!setInfo) {
+          throw new Error(`[SetService] Set configuration missing on ID: ${setId}`);
+        }
 
         const linesByDeckId = new Map<string, DeckCardRow[]>();
         for (const row of deckCardRows || []) {
@@ -85,7 +124,7 @@ export class SetService implements OnDestroy {
           linesByDeckId.set(key, bucket);
         }
 
-        const userDecks: MtgDeck[] = (deckModels || []).map((deckLike: any) => {
+        const userDecks: MtgDeck[] = (deckModels || []).map((deckLike) => {
           const id = String(deckLike.id);
           const lines = linesByDeckId.get(id) || [];
           const asRow = {
@@ -102,28 +141,27 @@ export class SetService implements OnDestroy {
         const cardSource$ =
           cardModels.length > 0
             ? of(cardModels)
-            : this.scryfallService.getCardsBySet(setCode.toLowerCase()).pipe(
+            : this.scryfallService.getCardsBySet(setInfo.code.toLowerCase()).pipe(
                 map((apiCards) => apiCards.map((apiCard) => mapScryfallToCard(apiCard, setId, '')))
               );
 
         return cardSource$.pipe(
-          map((finalCards) => ({ setInfo, userDecks, finalCards }))
+          map((finalCards) => ({
+            setInfo,
+            cards: finalCards,
+            decks: userDecks,
+            loadedAt: new Date().toISOString()
+          }))
         );
-      }),
-      tap(({ setInfo, userDecks, finalCards }) => {
-        this.activeContextSubject.next({
-          setInfo,
-          cards: finalCards,
-          decks: userDecks,
-          loadedAt: new Date().toISOString()
-        });
-      }),
-      catchError((err) => {
-        console.error(`[SetService] Coordinated workspace assembly failure for set ${setId}:`, err);
-        this.unloadWorkspace();
-        return of(null);
       })
-    ).subscribe();
+    );
+  }
+
+  private clearInFlight(setId: string): void {
+    if (this.inFlightSetId === setId) {
+      this.inFlightSetId = null;
+      this.inFlightLoad$ = null;
+    }
   }
 
   /** Installs a set: persist metadata, download Arena-only card art, bulk-insert cards. */
@@ -167,7 +205,7 @@ export class SetService implements OnDestroy {
         if (!currentList.some(s => s.id === domainSet.id)) {
           this.installedSetsSubject.next([...currentList, domainSet]);
         }
-        this.loadSetWorkspace(domainSet.id, domainSet.code.toLowerCase());
+        this.loadSetWorkspace(domainSet.id);
       }),
       map(() => domainSet),
       catchError((err) => {
@@ -284,11 +322,14 @@ export class SetService implements OnDestroy {
   }
 
   public unloadWorkspace(): void {
-    this.loadSubscription?.unsubscribe();
+    this.workspaceSubscription?.unsubscribe();
+    this.inFlightSetId = null;
+    this.inFlightLoad$ = null;
     this.activeContextSubject.next(null);
   }
 
   public ngOnDestroy(): void {
-    this.loadSubscription?.unsubscribe();
+    this.rosterSubscription?.unsubscribe();
+    this.workspaceSubscription?.unsubscribe();
   }
 }
