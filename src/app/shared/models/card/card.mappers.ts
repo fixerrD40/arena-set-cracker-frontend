@@ -13,7 +13,8 @@ export function mapRowToCard(row: CardRow): MtgCard {
     typeLine: row.typeLine,
     colors: row.colors,
     rarity: row.rarity,
-    manaCost: row.manaCost
+    manaCost: row.manaCost,
+    oracleText: row.oracleText || ''
   };
 }
 
@@ -28,7 +29,8 @@ export function mapCardToInsert(card: MtgCard): CardInsert {
     typeLine: card.typeLine,
     colors: card.colors,
     rarity: card.rarity,
-    manaCost: card.manaCost
+    manaCost: card.manaCost,
+    oracleText: card.oracleText || ''
   };
 }
 
@@ -47,6 +49,18 @@ export function mapScryfallToCard(
     typeLine: apiCard.type_line || 'Unknown',
     colors: apiCard.colors || [],
     rarity: apiCard.rarity || 'common',
-    manaCost: apiCard.mana_cost || '{0}'
+    manaCost: apiCard.mana_cost || '{0}',
+    oracleText: scryfallOracleText(apiCard)
   };
+}
+
+function scryfallOracleText(apiCard: ScryfallCard): string {
+  if (apiCard.oracle_text) {
+    return apiCard.oracle_text;
+  }
+  const faces = apiCard.card_faces || [];
+  return faces
+    .map((face) => face.oracle_text || '')
+    .filter((text) => text.length > 0)
+    .join('\n');
 }

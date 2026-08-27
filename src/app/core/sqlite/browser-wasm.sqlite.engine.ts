@@ -7,6 +7,7 @@ import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { APP_CONFIG } from '../config/config.model';
+import { ensureCardsOracleTextColumn } from './sqlite.ensure-columns';
 
 @Injectable({
   providedIn: 'root'
@@ -56,6 +57,8 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
 
       if (!savedBinary) {
         await this.generateWebDatabaseSchema(this.rawSqliteClient);
+        await this.commitSnapshotToIndexedDb(dbKey);
+      } else if (ensureCardsOracleTextColumn(this.rawSqliteClient)) {
         await this.commitSnapshotToIndexedDb(dbKey);
       }
       console.log('[BrowserWasmSqliteEngine] Browser web storage sandbox successfully active.');

@@ -31,6 +31,7 @@ export const cards = sqliteTable('cards', {
   colors: text('colors', { mode: 'json' }).$type<string[]>().notNull(),
   rarity: text('rarity').notNull(),
   manaCost: text('mana_cost').notNull(),
+  oracleText: text('oracle_text').notNull().default(''),
 });
 
 export const decks = sqliteTable('decks', {

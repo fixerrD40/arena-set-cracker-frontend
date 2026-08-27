@@ -68,7 +68,8 @@ Another Stray Text Line 1234
           typeLine: 'Enchantment',
           colors: ['W'],
           rarity: 'rare',
-          manaCost: '{1}{W}'
+          manaCost: '{1}{W}',
+          oracleText: ''
         }
       ];
       const { cards, unmatched } = resolveArenaLinesToCardMap(
@@ -92,7 +93,8 @@ Another Stray Text Line 1234
         typeLine: 'Basic Land — Swamp',
         colors: [],
         rarity: 'common',
-        manaCost: ''
+        manaCost: '',
+        oracleText: ''
       },
       {
         id: 'id-dawn',
@@ -104,7 +106,8 @@ Another Stray Text Line 1234
         typeLine: 'Enchantment',
         colors: ['W'],
         rarity: 'rare',
-        manaCost: '{1}{W}'
+        manaCost: '{1}{W}',
+        oracleText: ''
       }
     ];
 

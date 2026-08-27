@@ -12,4 +12,5 @@ export interface MtgCard {
   colors: string[];
   rarity: string;
   manaCost: string;
+  oracleText: string;
 }

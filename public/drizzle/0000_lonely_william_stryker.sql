@@ -28,6 +28,7 @@ CREATE TABLE `cards` (
 	`colors` text NOT NULL,
 	`rarity` text NOT NULL,
 	`mana_cost` text NOT NULL,
+	`oracle_text` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`set_id`) REFERENCES `sets`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
