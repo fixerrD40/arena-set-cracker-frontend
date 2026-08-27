@@ -32,9 +32,11 @@ Happy path: install a set (Scryfall) → open it → paste an Arena deck export 
 
 ## Commits
 
-Title: `Hideaway`.
+Ask where the user is before committing. First line: `<place> <goal>` (Hideaway is a place-stamp, not a magic title and not assumed).
 
-Body: prefer **class/file-level** notes on what changed (e.g. `DeckService` persist path, `deck.utils` Arena resolve)—not only a single end-to-end product sentence. Multiple bullets are fine when several units moved.
+Body only when the goal needs grains above the diff—how it was achieved across components. A self-explanatory diff (one file, obvious) is header-only; do not restate the header.
+
+Fold same-story follow-ups into the unpushed commit. Leave unrelated fixes as their own commit. Do not rewrite anything already on the remote.
 
 Only commit when the user asks.
 
