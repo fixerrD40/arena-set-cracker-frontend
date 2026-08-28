@@ -40,7 +40,7 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 
 Ask where the user is before committing. First line: `<place> <goal>` (Hideaway is a place-stamp, not a magic title and not assumed).
 
-Body only when the goal needs grains above the diff—how it was achieved across components. A self-explanatory diff (one file, obvious) is header-only; do not restate the header.
+Body only when the goal needs grains above the diff—how it was achieved across components. A self-explanatory diff (one file, obvious) is header-only; do not restate the header. When there is a body, nested bullets; nest justification under the point it comments on, not as a trailing paragraph.
 
 Fold same-story follow-ups into the unpushed commit. Leave unrelated fixes as their own commit. Do not rewrite anything already on the remote.
 
