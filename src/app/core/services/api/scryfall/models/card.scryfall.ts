@@ -2,6 +2,7 @@ export interface ScryfallImageUris {
   normal: string;
   small?: string;
   large?: string;
+  art_crop?: string;
 }
 
 export interface ScryfallCardFace {
@@ -35,8 +36,14 @@ export class ScryfallCard {
    * or multi-faced/modal double-faced cards (MDFCs)
    */
   get normalArtworkUrl(): string {
-    return this.image_uris?.normal
-      || this.card_faces?.[0]?.image_uris?.normal
-      || '';
+    return this.imageUrl('normal');
+  }
+
+  get illustrationArtworkUrl(): string {
+    return this.imageUrl('art_crop');
+  }
+
+  private imageUrl(kind: 'normal' | 'art_crop'): string {
+    return this.image_uris?.[kind] || this.card_faces?.[0]?.image_uris?.[kind] || '';
   }
 }

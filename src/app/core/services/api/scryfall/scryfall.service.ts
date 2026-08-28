@@ -49,8 +49,13 @@ export class ScryfallService {
     );
   }
 
+  /**
+   * Arena printings of this set. `is:arena` matches oracle availability and
+   * Scryfall's default unique=cards then prefers a paper reprint with no arena_id
+   * (LTR basics). `game:arena` is the printing on Arena.
+   */
   public getCardsBySet(code: string): Observable<ScryfallCard[]> {
-    const url = `${this.baseUrl}/cards/search?q=set:${code.toLowerCase()}+is:arena`;
+    const url = `${this.baseUrl}/cards/search?q=set:${code.toLowerCase()}+game:arena`;
     return this.fetchAllPages(url);
   }
 
@@ -58,7 +63,8 @@ export class ScryfallService {
   private fetchAllPages(url: string, accumulated: ScryfallCard[] = []): Observable<ScryfallCard[]> {
     return this.http.get<{ has_more: boolean; next_page?: string; data: ScryfallCard[] }>(url, this.httpOptions).pipe(
       switchMap(response => {
-        const combined = [...accumulated, ...response.data];
+        const pageCards = (response.data || []).map((raw) => new ScryfallCard(raw));
+        const combined = [...accumulated, ...pageCards];
 
         if (response.has_more && response.next_page) {
           return of(null).pipe(

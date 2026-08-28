@@ -17,6 +17,7 @@ export function mapRowToDeck(
     setId: deckRow.setId,
     name: deckRow.name,
     notes: deckRow.notes || '',
+    coverCardId: deckRow.coverCardId || '',
     tags: Array.isArray(deckRow.tags) ? deckRow.tags : [],
     cards: cardMap
   };
@@ -29,6 +30,7 @@ export function mapDeckToInsert(deck: MtgDeck): DeckInsert {
     setId: deck.setId,
     name: deck.name,
     notes: deck.notes,
+    coverCardId: deck.coverCardId || '',
     tags: deck.tags
     // createdAt omitted; column $default fills it
   };
@@ -48,6 +50,7 @@ export function mapJsonToDeck(payload: CloudDeckPayload): MtgDeck {
     setId: payload.setId,
     name: payload.name || 'Unnamed Deck',
     notes: payload.notes || '',
+    coverCardId: payload.coverCardId || '',
     tags: payload.tags || [],
     cards: cardMap
   };
@@ -60,6 +63,7 @@ export function mapDeckToJson(deck: MtgDeck): CloudDeckPayload {
     name: deck.name,
     notes: deck.notes,
     tags: deck.tags,
+    coverCardId: deck.coverCardId,
     cards: Object.fromEntries(deck.cards)
   };
 }

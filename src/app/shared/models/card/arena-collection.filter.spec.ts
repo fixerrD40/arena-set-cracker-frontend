@@ -1,0 +1,247 @@
+import { MtgCard } from './card';
+import {
+  ArenaCollectionFilter,
+  cardMatchesArenaCollectionFilter,
+  collectionColorGroup,
+  compareArenaCollection,
+  compareArenaDeckList,
+  emptyArenaCollectionFilter,
+  matchesCollectionText
+} from './arena-collection.filter';
+
+function card(partial: Partial<MtgCard> & Pick<MtgCard, 'name' | 'colors' | 'typeLine'>): MtgCard {
+  return {
+    id: partial.id ?? partial.name,
+    setId: 'set-ltr',
+    arenaId: 0,
+    scryfallId: partial.name,
+    localArtUri: '',
+    localIllustrationUri: '',
+    rarity: 'common',
+    manaCost: '',
+    oracleText: '',
+    ...partial
+  };
+}
+
+function filter(partial: Partial<ArenaCollectionFilter> = {}): ArenaCollectionFilter {
+  return { ...emptyArenaCollectionFilter(), ...partial };
+}
+
+const monoWhite = card({
+  name: 'Swords to Plowshares',
+  colors: ['W'],
+  typeLine: 'Instant',
+  manaCost: '{W}'
+});
+const monoRed = card({ name: 'Orcish Bowmasters', colors: ['R'], typeLine: 'Creature — Orc Archer' });
+const monoBlue = card({ name: 'Consider', colors: ['U'], typeLine: 'Instant' });
+const izzet = card({ name: 'Izzet Charm', colors: ['U', 'R'], typeLine: 'Instant' });
+const jeskai = card({ name: 'Jeskai Charm', colors: ['U', 'R', 'W'], typeLine: 'Instant' });
+const swamp = card({ name: 'Swamp', colors: [], typeLine: 'Basic Land — Swamp' });
+const plains = card({ name: 'Plains', colors: [], typeLine: 'Basic Land — Plains' });
+const wastes = card({ name: 'Wastes', colors: [], typeLine: 'Basic Land' });
+const solRing = card({ name: 'Sol Ring', colors: [], typeLine: 'Artifact' });
+const breedingPool = card({
+  name: 'Breeding Pool',
+  colors: [],
+  typeLine: 'Land — Forest Island'
+});
+const castleArdenvale = card({
+  name: 'Castle Ardenvale',
+  colors: [],
+  typeLine: 'Land',
+  oracleText: '{T}: Add {W}. {4}{W}, {T}: Create a 1/1 white Human creature token.'
+});
+const ringGoesSouth = card({
+  name: 'The Ring Goes South',
+  colors: ['G'],
+  typeLine: 'Enchantment',
+  oracleText: 'The Ring tempts you.'
+});
+
+describe('cardMatchesArenaCollectionFilter', () => {
+  it('shows the set pool except basics when no chips or text are set', () => {
+    const none = filter();
+    expect(cardMatchesArenaCollectionFilter(monoRed, none)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(izzet, none)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(breedingPool, none)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(swamp, none)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(plains, none)).toBe(false);
+  });
+
+  it('shows basics only when the land chip is on', () => {
+    const land = filter({ land: true });
+    expect(cardMatchesArenaCollectionFilter(swamp, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(plains, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(wastes, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(swamp, filter({ text: 'swamp' }))).toBe(false);
+  });
+
+  it('treats a single color chip as “has this color”, including gold', () => {
+    const red = filter({ colors: ['R'] });
+    expect(cardMatchesArenaCollectionFilter(monoRed, red)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(izzet, red)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoBlue, red)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(solRing, red)).toBe(false);
+  });
+
+  it('ORs two color chips when multicolor is off', () => {
+    const ur = filter({ colors: ['U', 'R'] });
+    expect(cardMatchesArenaCollectionFilter(monoRed, ur)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoBlue, ur)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(izzet, ur)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(solRing, ur)).toBe(false);
+  });
+
+  it('with only multicolor, keeps cards that have two or more colors', () => {
+    const multi = filter({ multicolor: true });
+    expect(cardMatchesArenaCollectionFilter(izzet, multi)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(jeskai, multi)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(breedingPool, multi)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, multi)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(solRing, multi)).toBe(false);
+  });
+
+  it('with multicolor and red, keeps gold cards that include red', () => {
+    const multiRed = filter({ colors: ['R'], multicolor: true });
+    expect(cardMatchesArenaCollectionFilter(izzet, multiRed)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(jeskai, multiRed)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, multiRed)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(card({
+      name: 'Simic Charm',
+      colors: ['G', 'U'],
+      typeLine: 'Instant'
+    }), multiRed)).toBe(false);
+  });
+
+  it('with multicolor and two colors, requires all selected colors', () => {
+    const multiUr = filter({ colors: ['U', 'R'], multicolor: true });
+    expect(cardMatchesArenaCollectionFilter(izzet, multiUr)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(jeskai, multiUr)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, multiUr)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(card({
+      name: 'Boros Charm',
+      colors: ['R', 'W'],
+      typeLine: 'Instant'
+    }), multiUr)).toBe(false);
+  });
+
+  it('returns nothing when colorless and multicolor are both on', () => {
+    const both = filter({ colorless: true, multicolor: true });
+    expect(cardMatchesArenaCollectionFilter(solRing, both)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(izzet, both)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(swamp, both)).toBe(false);
+  });
+
+  it('colorless keeps cards with no colors, not colored basics', () => {
+    const colorless = filter({ colorless: true });
+    expect(cardMatchesArenaCollectionFilter(solRing, colorless)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, colorless)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(swamp, colorless)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(wastes, colorless)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(wastes, filter({ colorless: true, land: true }))).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(swamp, filter({ colorless: true, land: true }))).toBe(false);
+  });
+
+  it('land restricts to type-line Land and infers land color from types or oracle', () => {
+    const land = filter({ land: true });
+    expect(cardMatchesArenaCollectionFilter(swamp, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(breedingPool, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(castleArdenvale, land)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, land)).toBe(false);
+
+    const whiteLand = filter({ land: true, colors: ['W'] });
+    expect(cardMatchesArenaCollectionFilter(plains, whiteLand)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(castleArdenvale, whiteLand)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(swamp, whiteLand)).toBe(false);
+
+    expect(cardMatchesArenaCollectionFilter(castleArdenvale, filter({ colors: ['W'] }))).toBe(true);
+  });
+
+  it('land plus multicolor keeps gold lands', () => {
+    const landMulti = filter({ land: true, multicolor: true });
+    expect(cardMatchesArenaCollectionFilter(breedingPool, landMulti)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(swamp, landMulti)).toBe(false);
+    expect(cardMatchesArenaCollectionFilter(izzet, landMulti)).toBe(false);
+  });
+});
+
+describe('compareArenaCollection', () => {
+  it('orders WUBRG, then gold, then colorless; lands last within a color; then CMC then name', () => {
+    const whiteTwo = card({
+      name: 'Seal of Cleansing',
+      colors: ['W'],
+      typeLine: 'Enchantment',
+      manaCost: '{1}{W}'
+    });
+    const whiteLand = card({
+      name: 'Idyllic Grange',
+      colors: [],
+      typeLine: 'Land — Plains',
+      oracleText: '{T}: Add {W}.'
+    });
+    const names = [
+      solRing,
+      izzet,
+      ringGoesSouth,
+      swamp,
+      monoRed,
+      whiteLand,
+      monoBlue,
+      whiteTwo,
+      monoWhite
+    ]
+      .sort(compareArenaCollection)
+      .map((entry) => entry.name);
+
+    expect(names).toEqual([
+      'Swords to Plowshares',
+      'Seal of Cleansing',
+      'Idyllic Grange',
+      'Consider',
+      'Swamp',
+      'Orcish Bowmasters',
+      'The Ring Goes South',
+      'Izzet Charm',
+      'Sol Ring'
+    ]);
+  });
+
+  it('puts a swamp after black spells once included', () => {
+    const darkRitual = card({
+      name: 'Dark Ritual',
+      colors: ['B'],
+      typeLine: 'Instant',
+      manaCost: '{B}'
+    });
+    expect(collectionColorGroup(swamp)).toBe('B');
+    expect(compareArenaCollection(darkRitual, swamp)).toBeLessThan(0);
+    expect(compareArenaCollection(monoWhite, swamp)).toBeLessThan(0);
+  });
+});
+
+describe('compareArenaDeckList', () => {
+  it('orders by CMC then name, with every land after every spell', () => {
+    const cheapBlue = card({ name: 'Consider', colors: ['U'], typeLine: 'Instant', manaCost: '{U}' });
+    const dearWhite = card({
+      name: 'Wrath',
+      colors: ['W'],
+      typeLine: 'Sorcery',
+      manaCost: '{2}{W}{W}'
+    });
+    const names = [dearWhite, swamp, cheapBlue, plains]
+      .sort(compareArenaDeckList)
+      .map((entry) => entry.name);
+    expect(names).toEqual(['Consider', 'Wrath', 'Plains', 'Swamp']);
+  });
+});
+
+describe('matchesCollectionText', () => {
+  it('ANDs space-separated terms across name, type, and oracle', () => {
+    expect(matchesCollectionText(ringGoesSouth, 'the ring goes south')).toBe(true);
+    expect(matchesCollectionText(ringGoesSouth, 'tempts')).toBe(true);
+    expect(matchesCollectionText(ringGoesSouth, 'enchantment ring')).toBe(true);
+    expect(matchesCollectionText(ringGoesSouth, 'bowmasters')).toBe(false);
+  });
+});

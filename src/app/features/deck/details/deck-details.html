@@ -1,0 +1,97 @@
+@if (scratchpadDeck$ | async; as deck) {
+  <div class="arena-details">
+    <header class="details-top">
+      <button type="button" class="back-btn" (click)="back.emit()" aria-label="Back to deck builder">
+        ← Deck Details
+      </button>
+    </header>
+
+    <div class="details-body">
+      <section class="details-panel">
+        <div class="details-name-block">
+          @if (renaming) {
+            <input
+              #renameInput
+              class="deck-rename details-rename"
+              [value]="deck.name"
+              (keydown.enter)="saveInlineName($any($event.target).value)"
+              (keydown.escape)="cancelRename()"
+              (blur)="saveInlineName($any($event.target).value)"
+              aria-label="Deck name"
+            />
+          } @else {
+            <button type="button" class="details-name" (click)="startRename()">{{ deck.name }}</button>
+          }
+        </div>
+
+        <div class="deck-tags">
+          <h3>Tags</h3>
+          <mat-chip-grid #chipGrid>
+            @for (tag of deck.tags; track tag) {
+              <mat-chip-row (removed)="removeTag(tag)">
+                {{ tag }}
+                <button matChipRemove type="button" aria-label="Remove tag">&times;</button>
+              </mat-chip-row>
+            }
+            <input
+              placeholder="Add a tag"
+              [matChipInputFor]="chipGrid"
+              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+              (matChipInputTokenEnd)="addTag($event)"
+              aria-label="Add new tag"
+            />
+          </mat-chip-grid>
+        </div>
+
+        <div class="deck-notes">
+          <h3>Description</h3>
+          <textarea
+            [value]="deck.notes"
+            (blur)="saveNotes($any($event.target).value)"
+            rows="6"
+            placeholder="Notes for this assignment…"
+            aria-label="Deck description"
+          ></textarea>
+        </div>
+
+        <div class="stat-line">Creatures {{ summary().creatureCopies }}</div>
+        <div class="stat-line">Non-creatures {{ summary().nonCreatureCopies }}</div>
+        <div class="stat-line">Lands {{ summary().landCopies }}</div>
+        <div class="curve-block">
+          <div class="details-curve">
+            @for (bucket of summary().curve; track bucket.bucket) {
+              <div class="curve-col">
+                <div class="curve-stack">
+                  <span
+                    class="stack-bar non"
+                    [style.height.px]="curveBarHeight(bucket.nonCreatures, curvePeak(summary().curve))"
+                  ></span>
+                  <span
+                    class="stack-bar cre"
+                    [style.height.px]="curveBarHeight(bucket.creatures, curvePeak(summary().curve))"
+                  ></span>
+                </div>
+                <span class="curve-label">{{ bucket.bucket }}</span>
+              </div>
+            }
+          </div>
+          <div class="avg-cmc">Average {{ summary().averageCmc }}</div>
+        </div>
+      </section>
+
+      <section class="details-panel breakdown">
+        <h3>List</h3>
+        @for (bucket of summary().types; track bucket.type) {
+          <div class="type-block">
+            <strong>{{ bucket.type }} {{ bucket.count }}</strong>
+            @for (sub of bucket.subtypes; track sub.name) {
+              <div class="subtype-line">{{ sub.name }} ({{ sub.count }})</div>
+            }
+          </div>
+        } @empty {
+          <p class="empty-note">No cards in this deck yet.</p>
+        }
+      </section>
+    </div>
+  </div>
+}

@@ -29,6 +29,35 @@ describe('mapScryfallToCard', () => {
     );
   });
 
+  it('stores framed art and illustration crop URIs independently', () => {
+    const apiCard = new ScryfallCard({
+      id: 'scry-dawn',
+      name: 'Dawn of a New Age'
+    });
+
+    const mapped = mapScryfallToCard(
+      apiCard,
+      'set-ltr',
+      'cached_art/ltr/1.png',
+      'cached_art/ltr/1-art.jpg'
+    );
+
+    expect(mapped.localArtUri).toBe('cached_art/ltr/1.png');
+    expect(mapped.localIllustrationUri).toBe('cached_art/ltr/1-art.jpg');
+  });
+
+  it('defaults both art URIs to empty when install has no files yet', () => {
+    const apiCard = new ScryfallCard({
+      id: 'scry-dawn',
+      name: 'Dawn of a New Age'
+    });
+
+    const mapped = mapScryfallToCard(apiCard, 'set-ltr');
+
+    expect(mapped.localArtUri).toBe('');
+    expect(mapped.localIllustrationUri).toBe('');
+  });
+
   it('uses empty oracle text when Scryfall omitted it', () => {
     const apiCard = new ScryfallCard({
       id: 'scry-land',

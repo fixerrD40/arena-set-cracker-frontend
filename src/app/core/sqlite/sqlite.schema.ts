@@ -27,6 +27,7 @@ export const cards = sqliteTable('cards', {
   scryfallId: text('scryfall_id').notNull(),
   name: text('name').notNull(),
   localArtUri: text('local_art_uri').notNull(),
+  localIllustrationUri: text('local_illustration_uri').notNull().default(''),
   typeLine: text('type_line').notNull(),
   colors: text('colors', { mode: 'json' }).$type<string[]>().notNull(),
   rarity: text('rarity').notNull(),
@@ -40,6 +41,7 @@ export const decks = sqliteTable('decks', {
   name: text('name').notNull(),
   tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().$default(() => []),
   notes: text('notes').notNull().default(''),
+  coverCardId: text('cover_card_id').notNull().default(''),
   createdAt: text('created_at').notNull().$default(() => new Date().toISOString()),
 });
 

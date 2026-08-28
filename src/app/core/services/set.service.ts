@@ -132,6 +132,7 @@ export class SetService implements OnDestroy {
             setId: deckLike.setId,
             name: deckLike.name,
             notes: deckLike.notes || '',
+            coverCardId: deckLike.coverCardId || '',
             tags: Array.isArray(deckLike.tags) ? deckLike.tags : [],
             createdAt: deckLike.createdAt || new Date().toISOString()
           } as DeckRow;
@@ -179,17 +180,19 @@ export class SetService implements OnDestroy {
 
         return from(arenaOnlyCards).pipe(
           concatMap((apiCard: ScryfallCard) => {
-            const imageUrl = apiCard.image_uris?.normal || apiCard.card_faces?.[0]?.image_uris?.normal;
+            const frameUrl = apiCard.normalArtworkUrl;
+            const cropUrl = apiCard.illustrationArtworkUrl;
+            const arenaId = apiCard.arena_id!;
 
-            if (!imageUrl) {
-              return of(mapScryfallToCard(apiCard, domainSet.id, ''));
+            if (!frameUrl && !cropUrl) {
+              return of(mapScryfallToCard(apiCard, domainSet.id, '', ''));
             }
 
-            const destinationFilePath = this.getCardArtPath(cleanCode, apiCard.arena_id!);
-
-            return this.fileService.downloadRemoteUrlToDisk(imageUrl, destinationFilePath).pipe(
-              map((localUri: string) => mapScryfallToCard(apiCard, domainSet.id, localUri)),
-              catchError(() => of(mapScryfallToCard(apiCard, domainSet.id, imageUrl)))
+            return forkJoin({
+              frame: this.downloadCardAsset(frameUrl, this.getCardArtPath(cleanCode, arenaId)),
+              crop: this.downloadCardAsset(cropUrl, this.getCardIllustrationPath(cleanCode, arenaId))
+            }).pipe(
+              map(({ frame, crop }) => mapScryfallToCard(apiCard, domainSet.id, frame, crop))
             );
           }),
           toArray()
@@ -253,6 +256,10 @@ export class SetService implements OnDestroy {
     return `${this.getSetDirectoryPath(setCode)}/${arenaId}.png`;
   }
 
+  public getCardIllustrationPath(setCode: string, arenaId: number): string {
+    return `${this.getSetDirectoryPath(setCode)}/${arenaId}-art.jpg`;
+  }
+
   /** Resolves a WebView-safe URI for the set cover, with a packaged fallback. */
   public getSetCoverWebViewUri(setCode: string): Observable<string> {
     const targetPath = this.getSetCoverArtPath(setCode);
@@ -265,8 +272,21 @@ export class SetService implements OnDestroy {
   }
 
   public triggerCardAssetDownload(url: string, setCode: string, arenaId: number): Observable<string> {
-    const destinationPath = this.getCardArtPath(setCode, arenaId);
-    return this.fileService.downloadRemoteUrlToDisk(url, destinationPath);
+    return this.downloadCardAsset(url, this.getCardArtPath(setCode, arenaId));
+  }
+
+  public triggerIllustrationAssetDownload(url: string, setCode: string, arenaId: number): Observable<string> {
+    return this.downloadCardAsset(url, this.getCardIllustrationPath(setCode, arenaId));
+  }
+
+  private downloadCardAsset(url: string, destinationPath: string): Observable<string> {
+    if (!url) {
+      return of('');
+    }
+
+    return this.fileService.downloadRemoteUrlToDisk(url, destinationPath).pipe(
+      catchError(() => of(url))
+    );
   }
 
   public triggerCoverAssetDownload(remoteServerUrl: string, setCode: string): Observable<string> {

@@ -8,6 +8,7 @@ export interface MtgCard {
   scryfallId: string;
   name: string;
   localArtUri: string;
+  localIllustrationUri: string;
   typeLine: string;
   colors: string[];
   rarity: string;

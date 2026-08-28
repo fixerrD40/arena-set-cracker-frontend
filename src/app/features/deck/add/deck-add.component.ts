@@ -103,6 +103,7 @@ export class DeckAddComponent implements OnInit {
       name: name.trim(),
       tags: [],
       notes: '',
+      coverCardId: '',
       cards
     };
 

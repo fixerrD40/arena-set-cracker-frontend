@@ -1,32 +1,43 @@
-import { ensureCardsOracleTextColumn, RawSqlJsDb } from './sqlite.ensure-columns';
+import { ensureCardsColumns, ensureDecksColumns, ensureSqliteColumns, RawSqlJsDb } from './sqlite.ensure-columns';
 
-function fakeDb(columnNames: string[]): RawSqlJsDb & { altered: string[] } {
+function fakeDb(tables: Record<string, string[]>): RawSqlJsDb & { altered: string[] } {
   const altered: string[] = [];
   return {
     altered,
-    exec: () => [
-      {
-        columns: ['cid', 'name', 'type'],
-        values: columnNames.map((name, cid) => [cid, name, 'text'])
-      }
-    ],
+    exec: (sql: string) => {
+      const table = /PRAGMA table_info\((\w+)\)/.exec(sql)?.[1] ?? '';
+      const columnNames = tables[table] || [];
+      return [
+        {
+          columns: ['cid', 'name', 'type'],
+          values: columnNames.map((name, cid) => [cid, name, 'text'])
+        }
+      ];
+    },
     run: (sql: string) => {
       altered.push(sql);
     }
   };
 }
 
-describe('ensureCardsOracleTextColumn', () => {
-  it('alters cards when oracle_text is missing', () => {
-    const db = fakeDb(['id', 'name', 'mana_cost']);
-    expect(ensureCardsOracleTextColumn(db)).toBe(true);
-    expect(db.altered.length).toBe(1);
-    expect(db.altered[0]).toContain('oracle_text');
+describe('ensureCardsColumns', () => {
+  it('adds every missing cards column', () => {
+    const db = fakeDb({ cards: ['id', 'name', 'mana_cost'] });
+    expect(ensureCardsColumns(db)).toBe(true);
+    expect(db.altered.join(' ')).toContain('oracle_text');
+    expect(db.altered.join(' ')).toContain('local_illustration_uri');
   });
 
-  it('is a no-op when the column already exists', () => {
-    const db = fakeDb(['id', 'name', 'oracle_text']);
-    expect(ensureCardsOracleTextColumn(db)).toBe(false);
+  it('adds only illustration when oracle_text already exists', () => {
+    const db = fakeDb({ cards: ['id', 'name', 'oracle_text'] });
+    expect(ensureCardsColumns(db)).toBe(true);
+    expect(db.altered.length).toBe(1);
+    expect(db.altered[0]).toContain('local_illustration_uri');
+  });
+
+  it('is a no-op when all ensured columns exist', () => {
+    const db = fakeDb({ cards: ['id', 'oracle_text', 'local_illustration_uri'] });
+    expect(ensureCardsColumns(db)).toBe(false);
     expect(db.altered.length).toBe(0);
   });
 
@@ -38,7 +49,27 @@ describe('ensureCardsOracleTextColumn', () => {
         db.altered.push(sql);
       }
     };
-    expect(ensureCardsOracleTextColumn(db)).toBe(false);
+    expect(ensureCardsColumns(db)).toBe(false);
     expect(db.altered.length).toBe(0);
+  });
+});
+
+describe('ensureSqliteColumns', () => {
+  it('patches both cards and decks when each is missing a column', () => {
+    const db = fakeDb({
+      cards: ['id', 'oracle_text', 'local_illustration_uri'],
+      decks: ['id', 'name']
+    });
+    expect(ensureSqliteColumns(db)).toBe(true);
+    expect(db.altered.join(' ')).toContain('cover_card_id');
+  });
+
+  it('still patches decks when cards are already current', () => {
+    const db = fakeDb({
+      cards: ['id', 'oracle_text', 'local_illustration_uri'],
+      decks: ['id', 'name']
+    });
+    expect(ensureCardsColumns(db)).toBe(false);
+    expect(ensureDecksColumns(db)).toBe(true);
   });
 });

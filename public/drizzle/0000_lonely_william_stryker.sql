@@ -24,6 +24,7 @@ CREATE TABLE `cards` (
 	`scryfall_id` text NOT NULL,
 	`name` text NOT NULL,
 	`local_art_uri` text NOT NULL,
+	`local_illustration_uri` text DEFAULT '' NOT NULL,
 	`type_line` text NOT NULL,
 	`colors` text NOT NULL,
 	`rarity` text NOT NULL,
@@ -38,6 +39,7 @@ CREATE TABLE `decks` (
 	`name` text NOT NULL,
 	`tags` text NOT NULL,
 	`notes` text DEFAULT '' NOT NULL,
+	`cover_card_id` text DEFAULT '' NOT NULL,
 	`created_at` text NOT NULL,
 	FOREIGN KEY (`set_id`) REFERENCES `sets`(`id`) ON UPDATE no action ON DELETE cascade
 );

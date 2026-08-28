@@ -10,6 +10,7 @@ export function mapRowToCard(row: CardRow): MtgCard {
     scryfallId: row.scryfallId,
     name: row.name,
     localArtUri: row.localArtUri,
+    localIllustrationUri: row.localIllustrationUri || '',
     typeLine: row.typeLine,
     colors: row.colors,
     rarity: row.rarity,
@@ -26,6 +27,7 @@ export function mapCardToInsert(card: MtgCard): CardInsert {
     scryfallId: card.scryfallId,
     name: card.name,
     localArtUri: card.localArtUri,
+    localIllustrationUri: card.localIllustrationUri || '',
     typeLine: card.typeLine,
     colors: card.colors,
     rarity: card.rarity,
@@ -37,7 +39,8 @@ export function mapCardToInsert(card: MtgCard): CardInsert {
 export function mapScryfallToCard(
   apiCard: ScryfallCard,
   generatedSetId: string,
-  localArtUri: string = ''
+  localArtUri: string = '',
+  localIllustrationUri: string = ''
 ): MtgCard {
   return {
     id: apiCard.id,
@@ -46,6 +49,7 @@ export function mapScryfallToCard(
     scryfallId: apiCard.id,
     name: apiCard.name,
     localArtUri: localArtUri,
+    localIllustrationUri: localIllustrationUri,
     typeLine: apiCard.type_line || 'Unknown',
     colors: apiCard.colors || [],
     rarity: apiCard.rarity || 'common',

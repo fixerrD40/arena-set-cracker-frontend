@@ -7,6 +7,7 @@ export interface MtgDeck {
   name: string;
   tags: string[];
   notes: string;
+  coverCardId: string;
   cards: Map<string, number>;
 }
 
@@ -17,6 +18,7 @@ export interface CloudDeckPayload {
   name: string;
   tags?: string[];
   notes?: string;
+  coverCardId?: string;
   cards?: Record<string, number>;
 }
 
@@ -34,7 +36,8 @@ export interface DeckValidationResult {
   errors: string[];
 }
 
-export type CreateDeckConfig = Omit<MtgDeck, 'tags' | 'notes' | 'cards'> & Partial<Pick<MtgDeck, 'tags' | 'notes' | 'cards'>>;
+export type CreateDeckConfig = Omit<MtgDeck, 'tags' | 'notes' | 'coverCardId' | 'cards'> &
+  Partial<Pick<MtgDeck, 'tags' | 'notes' | 'coverCardId' | 'cards'>>;
 
 export interface DeckDeltaPayload {
   id: string;

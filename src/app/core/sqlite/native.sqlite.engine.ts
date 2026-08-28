@@ -1,6 +1,6 @@
 import { Injectable, Injector, runInInjectionContext, inject } from '@angular/core';
 import { APP_CONFIG } from '../config/config.model';
-import { ensureCardsOracleTextColumn } from './sqlite.ensure-columns';
+import { ensureSqliteColumns } from './sqlite.ensure-columns';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -50,7 +50,7 @@ export class NativeSqliteEngine extends SqliteEngine {
         this.rawSqliteClient = new SQL.Database(bytes);
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
-        if (ensureCardsOracleTextColumn(this.rawSqliteClient)) {
+        if (ensureSqliteColumns(this.rawSqliteClient)) {
           this.flush();
         }
 

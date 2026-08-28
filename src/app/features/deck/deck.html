@@ -1,122 +1,150 @@
-@if (scratchpadDeck$ | async; as deck) {
-
-  <div class="workspace-toolbar">
-    <div class="toolbar-info">
-      @if (isDirty$ | async) {
-        <span class="status-badge dirty">⚠️ Unsaved Changes</span>
-      } @else {
-        <span class="status-badge pristine">✅ Synchronized</span>
-      }
-    </div>
-    <div class="toolbar-actions">
-      <button
-        mat-flat-button
-        color="primary"
-        [disabled]="!(isDirty$ | async)"
-        (click)="handleSaveChanges()">
-        Save Deck
-      </button>
-      <button
-        mat-stroked-button
-        color="warn"
-        [disabled]="!(isDirty$ | async)"
-        (click)="handleCancelChanges()">
-        Discard Changes
-      </button>
-    </div>
-  </div>
-
-  <div class="deck-wrapper">
-
-    <div class="deck-meta">
-      <div class="deck-tags">
-        <h3>Tags:</h3>
-        <mat-chip-grid #chipGrid>
-          @for (tag of deck.tags; track tag) {
-            <mat-chip-row (removed)="removeTag(tag)">
-              {{ tag }}
-              <button matChipRemove type="button" aria-label="Remove tag">&times;</button>
-            </mat-chip-row>
-          }
-          <input
-            placeholder="New tag..."
-            [matChipInputFor]="chipGrid"
-            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-            (matChipInputTokenEnd)="addTag($event)"
-            aria-label="Add new tag"
-          />
-        </mat-chip-grid>
-      </div>
-
-      <div class="deck-notes">
-        <h3>Notes:</h3>
-        <textarea
-          [value]="deck.notes"
-          (blur)="saveNotes($any($event.target).value)"
-          rows="4"
-          placeholder="[Add notes...]"
-          aria-label="Deck notes"
-        ></textarea>
-      </div>
-    </div>
-
-    <div class="deck-list">
-
-      @if (editing) {
-        <div class="inline-rename-container">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Edit Deck Name</mat-label>
+@if (scratchpadDeck$ | async) {
+  @if (screen === 'builder') {
+    <div class="arena-builder">
+      <section
+        class="collection-pane"
+        data-deck-drop="library"
+        [class.library-drop-hot]="drag.zone() === 'library'"
+      >
+        <div class="collection-toolbar">
+          <label class="collection-query">
+            <span class="query-prefix">s:{{ (workspace$ | async)?.setInfo.code || '—' }}</span>
             <input
-              matInput
-              #nameField
-              [value]="deck.name"
-              (keydown.enter)="saveInlineName(nameField.value)"
-              (keydown.escape)="cancelEdit()"
+              type="text"
+              class="query-suffix"
+              [ngModel]="filter.text"
+              (ngModelChange)="onCollectionTextChange($event)"
+              aria-label="Filter this set by name, type, or oracle text"
+              autocomplete="off"
+              spellcheck="false"
             />
-          </mat-form-field>
-          <div class="inline-actions">
-            <button mat-flat-button color="primary" (click)="saveInlineName(nameField.value)">Save</button>
-            <button mat-button color="warn" (click)="cancelEdit()">Cancel</button>
+            @if (filter.text) {
+              <button type="button" class="query-clear" (click)="clearCollectionText()" aria-label="Clear search">×</button>
+            }
+          </label>
+
+          <div class="collection-chips" role="group" aria-label="Color and type filters">
+            @for (color of manaColors; track color) {
+              <button
+                type="button"
+                class="chip-round"
+                [class.on]="isColorOn(color)"
+                (click)="toggleManaColor(color)"
+                [attr.aria-pressed]="isColorOn(color)"
+                [attr.aria-label]="colorLabel(color)"
+              >
+                <img [src]="'assets/colors/' + colorLabel(color).toLowerCase() + '.png'" [alt]="colorLabel(color)" />
+              </button>
+            }
+            <button
+              type="button"
+              class="chip-round"
+              [class.on]="filter.colorless"
+              (click)="toggleColorless()"
+              [attr.aria-pressed]="filter.colorless"
+              aria-label="Colorless"
+            >
+              <span class="chip-diamond" aria-hidden="true"></span>
+            </button>
+            <button
+              type="button"
+              class="chip-round"
+              [class.on]="filter.multicolor"
+              (click)="toggleMulticolor()"
+              [attr.aria-pressed]="filter.multicolor"
+              aria-label="Multicolor"
+            >
+              <span class="chip-gold" aria-hidden="true"></span>
+            </button>
+            <button
+              type="button"
+              class="chip-round chip-land"
+              [class.on]="filter.land"
+              (click)="toggleLand()"
+              [attr.aria-pressed]="filter.land"
+              aria-label="Land"
+            >
+              Land
+            </button>
           </div>
         </div>
-      } @else {
-        <h2>
-          {{ deck.name }}
-          <button mat-icon-button (click)="toggleEdit()" aria-label="Edit Deck Name">
-            <mat-icon>edit</mat-icon>
-          </button>
-        </h2>
 
-        <div class="decklist-cards">
-          @for (item of displayedCards$ | async; track item.card.id) {
+        <div
+          #collectionStage
+          class="collection-stage"
+          tabindex="0"
+          (keydown)="onCollectionKeydown($event)"
+        >
+          @if (collectionPageView$ | async; as pageView) {
+            <button
+              type="button"
+              class="page-nav"
+              (click)="prevCollectionPage()"
+              [disabled]="pageView.page === 0"
+              aria-label="Previous page"
+            >‹</button>
             <div
-              class="decklist-card"
-              [ngxTippy]="getCardTooltip(item.card.id)"
-              [tippyProps]="{ allowHTML: true, placement: 'top', theme: 'light-border' }"
+              class="collection-grid"
+              [class.empty]="pageView.cards.length === 0"
+              cdkDropList
+              cdkDropListSortingDisabled
+              [cdkDropListAutoScrollDisabled]="true"
             >
-              <span class="card-name">{{ item.card.name }}</span>
-              <span class="card-quantity">x{{ item.quantity }}</span>
-
-              <div class="card-actions-overlay">
-                <button mat-icon-button (click)="handleIncrementCard(item.card.id)" aria-label="Add copy">
-                  <mat-icon>add</mat-icon>
+              @for (item of pageView.cards; track item.card.id) {
+                <button
+                  type="button"
+                  class="collection-card"
+                  cdkDrag
+                  [cdkDragData]="collectionDrag(item.card)"
+                  (cdkDragStarted)="onCardDragStarted()"
+                  (cdkDragMoved)="onCardDragMoved($event)"
+                  (cdkDragEnded)="onCardDragEnded($event)"
+                  (click)="handleIncrementCard(item.card)"
+                  [attr.aria-label]="'Add ' + item.card.name"
+                >
+                  <ng-template cdkDragPreview>
+                    @if (item.card.localArtUri) {
+                      <img class="drag-card-preview" [src]="item.card.localArtUri" [alt]="item.card.name" />
+                    }
+                  </ng-template>
+                  <div class="owned-row" aria-hidden="true">
+                    @if (showsInfinityCopyMark(item.card)) {
+                      <span class="owned-infinity">∞</span>
+                    } @else {
+                      @for (pip of copyPips; track pip) {
+                        <span class="owned-pip" [class.filled]="item.quantity >= pip"></span>
+                      }
+                    }
+                  </div>
+                  @if (item.card.localArtUri) {
+                    <img [src]="item.card.localArtUri" [alt]="item.card.name" />
+                  } @else {
+                    <div class="card-fallback">
+                      <strong>{{ item.card.name }}</strong>
+                      <span>{{ item.card.typeLine }}</span>
+                    </div>
+                  }
                 </button>
-                <button mat-icon-button (click)="handleDecrementCard(item.card.id)" aria-label="Remove copy">
-                  <mat-icon>remove</mat-icon>
-                </button>
-              </div>
+              } @empty {
+                <p class="empty-matrix-fallback">No cards in this set match the current filter.</p>
+              }
             </div>
-          } @empty {
-            <div class="empty-matrix-fallback">
-              No cards assigned to this deck container yet. Drag and drop assets from the set selection pool to begin puzzle completion metrics.
-            </div>
+            <button
+              type="button"
+              class="page-nav"
+              (click)="nextCollectionPage()"
+              [disabled]="pageView.page + 1 >= pageView.pageCount"
+              aria-label="Next page"
+            >›</button>
           }
         </div>
-      }
+      </section>
+
+      <app-deck-contents (details)="openDetails()" />
     </div>
-  </div>
+  } @else if (deckSummary$ | async; as summary) {
+    <app-deck-details [summary]="summary" (back)="backToBuilder()" />
+  }
 } @else {
-  <div class="loading-workspace-spinner">
-    Loading deck workspace…
-  </div>
+  <div class="loading-workspace-spinner">Loading deck workspace…</div>
 }

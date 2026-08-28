@@ -4,6 +4,7 @@ import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { SetService } from './set.service';
 import { MtgCard } from '../../shared/models/card/card';
 import { MtgDeck } from '../../shared/models/deck/deck';
+import { deckCopyLimit } from '../../shared/models/deck/deck.copy-limit';
 import { decks, deckCards } from '../sqlite/sqlite.schema';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
@@ -36,6 +37,7 @@ export class DeckService {
         n: active.name,
         nt: active.notes,
         t: active.tags,
+        cv: active.coverCardId,
         c: Object.fromEntries(active.cards)
       });
 
@@ -43,6 +45,7 @@ export class DeckService {
         n: scratch.name,
         nt: scratch.notes,
         t: scratch.tags,
+        cv: scratch.coverCardId,
         c: Object.fromEntries(scratch.cards)
       });
 
@@ -50,22 +53,21 @@ export class DeckService {
     })
   );
 
-  public readonly displayedCards$: Observable<DisplayedCardLine[]> = combineLatest({
+  /**
+   * Focused-set catalog with this deck's quantities (0 if unassigned).
+   * The editor filters this pool; it does not hide the rest of the set.
+   */
+  public readonly catalogLines$: Observable<DisplayedCardLine[]> = combineLatest({
     workspace: this.setService.activeContext$,
     currentScratchpad: this.scratchpadDeck$
   }).pipe(
     map(({ workspace, currentScratchpad }) => {
       if (!workspace || !currentScratchpad) return [];
 
-      const list: DisplayedCardLine[] = [];
-
-      for (const card of workspace.cards) {
-        const quantityInDeck = currentScratchpad.cards.get(String(card.id));
-        if (quantityInDeck && quantityInDeck > 0) {
-          list.push({ card, quantity: quantityInDeck });
-        }
-      }
-      return list;
+      return workspace.cards.map((card) => ({
+        card,
+        quantity: currentScratchpad.cards.get(String(card.id)) || 0
+      }));
     })
   );
 
@@ -103,6 +105,49 @@ export class DeckService {
     return updated;
   }
 
+  public addCopy(card: MtgCard): void {
+    const current = this.scratchpadValue;
+    if (!current) return;
+
+    const cardId = String(card.id);
+    const qty = current.cards.get(cardId) || 0;
+    if (qty >= deckCopyLimit(card)) return;
+
+    this.updateScratchpad({ ...current, cards: this.incrementInMap(current.cards, cardId) });
+  }
+
+  public setCoverCard(cardId: string): void {
+    const current = this.scratchpadValue;
+    if (!current) return;
+
+    const nextId = String(cardId);
+    if (current.coverCardId === nextId) return;
+
+    this.updateScratchpad({ ...current, coverCardId: nextId });
+  }
+
+  public removeCopy(cardId: string): void {
+    const current = this.scratchpadValue;
+    if (!current) return;
+
+    this.updateScratchpad({
+      ...current,
+      cards: this.decrementInMap(current.cards, String(cardId))
+    });
+  }
+
+  public removeAllCopies(cardId: string): void {
+    const current = this.scratchpadValue;
+    if (!current) return;
+
+    const id = String(cardId);
+    if (!current.cards.has(id)) return;
+
+    const next = new Map(current.cards);
+    next.delete(id);
+    this.updateScratchpad({ ...current, cards: next });
+  }
+
   /**
    * Creates a new deck row + card lines, then activates it in memory.
    */
@@ -113,6 +158,7 @@ export class DeckService {
       name: name.trim(),
       tags: [],
       notes: '',
+      coverCardId: '',
       cards: new Map()
     };
 
@@ -167,7 +213,8 @@ export class DeckService {
       setId: deck.setId,
       name: deck.name,
       notes: deck.notes,
-      tags: [...deck.tags]
+      tags: [...deck.tags],
+      coverCardId: deck.coverCardId || ''
     };
 
     const writeParent$ = options.isNew

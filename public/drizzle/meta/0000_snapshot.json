@@ -49,6 +49,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "local_illustration_uri": {
+          "name": "local_illustration_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
         "type_line": {
           "name": "type_line",
           "type": "text",
@@ -206,6 +214,14 @@
         },
         "notes": {
           "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "cover_card_id": {
+          "name": "cover_card_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
