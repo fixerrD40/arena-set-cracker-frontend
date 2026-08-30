@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, Observable, of, throwError } from 'rxjs
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { SetService } from './set.service';
 import { MtgCard } from '../../shared/models/card/card';
-import { cloneDeck, MtgDeck } from '../../shared/models/deck/deck';
+import { cloneDeck, DeckStatus, MtgDeck } from '../../shared/models/deck/deck';
 import { deckCopyLimit } from '../../shared/models/deck/deck.copy-limit';
 import { decks, deckCards } from '../sqlite/sqlite.schema';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
@@ -184,6 +184,86 @@ export class DeckService {
         this.setActiveDeck(deck);
       }),
       map(() => deck)
+    );
+  }
+
+  public attachTheme(deckId: string, phrase: string): Observable<void> {
+    const workspace = this.setService.currentWorkspaceSnapshot;
+    if (!workspace) {
+      return of(void 0);
+    }
+
+    const deck = workspace.decks.find((entry) => String(entry.id) === String(deckId));
+    const trimmed = phrase.trim();
+    if (!deck || !trimmed || deck.themes.includes(trimmed)) {
+      return of(void 0);
+    }
+
+    const updated = cloneDeck(deck);
+    updated.themes = [...deck.themes, trimmed];
+
+    return this.persistDeck(updated, { isNew: false }).pipe(
+      tap(() => {
+        this.setService.updateDeckInWorkspaceMemory(updated);
+        const active = this.activeDeckSnapshot;
+        if (active && String(active.id) === String(deckId)) {
+          this.setActiveDeck(updated);
+        }
+      }),
+      map(() => void 0)
+    );
+  }
+
+  public detachTheme(deckId: string, phrase: string): Observable<void> {
+    const workspace = this.setService.currentWorkspaceSnapshot;
+    if (!workspace) {
+      return of(void 0);
+    }
+
+    const deck = workspace.decks.find((entry) => String(entry.id) === String(deckId));
+    const trimmed = phrase.trim();
+    if (!deck || !trimmed || !deck.themes.includes(trimmed)) {
+      return of(void 0);
+    }
+
+    const updated = cloneDeck(deck);
+    updated.themes = deck.themes.filter((entry) => entry !== trimmed);
+
+    return this.persistDeck(updated, { isNew: false }).pipe(
+      tap(() => {
+        this.setService.updateDeckInWorkspaceMemory(updated);
+        const active = this.activeDeckSnapshot;
+        if (active && String(active.id) === String(deckId)) {
+          this.setActiveDeck(updated);
+        }
+      }),
+      map(() => void 0)
+    );
+  }
+
+  public updateDeckStatus(deckId: string, status: DeckStatus): Observable<void> {
+    const workspace = this.setService.currentWorkspaceSnapshot;
+    if (!workspace) {
+      return of(void 0);
+    }
+
+    const deck = workspace.decks.find((entry) => String(entry.id) === String(deckId));
+    if (!deck || deck.status === status) {
+      return of(void 0);
+    }
+
+    const updated = cloneDeck(deck);
+    updated.status = status;
+
+    return this.persistDeck(updated, { isNew: false }).pipe(
+      tap(() => {
+        this.setService.updateDeckInWorkspaceMemory(updated);
+        const active = this.activeDeckSnapshot;
+        if (active && String(active.id) === String(deckId)) {
+          this.setActiveDeck(updated);
+        }
+      }),
+      map(() => void 0)
     );
   }
 

@@ -1,4 +1,5 @@
 import { MtgCard } from './card';
+import { cardMatchesTheme } from '../discovery/theme-match';
 import { CmcBucket, cmcBucket, compareByCmcThenName, getCmc } from './card.mana';
 
 export const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'] as const;
@@ -132,7 +133,7 @@ export function cardMatchesArenaCollectionFilter(
     return false;
   }
 
-  if (filter.theme && !matchesCollectionText(card, filter.theme)) {
+  if (filter.theme && !cardMatchesTheme(card, filter.theme)) {
     return false;
   }
 
@@ -186,6 +187,30 @@ function matchesColorDimension(card: MtgCard, filter: ArenaCollectionFilter): bo
     return matchesColorless;
   }
   return matchesAnySelected;
+}
+
+/**
+ * Set-board remaining pool: colorless always.
+ * One chip selected: mono or any gold that includes that color.
+ * Two or more chips: every color on the card must lie within the selected set.
+ */
+export function matchesColorScope(card: MtgCard, selected: readonly ManaColor[]): boolean {
+  if (selected.length === 0) {
+    return true;
+  }
+
+  const colors = collectionColors(card);
+  if (colors.length === 0) {
+    return true;
+  }
+
+  const selectedSet = new Set(selected);
+
+  if (selected.length === 1) {
+    return colors.some((color) => selectedSet.has(color));
+  }
+
+  return colors.every((color) => selectedSet.has(color));
 }
 
 function printedManaColors(colors: string[]): ManaColor[] {

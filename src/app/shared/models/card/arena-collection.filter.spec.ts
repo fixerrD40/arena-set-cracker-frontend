@@ -6,7 +6,8 @@ import {
   compareArenaCollection,
   compareArenaDeckList,
   emptyArenaCollectionFilter,
-  matchesCollectionText
+  matchesCollectionText,
+  matchesColorScope
 } from './arena-collection.filter';
 
 function card(partial: Partial<MtgCard> & Pick<MtgCard, 'name' | 'colors' | 'typeLine'>): MtgCard {
@@ -263,6 +264,47 @@ describe('compareArenaDeckList', () => {
       .sort(compareArenaDeckList)
       .map((entry) => entry.name);
     expect(names).toEqual(['Consider', 'Wrath', 'Plains', 'Swamp']);
+  });
+});
+
+describe('matchesColorScope', () => {
+  it('always includes colorless cards when colors are selected', () => {
+    expect(matchesColorScope(solRing, ['R', 'W'])).toBe(true);
+    expect(matchesColorScope(wastes, ['U'])).toBe(true);
+  });
+
+  it('includes mono cards whose color is in the selected set', () => {
+    expect(matchesColorScope(monoRed, ['R', 'W'])).toBe(true);
+    expect(matchesColorScope(monoWhite, ['R', 'W'])).toBe(true);
+    expect(matchesColorScope(monoBlue, ['R', 'W'])).toBe(false);
+  });
+
+  it('with one chip selected, includes any gold that shares that color', () => {
+    expect(matchesColorScope(monoBlue, ['U'])).toBe(true);
+    expect(matchesColorScope(izzet, ['U'])).toBe(true);
+    expect(matchesColorScope(jeskai, ['U'])).toBe(true);
+    expect(matchesColorScope(monoRed, ['U'])).toBe(false);
+  });
+
+  it('with two or more chips, gold must stay within the selected set', () => {
+    const boros = card({ name: 'Boros Charm', colors: ['R', 'W'], typeLine: 'Instant' });
+    const gruul = card({ name: 'Selesnya Charm', colors: ['G', 'W'], typeLine: 'Instant' });
+    expect(matchesColorScope(boros, ['R', 'W'])).toBe(true);
+    expect(matchesColorScope(gruul, ['R', 'W'])).toBe(false);
+    expect(matchesColorScope(izzet, ['R', 'W'])).toBe(false);
+    expect(matchesColorScope(izzet, ['R', 'W', 'U'])).toBe(true);
+  });
+
+  it('does not require gold to use every selected color', () => {
+    expect(matchesColorScope(izzet, ['R', 'W', 'U'])).toBe(true);
+    expect(matchesColorScope(jeskai, ['R', 'W', 'U'])).toBe(true);
+  });
+
+  it('includes every in-set colored card when all five are selected', () => {
+    const all = ['W', 'U', 'B', 'R', 'G'] as const;
+    expect(matchesColorScope(monoRed, all)).toBe(true);
+    expect(matchesColorScope(izzet, all)).toBe(true);
+    expect(matchesColorScope(jeskai, all)).toBe(true);
   });
 });
 

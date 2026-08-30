@@ -1,0 +1,39 @@
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.assignment-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--deck-line);
+  border-radius: 8px;
+  background: var(--deck-panel);
+}
+
+.metrics-primary {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--deck-fg);
+}
+
+.metrics-rarity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.rarity-stat {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--deck-bg);
+  border: 1px solid var(--deck-line);
+  color: var(--deck-muted);
+  text-transform: capitalize;
+}

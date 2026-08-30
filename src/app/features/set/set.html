@@ -1,181 +1,59 @@
-<div class="set-detail-container" style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
-
-  <section class="set-decks-panel" style="border: 1px solid #ddd; padding: 1rem; border-radius: 6px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
-      <h2 style="margin: 0; font-size: 1.15rem;">Decks</h2>
-      <button mat-raised-button color="primary" type="button" (click)="goToAddDeck()">
-        <mat-icon>add</mat-icon>
-        Import / Add Deck
-      </button>
-    </div>
-
-    @if (workspace$ | async; as workspace) {
-      <ul class="set-deck-list" style="list-style: none; margin: 1rem 0 0; padding: 0;">
-        @for (deck of workspace.decks; track deck.id) {
-          <li style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
-            <button type="button" class="deck-open-link" (click)="openDeck(deck.id)" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--asc-primary, #3f51b5); font-weight: 500; text-align: left;">
-              {{ deck.name }}
-            </button>
-            <span style="font-size: 0.85rem; color: #666;">
-              {{ deckCardCount(deck) }} cards
-            </span>
-          </li>
-        } @empty {
-          <li style="padding: 0.75rem 0; color: #666; font-style: italic;">
-            No decks yet. Import an Arena list for this set to get started.
-          </li>
+<div class="set-board">
+  @if (boardShell$ | async; as board) {
+    @if (patternState$ | async; as patternState) {
+      <div class="set-board-layout">
+        @if (decksSidebarOpen) {
+          <app-set-decks-drawer
+            [decksByStatus]="board.decksByStatus"
+            [selectedTheme]="selectedTheme"
+            (closeSidebar)="toggleDecksSidebar()"
+            (themeSelect)="toggleThemeSelection($event)"
+          />
         }
-      </ul>
+
+        <div class="set-main">
+          <div class="set-main-upper">
+            <div class="set-main-head">
+              @if (!decksSidebarOpen) {
+                <button
+                  type="button"
+                  class="deck-drawer-toggle"
+                  [class.peek-hot]="!decksSidebarOpen && dragState.peekDrawer()"
+                  (click)="toggleDecksSidebar()"
+                  aria-label="Show decks panel"
+                >
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              }
+              <app-set-assignment-metrics [metrics]="board.metrics" />
+            </div>
+
+            <app-set-discovery-pool
+              [scoped]="board.scoped"
+              [remaining]="board.remaining"
+              [total]="board.total"
+              [scopedColors]="scopedColors"
+              [drainNeedsWork]="drainNeedsWork"
+              (colorScopeChange)="toggleColorScope($event)"
+              (drainNeedsWorkChange)="onDrainNeedsWorkChange($event)"
+            />
+
+            <app-set-patterns-panel
+              [patternState]="patternState"
+              [selectedTheme]="selectedTheme"
+              [drawerOpen]="decksSidebarOpen"
+              (themeSelect)="toggleThemeSelection($event)"
+            />
+          </div>
+
+          <app-set-theme-preview
+            #themePreview
+            [pool]="board.pool"
+            [selectedTheme]="selectedTheme"
+            (themeClear)="clearThemeSelection()"
+          />
+        </div>
+      </div>
     }
-  </section>
-
-  <div style="display: flex; gap: 1rem; flex-grow: 0;">
-
-    <aside class="filters-sidebar">
-      <div class="filters">
-
-        <div>
-          <strong>Colors:</strong>
-          @for (color of filters['colors'].options; track color) {
-            <button
-              (click)="toggleFilter('colors', color)"
-              [ngClass]="{
-                'include': filters['colors'].states.get(color) === TriState.Include,
-                'exclude': filters['colors'].states.get(color) === TriState.Exclude
-              }"
-              class="color-button"
-            >
-              <img [src]="'assets/colors/' + getColorName(color).toLowerCase() + '.png'" [alt]="color" />
-            </button>
-          }
-        </div>
-
-        <div>
-          <strong>Types:</strong>
-          @for (type of filters['types'].options; track type) {
-            <button
-              (click)="toggleFilter('types', type)"
-              [ngClass]="{
-                'include': filters['types'].states.get(type) === TriState.Include,
-                'exclude': filters['types'].states.get(type) === TriState.Exclude
-              }"
-            >
-              {{ type }}
-            </button>
-          }
-        </div>
-
-        <div>
-          <strong>Rarities:</strong>
-          @for (rarity of filters['rarities'].options; track rarity) {
-            <button
-              (click)="toggleFilter('rarities', rarity)"
-              [ngClass]="{
-                'include': filters['rarities'].states.get(rarity) === TriState.Include,
-                'exclude': filters['rarities'].states.get(rarity) === TriState.Exclude
-              }"
-            >
-              {{ rarity }}
-            </button>
-          }
-        </div>
-
-        <div>
-          <strong>Costs (CMC):</strong>
-          @for (cost of filters['costs'].options; track cost) {
-            <button
-              (click)="toggleFilter('costs', cost)"
-              [ngClass]="{
-                'include': filters['costs'].states.get(cost) === TriState.Include,
-                'exclude': filters['costs'].states.get(cost) === TriState.Exclude
-              }"
-            >
-              {{ cost }}
-            </button>
-          }
-        </div>
-
-      </div>
-    </aside>
-
-  <main class="chart-main" style="flex: 1; display: flex; flex-direction: column; min-height: 500px;">
-
-    <div class="header" style="margin-bottom: 1rem;">
-      <input
-        type="text"
-        placeholder="Search cards..."
-        [(ngModel)]="searchTerm"
-        class="search-input"
-        aria-label="Search cards by name"
-        style="width: 100%; padding: 0.5rem; font-size: 1rem;"
-      />
-      <div class="pagination-info" style="margin-top: 0.5rem; font-size: 0.9rem; color: #555;">
-        Showing cards {{ filteredCards.length > 0 ? currentPage * pageSize + 1 : 0 }} -
-        {{ Math.min((currentPage + 1) * pageSize, filteredCards.length) }} of
-        {{ filteredCards.length }} ({{ allAggregatedCards.length }} total)
-      </div>
-    </div>
-
-    <div class="chart-wrapper" style="flex-grow: 1; min-height: 300px;">
-      @defer (on timer(150ms)) {
-        <app-set-chart [chartData]="barChartData" />
-      } @placeholder {
-        <div class="chart-loading-skeleton" style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; background: #fafafa; border: 1px dashed #ccc; border-radius: 4px;">
-          <p style="color: #666; font-size: 0.9rem;">Assembling layout charts...</p>
-        </div>
-      }
-    </div>
-
-    <div class="pagination-controls" style="margin-top: 1rem; display: flex; justify-content: center; gap: 1rem;">
-      <button (click)="prevPage()" [disabled]="!hasPrevPage">Previous</button>
-      <span>Page {{ currentPage + 1 }} / {{ Math.ceil(filteredCards.length / pageSize) || 1 }}</span>
-      <button (click)="nextPage()" [disabled]="!hasNextPage">Next</button>
-    </div>
-
-  </main>
-
-  </div>
-
-  <section class="underutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
-    <h3>Underutilized Cards</h3>
-
-    <div class="card-grid-flex" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-      @for (card of underutilizedCards; track card.id) {
-        <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
-
-          @if (card.localArtUri) {
-            <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
-          }
-
-          <div><strong>{{ card.name }}</strong></div>
-          <div>Used: {{ card.quantity }}</div>
-          <div style="font-size: 0.85rem; color: #666;">{{ card.typeLine }}</div>
-        </div>
-      } @empty {
-        <p>No underutilized cards found.</p>
-      }
-    </div>
-  </section>
-
-  <section class="overutilized-cards" style="border: 1px solid #ddd; padding: 1rem; overflow-y: auto; max-height: 300px; margin-top: 1rem;">
-    <h3>Overutilized Cards</h3>
-
-    <div class="card-grid-flex" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-      @for (card of overutilizedCards; track card.id) {
-        <div class="card-summary" style="border: 1px solid #ccc; padding: 0.5rem; width: 150px;">
-
-          @if (card.localArtUri) {
-            <img [src]="card.localArtUri" alt="{{ card.name }}" style="width: 100%; height: auto;" />
-          }
-
-          <div><strong>{{ card.name }}</strong></div>
-          <div>Used: {{ card.quantity }}</div>
-          <div style="font-size: 0.85rem; color: #666;">{{ card.typeLine }}</div>
-        </div>
-      } @empty {
-        <p>No overutilized cards found.</p>
-      }
-    </div>
-  </section>
-
+  }
 </div>

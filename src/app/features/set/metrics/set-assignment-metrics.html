@@ -1,0 +1,19 @@
+<section class="assignment-metrics" aria-label="Set assignment summary">
+  <p class="metrics-primary">
+    {{ metrics().uniqueCardsUsedPct }}% of cards assigned
+    ({{ metrics().uniqueCardsUsed }}/{{ metrics().totalCatalog }} unique)
+    · {{ metrics().totalCopiesAssigned }} copies in decks
+  </p>
+  <div class="metrics-rarity">
+    @for (rarity of rarities; track rarity) {
+      @if (metrics().copiesByRarity[rarity] > 0) {
+        <span class="rarity-stat">
+          {{ metrics().copiesByRarity[rarity] }} {{ rarity }}
+          @if (metrics().uniqueByRarity[rarity] > 0) {
+            · {{ metrics().uniqueByRarity[rarity] }} cards
+          }
+        </span>
+      }
+    }
+  </div>
+</section>

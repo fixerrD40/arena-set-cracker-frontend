@@ -1,5 +1,13 @@
 import { MtgCard } from '../card/card';
-import { QuantifiedCard, deckRowManaPips, deckRowTone, deckRowToneStyle, summarizeDeck } from './deck.stats';
+import { MtgDeck } from './deck';
+import {
+  QuantifiedCard,
+  deckLandIdentityColors,
+  deckRowManaPips,
+  deckRowTone,
+  deckRowToneStyle,
+  summarizeDeck
+} from './deck.stats';
 
 function card(partial: Partial<MtgCard> & Pick<MtgCard, 'name' | 'typeLine' | 'colors'>): MtgCard {
   return {
@@ -56,5 +64,40 @@ describe('deckRowTone', () => {
       colors: ['G'],
       manaCost: '{G}'
     }))).toEqual(['G']);
+  });
+});
+
+describe('deckLandIdentityColors', () => {
+  it('derives deck colors from lands only, in WUBRG order', () => {
+    const catalog = [
+      card({ id: 'bolt', name: 'Bolt', typeLine: 'Instant', colors: ['R'], manaCost: '{R}' }),
+      card({ id: 'mountain', name: 'Mountain', typeLine: 'Basic Land — Mountain', colors: [], manaCost: '' }),
+      card({ id: 'island', name: 'Island', typeLine: 'Basic Land — Island', colors: [], manaCost: '' }),
+      card({
+        id: 'gate',
+        name: 'Steam Vents',
+        typeLine: 'Land — Island Mountain',
+        colors: [],
+        manaCost: '',
+        oracleText: '({T}: Add {U} or {R}.)'
+      })
+    ];
+
+    const deck: Pick<MtgDeck, 'cards'> = {
+      cards: new Map([
+        ['bolt', 4],
+        ['mountain', 8],
+        ['island', 4],
+        ['gate', 2]
+      ])
+    };
+
+    expect(deckLandIdentityColors(deck, catalog)).toEqual(['U', 'R']);
+  });
+
+  it('returns empty when the deck has no lands', () => {
+    const catalog = [card({ id: 'bolt', name: 'Bolt', typeLine: 'Instant', colors: ['R'], manaCost: '{R}' })];
+    const deck: Pick<MtgDeck, 'cards'> = { cards: new Map([['bolt', 4]]) };
+    expect(deckLandIdentityColors(deck, catalog)).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 import { MtgCard } from '../card/card';
-import { ManaColor, collectionColors, isLandCard } from '../card/arena-collection.filter';
+import { MANA_COLORS, ManaColor, collectionColors, isLandCard } from '../card/arena-collection.filter';
 import { CMC_BUCKETS, CmcBucket, cmcBucket, getCmc, parseManaPips } from '../card/card.mana';
+import { MtgDeck } from './deck';
 
 export interface QuantifiedCard {
   card: MtgCard;
@@ -80,6 +81,27 @@ export function deckRowManaPips(card: MtgCard): string[] {
     return [];
   }
   return pips;
+}
+
+/** Arena deck badge: union of WUBRG inferred from lands only, in pip order. */
+export function deckLandIdentityColors(deck: Pick<MtgDeck, 'cards'>, catalog: readonly MtgCard[]): ManaColor[] {
+  const byId = new Map(catalog.map((entry) => [String(entry.id), entry]));
+  const seen = new Set<ManaColor>();
+
+  deck.cards.forEach((qty, cardId) => {
+    if (qty <= 0) {
+      return;
+    }
+    const card = byId.get(String(cardId));
+    if (!card || !isLandCard(card)) {
+      return;
+    }
+    for (const color of collectionColors(card)) {
+      seen.add(color);
+    }
+  });
+
+  return MANA_COLORS.filter((color) => seen.has(color));
 }
 
 export function summarizeDeck(lines: QuantifiedCard[]): DeckSummary {

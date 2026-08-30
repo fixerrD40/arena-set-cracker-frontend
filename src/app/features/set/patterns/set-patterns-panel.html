@@ -1,0 +1,36 @@
+<section
+  class="patterns-panel"
+  aria-label="Emergent themes"
+  data-set-drop="theme-pool"
+  [class.theme-return-hot]="themeReturnHot()"
+>
+  <h2>Patterns</h2>
+  @if (patternState().loading) {
+    <p class="empty-note">Finding patterns…</p>
+  } @else if (patternState().patterns.length > 0) {
+    <div class="pattern-list" cdkDropList cdkDropListSortingDisabled [cdkDropListAutoScrollDisabled]="true">
+      @for (pattern of patternState().patterns; track pattern.phrase) {
+        <div
+          class="pattern-chip"
+          [class.selected]="selectedTheme() === pattern.phrase"
+          cdkDrag
+          [cdkDragData]="pattern.phrase"
+          (cdkDragStarted)="onThemeDragStarted()"
+          (cdkDragMoved)="onThemeDragMoved($event)"
+          (cdkDragEnded)="onThemeDragEnded($event)"
+          (click)="onPatternClick(pattern.phrase)"
+        >
+          <ng-template cdkDragPreview>
+            <div class="pattern-chip pattern-chip-preview">
+              <span class="pattern-phrase">{{ pattern.phrase }}</span>
+            </div>
+          </ng-template>
+          <span class="pattern-phrase">{{ pattern.phrase }}</span>
+          <span class="pattern-count">{{ pattern.cardCount }} cards</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="empty-note">No repeated patterns in the current pool.</p>
+  }
+</section>

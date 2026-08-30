@@ -1,0 +1,68 @@
+@if (pageView$ | async; as pageView) {
+  <section class="theme-preview" aria-label="Cards matching selected theme">
+    <div class="theme-preview-header">
+      <h2>{{ pageView.theme }}</h2>
+      <div class="theme-preview-controls">
+        @if (pageView.pageCount > 1) {
+          <span class="theme-preview-page">
+            {{ pageView.page + 1 }} / {{ pageView.pageCount }}
+          </span>
+        }
+        <button type="button" class="theme-preview-clear" (click)="themeClear.emit(pageView.theme)">
+          Clear
+        </button>
+      </div>
+    </div>
+    @if (pageView.total > 0) {
+      <div #themePreviewStage class="theme-preview-stage">
+        <button
+          type="button"
+          class="page-nav"
+          (click)="prevPage()"
+          [disabled]="pageView.page === 0"
+          aria-label="Previous page"
+        >
+          ‹
+        </button>
+        <div
+          class="theme-preview-grid"
+          [style.grid-template-columns]="'repeat(' + pageView.columns + ', minmax(0, 1fr))'"
+          [style.grid-template-rows]="'repeat(' + pageView.rows + ', ' + pageView.rowHeightPx + 'px)'"
+          [style.column-gap.px]="pageView.colGapPx"
+          [style.row-gap.px]="pageView.rowGapPx"
+        >
+          @for (card of pageView.cards; track card.id) {
+            <div class="theme-preview-card">
+              @if (cardArtUri(card, 'frame'); as art) {
+                <img [src]="art" [alt]="card.name" />
+              } @else {
+                <div class="theme-preview-fallback">
+                  <strong>{{ card.name }}</strong>
+                  <span>{{ card.typeLine }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <button
+          type="button"
+          class="page-nav"
+          (click)="nextPage()"
+          [disabled]="pageView.page + 1 >= pageView.pageCount"
+          aria-label="Next page"
+        >
+          ›
+        </button>
+      </div>
+    } @else if (pageView.emptyReason === 'below-threshold') {
+      <p class="empty-note">
+        Only {{ pageView.matchCount }} cards in the scoped pool match (minimum
+        {{ pageView.minRequired }} for a pool this size).
+      </p>
+    } @else {
+      <p class="empty-note">No cards in the current pool match this theme.</p>
+    }
+  </section>
+} @else {
+  <div class="set-main-fill" aria-hidden="true"></div>
+}

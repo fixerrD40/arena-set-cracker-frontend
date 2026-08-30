@@ -1,0 +1,29 @@
+<section class="discovery-pool" aria-label="Remaining pool for pattern discovery">
+  <p class="remaining-count">
+    {{ scoped() }} in scope · {{ remaining() }} remaining of {{ total() }}
+  </p>
+
+  <div class="pool-controls">
+    <div class="color-scope" role="group" aria-label="Color scope for pattern discovery">
+      @for (color of manaColors; track color) {
+        <button
+          type="button"
+          class="color-chip"
+          [class.on]="isColorScoped(color)"
+          (click)="toggleColorScope(color)"
+          [attr.aria-pressed]="isColorScoped(color)"
+          [attr.aria-label]="colorLabel(color)"
+        >
+          <img [src]="'assets/colors/' + colorLabel(color).toLowerCase() + '.png'" [alt]="colorLabel(color)" />
+        </button>
+      }
+    </div>
+
+    <mat-slide-toggle
+      [checked]="drainNeedsWork()"
+      (change)="drainNeedsWorkChange.emit($event.checked)"
+    >
+      Needs work drains pool
+    </mat-slide-toggle>
+  </div>
+</section>

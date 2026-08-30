@@ -1,0 +1,89 @@
+<aside class="set-decks-sidebar" aria-label="Decks">
+  <div class="sidebar-header">
+    <h2>Decks</h2>
+    <button type="button" class="sidebar-toggle" (click)="closeSidebar.emit()" aria-label="Hide decks panel">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+  </div>
+
+  <div class="sidebar-actions">
+    <button mat-raised-button color="primary" type="button" (click)="goToAddDeck()">
+      <mat-icon>add</mat-icon>
+      Import / Add
+    </button>
+  </div>
+
+  <div class="sidebar-scroll">
+    @for (status of deckStatuses; track status) {
+      <section
+        class="deck-status-section"
+        cdkDropList
+        [id]="'deck-status-' + status"
+        [cdkDropListConnectedTo]="deckStatusDropIds"
+        [cdkDropListEnterPredicate]="acceptDeckDrag"
+        (cdkDropListDropped)="onDeckStatusDrop($event, status)"
+      >
+        <h3>{{ statusLabels[status] }}</h3>
+        @if (decksByStatus()[status].length === 0) {
+          <p class="deck-status-empty">Drop decks here</p>
+        }
+        @for (deck of decksByStatus()[status]; track deck.id) {
+          <div
+            class="sidebar-deck-row"
+            cdkDrag
+            [cdkDragData]="deck"
+            data-set-drop="deck-theme"
+            [attr.data-deck-id]="deck.id"
+            [class.theme-drop-hot]="themeDropDeckId() === deck.id"
+          >
+            <button type="button" class="deck-open-link" cdkDragHandle (click)="openDeck(deck.id)">
+              <div class="deck-open-head">
+                <span class="deck-name">{{ deck.name }}</span>
+                @let landColors = deckLandColors(deck);
+                @if (landColors.length > 0) {
+                  <span class="deck-color-pips" aria-label="Deck colors from lands">
+                    @for (color of landColors; track color) {
+                      @if (manaPipAsset(color); as pipSrc) {
+                        <img [src]="pipSrc" [alt]="colorLabel(color)" />
+                      }
+                    }
+                  </span>
+                }
+              </div>
+              <span class="deck-meta">{{ deckCardCount(deck) }} cards</span>
+            </button>
+            @if (deck.themes.length > 0) {
+              <div class="deck-themes">
+                @for (theme of deck.themes; track theme) {
+                  <div
+                    class="theme-chip"
+                    [class.selected]="selectedTheme() === theme"
+                    cdkDrag
+                    [cdkDragData]="deckThemeDrag(deck.id, theme)"
+                    (cdkDragStarted)="onDeckThemeDragStarted()"
+                    (cdkDragMoved)="onDeckThemeDragMoved($event)"
+                    (cdkDragEnded)="onDeckThemeDragEnded($event)"
+                    (click)="onThemeChipClick(theme, $event)"
+                  >
+                    <ng-template cdkDragPreview>
+                      <div class="theme-chip theme-chip-preview">{{ theme }}</div>
+                    </ng-template>
+                    {{ theme }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    @if (
+      decksByStatus().concept.length +
+        decksByStatus()['needs-work'].length +
+        decksByStatus().final.length === 0
+    ) {
+      <p class="empty-note">No decks yet.</p>
+    }
+  </div>
+</aside>
