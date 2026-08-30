@@ -22,7 +22,7 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 ## Stack map
 
 - Angular 20 standalone + Material
-- Local DB: Drizzle schema → sql.js (browser IndexedDB / Electron file)
+- Local DB: Drizzle schema → sql.js (browser IndexedDB / Electron file). Empty vault: `public/drizzle/0000_*.sql`. Existing file loads as-is. No startup ALTER / column-ensure. No in-place upgrades until a client is shipped; layout change means wipe `mtg_vault.db` (and the browser IndexedDB key).
 - Platform wiring: `SQLITE_ENGINE_TOKEN`, `DATA_WIRE_TOKEN` (`CloudDataWire` vs `ElectronDataWire`)
 - Also: Capacitor mobile, optional cloud API via `src/assets/config.json` (`baseUrl`)
 
@@ -33,14 +33,14 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 | Installed sets + active workspace (set, cards, decks) | `SetService` |
 | Active deck scratchpad + flush/persist | `DeckService` |
 | Arena parse + name resolve within catalog | `shared/models/deck/deck.utils.ts` |
-| SQLite schema / migrations | `core/sqlite/sqlite.schema.ts`, `public/drizzle/` |
+| SQLite schema (create only) | `core/sqlite/sqlite.schema.ts`, `public/drizzle/` (`0000` bootstrap) |
 | Shared CSS shell (auth/forms) | `shared/styles/auth-shell.css`, tokens in `styles.css` |
 
 ## Commits
 
 Ask where the user is before committing. First line: `<place> <goal>` (Hideaway is a place-stamp, not a magic title and not assumed).
 
-Body only when the goal needs grains above the diff—how it was achieved across components. A self-explanatory diff (one file, obvious) is header-only; do not restate the header. When there is a body, nested bullets; nest justification under the point it comments on, not as a trailing paragraph.
+Body only when the goal needs grains above the diff. Track files (or their owners: mappers, service, features, sqlite artifacts), nested under the domain change. Header-only when the diff is one file and obvious. Do not restate the header, the product story, or work that is not in the diff.
 
 Fold same-story follow-ups into the unpushed commit. Leave unrelated fixes as their own commit. Do not rewrite anything already on the remote.
 
