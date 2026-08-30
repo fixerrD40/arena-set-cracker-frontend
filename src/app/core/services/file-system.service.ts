@@ -3,6 +3,8 @@ import { Observable, from, of, throwError } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { electronArtWebViewUri } from './file-system.electron-uri';
+import { getDesktopBridge, isElectronRenderer } from '../platform/desktop-bridge';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +17,7 @@ export class FileSystemService {
       return of(targetPath);
     }
 
-    if (this.isElectron()) {
+    if (isElectronRenderer()) {
       return this.resolveElectronUri(targetPath);
     }
 
@@ -32,7 +34,7 @@ export class FileSystemService {
 
   /** Downloads a remote URL to durable storage when the host provides it; otherwise returns the remote URL for display. */
   public downloadRemoteUrlToDisk(url: string, destinationPath: string): Observable<string> {
-    if (this.isElectron()) {
+    if (isElectronRenderer()) {
       return this.downloadElectron(url, destinationPath);
     }
 
@@ -45,23 +47,23 @@ export class FileSystemService {
   }
 
   /** Used on set uninstall; missing directories are ignored. */
-  public deleteDirectory(path: string): Observable<void> {
-    if (this.isElectron()) {
-      try {
-        const { fs, path: nodePath, cwd } = this.nodeIo();
-        const target = nodePath.join(cwd, path);
-        if (fs.existsSync(target)) {
-          fs.rmSync(target, { recursive: true, force: true });
-        }
-      } catch (err) {
-        console.error('[FileSystemService] Electron rmdir failed:', err);
+  public deleteDirectory(relativePath: string): Observable<void> {
+    if (isElectronRenderer()) {
+      const desktop = getDesktopBridge();
+      if (!desktop) {
+        return of(void 0);
       }
-      return of(void 0);
+      return from(desktop.artRemoveDir(relativePath)).pipe(
+        catchError((err) => {
+          console.error('[FileSystemService] Electron rmdir failed:', err);
+          return of(void 0);
+        })
+      );
     }
 
     return from(
       Filesystem.rmdir({
-        path,
+        path: relativePath,
         directory: Directory.Data,
         recursive: true
       })
@@ -95,18 +97,12 @@ export class FileSystemService {
   }
 
   private downloadElectron(url: string, destinationPath: string): Observable<string> {
-    return from(fetch(url)).pipe(
-      switchMap(async (response) => {
-        if (!response.ok) {
-          throw new Error(`CDN network link HTTP asset error: ${response.statusText}`);
-        }
-        const buffer = new Uint8Array(await response.arrayBuffer());
-        const { fs, path: nodePath, cwd, pathToFileURL } = this.nodeIo();
-        const abs = nodePath.join(cwd, destinationPath);
-        fs.mkdirSync(nodePath.dirname(abs), { recursive: true });
-        fs.writeFileSync(abs, buffer);
-        return pathToFileURL(abs).href;
-      }),
+    const desktop = getDesktopBridge();
+    if (!desktop) {
+      return throwError(() => new Error('[FileSystemService] Desktop bridge unavailable.'));
+    }
+    return from(desktop.artDownload(url, destinationPath)).pipe(
+      map(() => electronArtWebViewUri(destinationPath)),
       catchError((err) => {
         console.error('[FileSystemService] Electron write failed:', err?.message || err);
         return throwError(() => err);
@@ -115,43 +111,18 @@ export class FileSystemService {
   }
 
   private resolveElectronUri(targetPath: string): Observable<string> {
-    try {
-      const { fs, path: nodePath, cwd, pathToFileURL } = this.nodeIo();
-      const abs = nodePath.join(cwd, targetPath);
-      if (!fs.existsSync(abs)) {
-        return throwError(() => new Error(`File target unreachable: ${targetPath}`));
-      }
-      return of(pathToFileURL(abs).href);
-    } catch (err) {
-      return throwError(() => err);
+    const desktop = getDesktopBridge();
+    if (!desktop) {
+      return throwError(() => new Error('[FileSystemService] Desktop bridge unavailable.'));
     }
-  }
-
-  private isElectron(): boolean {
-    return !!(
-      typeof window !== 'undefined' &&
-      (window as any).process?.versions?.electron
+    return from(desktop.artExists(targetPath)).pipe(
+      switchMap((exists) => {
+        if (!exists) {
+          return throwError(() => new Error(`File target unreachable: ${targetPath}`));
+        }
+        return of(electronArtWebViewUri(targetPath));
+      })
     );
-  }
-
-  private nodeIo(): {
-    fs: any;
-    path: any;
-    cwd: string;
-    pathToFileURL: (p: string) => URL;
-  } {
-    const w = window as any;
-    const nodeRequire = w.require;
-    if (!nodeRequire || !w.process) {
-      throw new Error('[FileSystemService] Electron Node bindings unavailable.');
-    }
-    const { pathToFileURL } = nodeRequire('url');
-    return {
-      fs: nodeRequire('fs'),
-      path: nodeRequire('path'),
-      cwd: w.process.cwd(),
-      pathToFileURL
-    };
   }
 
   private blobToBase64(blob: Blob): Promise<string> {

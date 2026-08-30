@@ -6,6 +6,7 @@ import * as MySchema from './sqlite.schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sql-js';
 import initSqlJs from 'sql.js';
+import { getDesktopBridge } from '../platform/desktop-bridge';
 import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
 
 @Injectable({
@@ -15,6 +16,7 @@ export class NativeSqliteEngine extends SqliteEngine {
   public rawSqliteClient?: any;
   public cachedDbInstance?: any;
   public activeFileName?: string;
+  private persistChain: Promise<void> = Promise.resolve();
 
   public override async bootstrap(injector: Injector): Promise<void> {
     if (this.cachedDbInstance) return;
@@ -29,40 +31,33 @@ export class NativeSqliteEngine extends SqliteEngine {
 
     this.activeFileName = runtimeConfig.sqliteDbName.replace(/^file:/, '');
 
-    const globalWindow = window as any;
-    if (!globalWindow.require || !globalWindow.process) {
-      throw new Error('[SqliteEngine] Environment verification failed: Missing Node shell context objects.');
+    const desktop = getDesktopBridge();
+    if (!desktop) {
+      throw new Error('[SqliteEngine] Desktop bridge unavailable.');
     }
 
-    const nodeRequire = globalWindow.require;
     try {
-      const fs = nodeRequire('fs');
-      const path = nodeRequire('path');
-      const process = globalWindow.process;
-
-      const targetPath = path.join(process.cwd(), this.activeFileName);
       const SQL = await initSqlJs({ locateFile: (file: string) => `assets/${file}` });
+      const existing = await desktop.sqliteRead(this.activeFileName);
 
-      if (fs.existsSync(targetPath)) {
-        const rawBuffer = fs.readFileSync(targetPath);
-        const bytes = new Uint8Array(rawBuffer);
-
-        this.rawSqliteClient = new SQL.Database(bytes);
+      if (existing) {
+        this.rawSqliteClient = new SQL.Database(new Uint8Array(existing));
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
         if (ensureSqliteColumns(this.rawSqliteClient)) {
-          this.flush();
+          await this.persistToDisk();
         }
 
-        console.log(`[SqliteEngine] High-speed Drizzle client loaded via require: [${this.activeFileName}].`);
+        console.log(`[SqliteEngine] High-speed Drizzle client loaded via desktop bridge: [${this.activeFileName}].`);
       } else {
         console.log(`[SqliteEngine] Database container file missing. Compiling schema layout...`);
 
         this.rawSqliteClient = new SQL.Database();
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
-        this.generateDatabaseSchema(this.rawSqliteClient);
-        this.flush();
+        const ddl = await desktop.drizzleBootstrapSql();
+        this.generateDatabaseSchema(this.rawSqliteClient, ddl);
+        await this.persistToDisk();
       }
     } catch (rootError) {
       console.error('[SqliteEngine] Critical failure during desktop engine initialization pass:', rootError);
@@ -144,61 +139,29 @@ export class NativeSqliteEngine extends SqliteEngine {
   }
 
   public flush(): void {
+    this.persistChain = this.persistChain.then(
+      () => this.persistToDisk(),
+      () => this.persistToDisk()
+    );
+  }
+
+  private async persistToDisk(): Promise<void> {
     const rawDb = this.rawSqliteClient;
     const fileName = this.activeFileName;
-    if (!rawDb || !fileName) return;
+    const desktop = getDesktopBridge();
+    if (!rawDb || !fileName || !desktop) return;
 
     try {
-      const globalWindow = window as any;
-      const nodeRequire = globalWindow.require;
-      const fs = nodeRequire('fs');
-      const path = nodeRequire('path');
-      const process = globalWindow.process;
-
-      const { Buffer } = nodeRequire('buffer') as any;
-
-      const data = rawDb.export();
-      const buffer = Buffer.from(data);
-
-      fs.writeFileSync(path.join(process.cwd(), fileName), buffer);
+      const data = new Uint8Array(rawDb.export());
+      await desktop.sqliteWrite(fileName, data);
       console.log(`[SqliteEngine] Memory cache state successfully persisted to disk: [${fileName}].`);
     } catch (error) {
       console.error('[SqliteEngine] Critical failure writing binary block to disk:', error);
     }
   }
 
-  private generateDatabaseSchema(db: any): void {
-    try {
-      const globalWindow = window as any;
-      const nodeRequire = globalWindow.require;
-      const fs = nodeRequire('fs');
-      const path = nodeRequire('path');
-      const process = globalWindow.process;
-
-      const targetDirectory = fs.existsSync(path.join(process.cwd(), 'public', 'drizzle'))
-        ? path.join(process.cwd(), 'public', 'drizzle')
-        : path.join(process.cwd(), 'dist', 'arena-set-cracker', 'browser', 'drizzle');
-
-      if (!fs.existsSync(targetDirectory)) {
-        throw new Error(`[SqliteEngine] Missing schema directory at [${targetDirectory}].`);
-      }
-
-      const files = fs.readdirSync(targetDirectory);
-      const initMigrationFile = files.find((file: string) => file.startsWith('0000_') && file.endsWith('.sql'));
-
-      if (!initMigrationFile) {
-        throw new Error(`[SqliteEngine] DDL file missing inside directory: [${targetDirectory}]`);
-      }
-
-      const sqlScriptPath = path.join(targetDirectory, initMigrationFile);
-      const ddlStatementsScript = fs.readFileSync(sqlScriptPath, 'utf8');
-      const cleaned = ddlStatementsScript.replace(/-->\s*statement-breakpoint/g, '');
-
-      db.run(cleaned);
-      console.log(`[SqliteEngine] Database schema successfully initialized via: [${initMigrationFile}].`);
-    } catch (ddlError: any) {
-      console.error('[SqliteEngine] Error initializing database schema:', ddlError?.message || ddlError);
-      throw ddlError;
-    }
+  private generateDatabaseSchema(db: any, ddlStatementsScript: string): void {
+    db.run(ddlStatementsScript);
+    console.log('[SqliteEngine] Database schema successfully initialized via drizzle bootstrap SQL.');
   }
 }

@@ -266,7 +266,7 @@ export class SetService implements OnDestroy {
 
     return this.fileService.resolvePlatformWebViewUri(targetPath).pipe(
       catchError(() => {
-        return of('assets/covers/default-mtg.jpg');
+        return of('');
       })
     );
   }
@@ -294,7 +294,7 @@ export class SetService implements OnDestroy {
     const fullRemoteUrl = `${remoteServerUrl}/api/assets/covers/${setCode.toLowerCase()}.jpg`;
 
     return this.fileService.downloadRemoteUrlToDisk(fullRemoteUrl, destinationPath).pipe(
-      catchError(() => of('assets/covers/default-mtg.jpg'))
+      catchError(() => of(''))
     );
   }
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AppConfigData } from './config.model';
+import { isElectronRenderer } from '../platform/desktop-bridge';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +9,7 @@ export class AppConfigService {
   private runtimeConfig!: AppConfigData;
 
   private evaluateIsElectron(): boolean {
-    return !!(typeof window !== 'undefined' && (window as any).process?.versions?.electron);
+    return isElectronRenderer();
   }
 
   /**

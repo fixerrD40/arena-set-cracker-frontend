@@ -27,6 +27,7 @@
     },
     "files": [
       "desktop.js",
+      "preload.js",
       "dist/arena-set-cracker/**/*"
     ],
     "linux": {

@@ -1,12 +1,13 @@
 import { Injectable, Injector } from '@angular/core';
 import { PlatformContext } from './platform.contract';
+import { isElectronRenderer } from './desktop-bridge';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformOrchestrationService {
   private context!: PlatformContext;
 
   public isElectronEnvironment(): boolean {
-    return !!(typeof window !== 'undefined' && (window as any).process?.versions?.electron);
+    return isElectronRenderer();
   }
 
   public async initializePlatformContext(injector: Injector): Promise<void> {

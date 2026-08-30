@@ -21,7 +21,7 @@
       @for (set of installedSets; track set.id) {
         <div
           class="set-tile-card"
-          [style.background-image]="'url(' + set.resolvedCoverArt + ')'"
+          [style.background-image]="set.resolvedCoverArt ? 'url(' + set.resolvedCoverArt + ')' : null"
           (click)="onSelectSet(set)"
           [class.active]="(setService.activeContext$ | async)?.setInfo?.id === set.id">
 
