@@ -1,6 +1,5 @@
 import { Injectable, Injector, runInInjectionContext, inject } from '@angular/core';
 import { APP_CONFIG } from '../config/config.model';
-import { ensureSqliteColumns } from './sqlite.ensure-columns';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -43,10 +42,6 @@ export class NativeSqliteEngine extends SqliteEngine {
       if (existing) {
         this.rawSqliteClient = new SQL.Database(new Uint8Array(existing));
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
-
-        if (ensureSqliteColumns(this.rawSqliteClient)) {
-          await this.persistToDisk();
-        }
 
         console.log(`[SqliteEngine] High-speed Drizzle client loaded via desktop bridge: [${this.activeFileName}].`);
       } else {
