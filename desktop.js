@@ -33,6 +33,36 @@ app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096');
 const DIST_ROOT = path.join(__dirname, 'dist', 'arena-set-cracker', 'browser');
 const APP_ORIGIN = 'app://localhost';
 
+// 'unsafe-inline' styles: Angular/Material. wasm-unsafe-eval: sql.js.
+const APP_CSP = [
+  "default-src 'none'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' https://svgs.scryfall.io https://cards.scryfall.io",
+  "connect-src 'self' https://api.scryfall.com http://localhost:8080",
+  "worker-src 'self' blob:",
+  "base-uri 'self'",
+  "form-action 'none'"
+].join('; ');
+
+async function fetchLocalFile(filePath, { html } = {}) {
+  const response = await net.fetch(pathToFileURL(filePath).href);
+  if (!html) {
+    return response;
+  }
+  let page = await response.text();
+  page = page.replace('<base href="./">', '<base href="/">');
+  const headers = new Headers(response.headers);
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Content-Security-Policy', APP_CSP);
+  return new Response(page, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
 function resolveUnder(root, relativePosix) {
   const cleaned = String(relativePosix || '')
     .replace(/^\/+/, '')
@@ -86,7 +116,6 @@ function readDrizzleBootstrapSql() {
   throw new Error('[desktop] Missing drizzle bootstrap SQL.');
 }
 
-// Job 3: Node APIs the renderer is no longer allowed to call itself.
 function registerIpc() {
   ipcMain.handle('desktop:sqliteRead', (_event, fileName) => {
     const abs = assertSqliteFileName(fileName);
@@ -130,8 +159,7 @@ function registerIpc() {
   ipcMain.handle('desktop:drizzleBootstrapSql', () => readDrizzleBootstrapSql());
 }
 
-// Job 2: map app://localhost/<path> onto a file under dist/ or cached_art/.
-function handleAppRequest(request) {
+async function handleAppRequest(request) {
   const url = new URL(request.url);
   if (url.host !== 'localhost') {
     return new Response('bad host', { status: 400 });
@@ -152,12 +180,12 @@ function handleAppRequest(request) {
     if (!fs.existsSync(filePath)) {
       return new Response('not found', { status: 404 });
     }
-    return net.fetch(pathToFileURL(filePath).href);
+    return fetchLocalFile(filePath);
   }
 
   const distFile = resolveUnder(DIST_ROOT, pathname);
   if (distFile && fs.existsSync(distFile)) {
-    return net.fetch(pathToFileURL(distFile).href);
+    return fetchLocalFile(distFile, { html: path.extname(distFile) === '.html' });
   }
 
   const ext = path.extname(pathname);
@@ -165,11 +193,11 @@ function handleAppRequest(request) {
     return new Response('not found', { status: 404 });
   }
 
-  return net.fetch(pathToFileURL(path.join(DIST_ROOT, 'index.html')).href);
+  return fetchLocalFile(path.join(DIST_ROOT, 'index.html'), { html: true });
 }
 
-// Job 1: isolated renderer, real origin. UA suffix is for Scryfall, not routing.
 function createWindow() {
+  // Keep Chromium's Electron token in the UA; append a Scryfall-identifiable suffix.
   const scryfallTag = 'MtgVaultApp/1.0.0 (stafford.hank@gmail.com)';
   const sessionUA = session.defaultSession.getUserAgent();
   if (!sessionUA.includes('MtgVaultApp')) {
