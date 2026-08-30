@@ -165,6 +165,35 @@ describe('cardMatchesArenaCollectionFilter', () => {
     expect(cardMatchesArenaCollectionFilter(swamp, landMulti)).toBe(false);
     expect(cardMatchesArenaCollectionFilter(izzet, landMulti)).toBe(false);
   });
+
+  it('restricts to selected rarities when any are on', () => {
+    const rares = filter({ rarities: ['rare', 'mythic'] });
+    expect(cardMatchesArenaCollectionFilter(card({
+      name: 'Anduril',
+      colors: ['W'],
+      typeLine: 'Artifact',
+      rarity: 'rare'
+    }), rares)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, rares)).toBe(false);
+  });
+
+  it('restricts to selected CMC buckets when any are on', () => {
+    const cheap = filter({ cmcBuckets: ['1-'] });
+    expect(cardMatchesArenaCollectionFilter(monoWhite, cheap)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(card({
+      name: 'Wrath',
+      colors: ['W'],
+      typeLine: 'Sorcery',
+      manaCost: '{2}{W}{W}'
+    }), cheap)).toBe(false);
+  });
+
+  it('ANDs an applied theme without using the search box', () => {
+    const themed = filter({ theme: 'tempts' });
+    expect(cardMatchesArenaCollectionFilter(ringGoesSouth, themed)).toBe(true);
+    expect(cardMatchesArenaCollectionFilter(monoRed, themed)).toBe(false);
+    expect(themed.text).toBe('');
+  });
 });
 
 describe('compareArenaCollection', () => {

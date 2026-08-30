@@ -1,8 +1,8 @@
 import { Component, ElementRef, inject, input, output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
-import { ENTER, COMMA } from '@angular/cdk/keycodes';
+import { MatChipsModule } from '@angular/material/chips';
 import { DeckService } from '../../../core/services/deck.service';
+import { DECK_STATUSES, DECK_STATUS_LABELS, DeckStatus } from '../../../shared/models/deck/deck';
 import { DeckSummary, curveBarHeight, curvePeak } from '../../../shared/models/deck/deck.stats';
 
 @Component({
@@ -22,7 +22,8 @@ export class DeckDetailsComponent {
   @ViewChild('renameInput') renameInput?: ElementRef<HTMLInputElement>;
 
   public readonly scratchpadDeck$ = this.deckService.scratchpadDeck$;
-  public readonly separatorKeysCodes: number[] = [ENTER, COMMA];
+  public readonly statuses = DECK_STATUSES;
+  public readonly statusLabels = DECK_STATUS_LABELS;
   public renaming = false;
   public readonly curveBarHeight = curveBarHeight;
   public readonly curvePeak = curvePeak;
@@ -46,29 +47,19 @@ export class DeckDetailsComponent {
     this.renaming = false;
   }
 
-  public addTag(event: MatChipInputEvent): void {
+  public setStatus(status: DeckStatus): void {
     const current = this.deckService.scratchpadValue;
-    const value = (event.value || '').trim();
-
-    if (current && value && !current.tags.includes(value)) {
-      this.deckService.updateScratchpad({
-        ...current,
-        tags: [...current.tags, value]
-      });
-    }
-
-    if (event.chipInput) {
-      event.chipInput.clear();
-    }
+    if (!current || current.status === status) return;
+    this.deckService.updateScratchpad({ ...current, status });
   }
 
-  public removeTag(tag: string): void {
+  public removeTheme(theme: string): void {
     const current = this.deckService.scratchpadValue;
     if (!current) return;
 
     this.deckService.updateScratchpad({
       ...current,
-      tags: current.tags.filter((entry) => entry !== tag)
+      themes: current.themes.filter((entry) => entry !== theme)
     });
   }
 

@@ -101,7 +101,8 @@ export class DeckAddComponent implements OnInit {
       id: crypto.randomUUID(),
       setId: this.activeSet.id,
       name: name.trim(),
-      tags: [],
+      status: 'concept',
+      themes: [],
       notes: '',
       coverCardId: '',
       cards

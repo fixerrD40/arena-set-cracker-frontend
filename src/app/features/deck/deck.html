@@ -66,6 +66,65 @@
             >
               Land
             </button>
+            <div class="extras">
+              <button
+                type="button"
+                class="chip-round extras-toggle"
+                [class.on]="extrasOpen || extrasActive()"
+                (click)="toggleExtras()"
+                [attr.aria-expanded]="extrasOpen"
+                aria-label="More filters"
+              >
+                <span class="hamburger" aria-hidden="true"></span>
+              </button>
+              @if (extrasOpen) {
+                <div class="extras-panel">
+                  <div class="extras-row" role="group" aria-label="Rarity">
+                    @for (rarity of rarities; track rarity) {
+                      <button
+                        type="button"
+                        class="extras-chip"
+                        [class.on]="isRarityOn(rarity)"
+                        (click)="toggleRarity(rarity)"
+                        [attr.aria-pressed]="isRarityOn(rarity)"
+                      >
+                        {{ rarity }}
+                      </button>
+                    }
+                  </div>
+                  <div class="extras-row" role="group" aria-label="Mana value">
+                    @for (bucket of cmcBuckets; track bucket) {
+                      <button
+                        type="button"
+                        class="extras-chip"
+                        [class.on]="isCmcOn(bucket)"
+                        (click)="toggleCmc(bucket)"
+                        [attr.aria-pressed]="isCmcOn(bucket)"
+                      >
+                        {{ bucket }}
+                      </button>
+                    }
+                  </div>
+                  <div class="extras-row extras-themes" role="group" aria-label="Themes">
+                    @if (scratchpadDeck$ | async; as deck) {
+                      @for (theme of deck.themes; track theme) {
+                        <button
+                          type="button"
+                          class="extras-chip"
+                          [class.on]="isThemeApplied(theme)"
+                          (click)="applyTheme(theme)"
+                          [attr.aria-pressed]="isThemeApplied(theme)"
+                        >
+                          {{ theme }}
+                        </button>
+                      } @empty {
+                        <span class="extras-empty">No themes attached</span>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { MtgDeck, CloudDeckPayload } from './deck';
+import { MtgDeck, CloudDeckPayload, coerceDeckStatus, coerceDeckThemes } from './deck';
 import { DeckRow, DeckCardRow, DeckInsert } from '../../../core/sqlite/sqlite.schema';
 
 /** Joins a deck row with deck_cards lines into a domain Map. */
@@ -18,7 +18,8 @@ export function mapRowToDeck(
     name: deckRow.name,
     notes: deckRow.notes || '',
     coverCardId: deckRow.coverCardId || '',
-    tags: Array.isArray(deckRow.tags) ? deckRow.tags : [],
+    status: coerceDeckStatus(deckRow.status),
+    themes: coerceDeckThemes(deckRow.themes),
     cards: cardMap
   };
 }
@@ -31,7 +32,8 @@ export function mapDeckToInsert(deck: MtgDeck): DeckInsert {
     name: deck.name,
     notes: deck.notes,
     coverCardId: deck.coverCardId || '',
-    tags: deck.tags
+    themes: [...deck.themes],
+    status: deck.status
     // createdAt omitted; column $default fills it
   };
 }
@@ -51,7 +53,8 @@ export function mapJsonToDeck(payload: CloudDeckPayload): MtgDeck {
     name: payload.name || 'Unnamed Deck',
     notes: payload.notes || '',
     coverCardId: payload.coverCardId || '',
-    tags: payload.tags || [],
+    status: coerceDeckStatus(payload.status),
+    themes: coerceDeckThemes(payload.themes),
     cards: cardMap
   };
 }
@@ -62,7 +65,8 @@ export function mapDeckToJson(deck: MtgDeck): CloudDeckPayload {
     setId: deck.setId,
     name: deck.name,
     notes: deck.notes,
-    tags: deck.tags,
+    status: deck.status,
+    themes: [...deck.themes],
     coverCardId: deck.coverCardId,
     cards: Object.fromEntries(deck.cards)
   };

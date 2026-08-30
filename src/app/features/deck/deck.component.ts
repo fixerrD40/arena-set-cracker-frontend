@@ -9,12 +9,15 @@ import { DeckValidationResult } from '../../shared/models/deck/deck';
 import { ColorDisplayNames } from '../../shared/models/color';
 import {
   ArenaCollectionFilter,
+  COLLECTION_RARITIES,
+  CollectionRarity,
   MANA_COLORS,
   ManaColor,
   cardMatchesArenaCollectionFilter,
   compareArenaCollection,
   emptyArenaCollectionFilter
 } from '../../shared/models/card/arena-collection.filter';
+import { CMC_BUCKETS, CmcBucket } from '../../shared/models/card/card.mana';
 import { MtgCard } from '../../shared/models/card/card';
 import { showsInfinityCopyMark } from '../../shared/models/deck/deck.copy-limit';
 import { summarizeDeck } from '../../shared/models/deck/deck.stats';
@@ -59,6 +62,9 @@ export class DeckComponent implements OnDestroy {
   }
 
   public readonly manaColors = MANA_COLORS;
+  public readonly rarities = COLLECTION_RARITIES;
+  public readonly cmcBuckets = CMC_BUCKETS;
+  public extrasOpen = false;
   public readonly showsInfinityCopyMark = showsInfinityCopyMark;
   public readonly copyPips = [1, 2, 3, 4] as const;
   public readonly collectionPageSize = 8;
@@ -79,13 +85,17 @@ export class DeckComponent implements OnDestroy {
 
   public readonly filteredCards$ = combineLatest({
     lines: this.deckService.catalogLines$,
-    filter: this.collectionFilter$
+    filter: this.collectionFilter$,
+    deck: this.deckService.scratchpadDeck$
   }).pipe(
-    map(({ lines, filter }) =>
-      lines
-        .filter((line) => cardMatchesArenaCollectionFilter(line.card, filter))
-        .sort((a, b) => compareArenaCollection(a.card, b.card))
-    )
+    map(({ lines, filter, deck }) => {
+      const theme =
+        filter.theme && deck?.themes.includes(filter.theme) ? filter.theme : null;
+      const effective = theme === filter.theme ? filter : { ...filter, theme };
+      return lines
+        .filter((line) => cardMatchesArenaCollectionFilter(line.card, effective))
+        .sort((a, b) => compareArenaCollection(a.card, b.card));
+    })
   );
 
   public readonly collectionPageView$ = combineLatest({
@@ -143,6 +153,46 @@ export class DeckComponent implements OnDestroy {
 
   public toggleLand(): void {
     this.pushFilter({ ...this.filter, land: !this.filter.land });
+  }
+
+  public isRarityOn(rarity: CollectionRarity): boolean {
+    return this.filter.rarities.includes(rarity);
+  }
+
+  public toggleRarity(rarity: CollectionRarity): void {
+    const rarities = this.isRarityOn(rarity)
+      ? this.filter.rarities.filter((entry) => entry !== rarity)
+      : [...this.filter.rarities, rarity];
+    this.pushFilter({ ...this.filter, rarities });
+  }
+
+  public isCmcOn(bucket: CmcBucket): boolean {
+    return this.filter.cmcBuckets.includes(bucket);
+  }
+
+  public toggleCmc(bucket: CmcBucket): void {
+    const cmcBuckets = this.isCmcOn(bucket)
+      ? this.filter.cmcBuckets.filter((entry) => entry !== bucket)
+      : [...this.filter.cmcBuckets, bucket];
+    this.pushFilter({ ...this.filter, cmcBuckets });
+  }
+
+  public isThemeApplied(theme: string): boolean {
+    return this.filter.theme === theme;
+  }
+
+  public applyTheme(theme: string): void {
+    this.pushFilter({ ...this.filter, theme: this.filter.theme === theme ? null : theme });
+  }
+
+  public extrasActive(): boolean {
+    const attached = this.deckService.scratchpadValue?.themes ?? [];
+    const themeOn = !!this.filter.theme && attached.includes(this.filter.theme);
+    return this.filter.rarities.length > 0 || this.filter.cmcBuckets.length > 0 || themeOn;
+  }
+
+  public toggleExtras(): void {
+    this.extrasOpen = !this.extrasOpen;
   }
 
   public onCollectionTextChange(text: string): void {

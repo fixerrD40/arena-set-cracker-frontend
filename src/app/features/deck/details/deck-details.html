@@ -24,23 +24,37 @@
           }
         </div>
 
-        <div class="deck-tags">
-          <h3>Tags</h3>
-          <mat-chip-grid #chipGrid>
-            @for (tag of deck.tags; track tag) {
-              <mat-chip-row (removed)="removeTag(tag)">
-                {{ tag }}
-                <button matChipRemove type="button" aria-label="Remove tag">&times;</button>
-              </mat-chip-row>
+        <div class="deck-status">
+          <h3>Status</h3>
+          <div class="status-row" role="radiogroup" aria-label="Deck status">
+            @for (status of statuses; track status) {
+              <button
+                type="button"
+                class="status-chip"
+                [class.on]="deck.status === status"
+                [attr.aria-pressed]="deck.status === status"
+                (click)="setStatus(status)"
+              >
+                {{ statusLabels[status] }}
+              </button>
             }
-            <input
-              placeholder="Add a tag"
-              [matChipInputFor]="chipGrid"
-              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-              (matChipInputTokenEnd)="addTag($event)"
-              aria-label="Add new tag"
-            />
-          </mat-chip-grid>
+          </div>
+        </div>
+
+        <div class="deck-themes">
+          <h3>Themes</h3>
+          @if (deck.themes.length > 0) {
+            <mat-chip-grid>
+              @for (theme of deck.themes; track theme) {
+                <mat-chip-row (removed)="removeTheme(theme)">
+                  {{ theme }}
+                  <button matChipRemove type="button" aria-label="Remove theme">&times;</button>
+                </mat-chip-row>
+              }
+            </mat-chip-grid>
+          } @else {
+            <p class="empty-note">No themes attached. Drag a theme onto this deck from the set board.</p>
+          }
         </div>
 
         <div class="deck-notes">

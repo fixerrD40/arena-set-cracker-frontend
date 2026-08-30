@@ -1,14 +1,46 @@
 /**
  * Domain deck model. cards is a Map for O(1) quantity lookups in the UI.
  */
+export const DECK_STATUSES = ['concept', 'needs-work', 'final'] as const;
+export type DeckStatus = (typeof DECK_STATUSES)[number];
+
+export const DECK_STATUS_LABELS: Record<DeckStatus, string> = {
+  concept: 'Concept',
+  'needs-work': 'Needs work',
+  final: 'Final'
+};
+
+export function coerceDeckStatus(value: unknown): DeckStatus {
+  if (value === 'final' || value === 'needs-work' || value === 'concept') {
+    return value;
+  }
+  return 'concept';
+}
+
+export function coerceDeckThemes(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
+}
+
 export interface MtgDeck {
   id: string;
   setId: string;
   name: string;
-  tags: string[];
+  status: DeckStatus;
+  themes: string[];
   notes: string;
   coverCardId: string;
   cards: Map<string, number>;
+}
+
+export function cloneDeck(deck: MtgDeck): MtgDeck {
+  return {
+    ...deck,
+    themes: [...deck.themes],
+    cards: new Map(deck.cards)
+  };
 }
 
 /** Cloud/REST deck shape (cards as a plain object). */
@@ -16,7 +48,8 @@ export interface CloudDeckPayload {
   id: string;
   setId: string;
   name: string;
-  tags?: string[];
+  status?: DeckStatus;
+  themes?: string[];
   notes?: string;
   coverCardId?: string;
   cards?: Record<string, number>;
@@ -36,8 +69,8 @@ export interface DeckValidationResult {
   errors: string[];
 }
 
-export type CreateDeckConfig = Omit<MtgDeck, 'tags' | 'notes' | 'coverCardId' | 'cards'> &
-  Partial<Pick<MtgDeck, 'tags' | 'notes' | 'coverCardId' | 'cards'>>;
+export type CreateDeckConfig = Omit<MtgDeck, 'status' | 'themes' | 'notes' | 'coverCardId' | 'cards'> &
+  Partial<Pick<MtgDeck, 'status' | 'themes' | 'notes' | 'coverCardId' | 'cards'>>;
 
 export interface DeckDeltaPayload {
   id: string;

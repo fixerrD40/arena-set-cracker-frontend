@@ -1,5 +1,5 @@
 import { MtgCard } from './card';
-import { compareByCmcThenName } from './card.mana';
+import { CmcBucket, cmcBucket, compareByCmcThenName, getCmc } from './card.mana';
 
 export const MANA_COLORS = ['W', 'U', 'B', 'R', 'G'] as const;
 export type ManaColor = (typeof MANA_COLORS)[number];
@@ -25,15 +25,22 @@ const LAND_TYPE_COLOR: Record<string, ManaColor> = {
   Forest: 'G'
 };
 
+export const COLLECTION_RARITIES = ['common', 'uncommon', 'rare', 'mythic'] as const;
+export type CollectionRarity = (typeof COLLECTION_RARITIES)[number];
+
 /**
  * Arena collection chips on top of an inherent set pool (`s:<code>`).
  * Colorless + multicolor is empty: a card cannot be both.
+ * theme is one attached phrase applied this visit; not persisted with the filter.
  */
 export interface ArenaCollectionFilter {
   colors: readonly ManaColor[];
   colorless: boolean;
   multicolor: boolean;
   land: boolean;
+  rarities: readonly CollectionRarity[];
+  cmcBuckets: readonly CmcBucket[];
+  theme: string | null;
   text: string;
 }
 
@@ -43,6 +50,9 @@ export function emptyArenaCollectionFilter(): ArenaCollectionFilter {
     colorless: false,
     multicolor: false,
     land: false,
+    rarities: [],
+    cmcBuckets: [],
+    theme: null,
     text: ''
   };
 }
@@ -111,6 +121,18 @@ export function cardMatchesArenaCollectionFilter(
   }
 
   if (!matchesColorDimension(card, filter)) {
+    return false;
+  }
+
+  if (filter.rarities.length > 0 && !filter.rarities.includes(card.rarity as CollectionRarity)) {
+    return false;
+  }
+
+  if (filter.cmcBuckets.length > 0 && !filter.cmcBuckets.includes(cmcBucket(getCmc(card.manaCost)))) {
+    return false;
+  }
+
+  if (filter.theme && !matchesCollectionText(card, filter.theme)) {
     return false;
   }
 

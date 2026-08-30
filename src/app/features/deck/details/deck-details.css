@@ -59,7 +59,8 @@
   font-size: 0.9rem;
 }
 
-.deck-tags h3,
+.deck-themes h3,
+.deck-status h3,
 .deck-notes h3,
 .breakdown h3 {
   font-size: 0.95rem;
@@ -75,14 +76,26 @@
   box-sizing: border-box;
 }
 
-input[matChipInputFor] {
-  border: none;
-  outline: none;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  min-width: 120px;
-  background: transparent;
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.status-chip {
+  border: 1px solid var(--deck-line);
+  background: var(--deck-panel);
   color: var(--deck-fg);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.status-chip.on {
+  border-color: var(--deck-gold);
+  color: var(--deck-gold);
 }
 
 .deck-notes textarea {

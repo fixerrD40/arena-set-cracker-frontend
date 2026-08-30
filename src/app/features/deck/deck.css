@@ -121,6 +121,74 @@
   background: radial-gradient(circle at 30% 30%, #fde68a, #d97706);
 }
 
+.extras { position: relative; }
+
+.extras-toggle .hamburger,
+.extras-toggle .hamburger::before,
+.extras-toggle .hamburger::after {
+  display: block;
+  width: 14px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.extras-toggle .hamburger {
+  position: relative;
+}
+
+.extras-toggle .hamburger::before,
+.extras-toggle .hamburger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.extras-toggle .hamburger::before { top: -5px; }
+.extras-toggle .hamburger::after { top: 5px; }
+
+.extras-panel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  padding: 0.7rem;
+  border-radius: 8px;
+  background: var(--deck-panel);
+  border: 1px solid var(--deck-line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.extras-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.extras-chip {
+  border: 1px solid var(--deck-line);
+  background: transparent;
+  color: var(--deck-fg);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.extras-chip.on {
+  border-color: #7dce6a;
+  color: #7dce6a;
+}
+
+.extras-empty {
+  color: var(--deck-dim);
+  font-size: 0.75rem;
+}
+
 .collection-stage {
   flex: 1;
   min-height: 0;

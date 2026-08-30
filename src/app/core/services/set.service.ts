@@ -5,7 +5,7 @@ import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 import { MtgSet } from '../../shared/models/set/set';
 import { MtgCard } from '../../shared/models/card/card';
-import { MtgDeck } from '../../shared/models/deck/deck';
+import { cloneDeck, MtgDeck } from '../../shared/models/deck/deck';
 import { ScryfallSet } from './api/scryfall/models/set.scryfall';
 import { ScryfallCard } from './api/scryfall/models/card.scryfall';
 
@@ -133,7 +133,8 @@ export class SetService implements OnDestroy {
             name: deckLike.name,
             notes: deckLike.notes || '',
             coverCardId: deckLike.coverCardId || '',
-            tags: Array.isArray(deckLike.tags) ? deckLike.tags : [],
+            themes: Array.isArray(deckLike.themes) ? deckLike.themes : [],
+            status: deckLike.status || 'concept',
             createdAt: deckLike.createdAt || new Date().toISOString()
           } as DeckRow;
           return mapRowToDeck(asRow, lines);
@@ -307,10 +308,10 @@ export class SetService implements OnDestroy {
     const updatedDecks = exists
       ? current.decks.map((d) =>
           String(d.id) === String(deck.id)
-            ? { ...deck, tags: [...deck.tags], cards: new Map(deck.cards) }
+            ? cloneDeck(deck)
             : d
         )
-      : [...current.decks, { ...deck, tags: [...deck.tags], cards: new Map(deck.cards) }];
+      : [...current.decks, cloneDeck(deck)];
 
     this.activeContextSubject.next({
       ...current,

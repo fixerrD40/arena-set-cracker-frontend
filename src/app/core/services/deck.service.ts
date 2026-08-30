@@ -3,7 +3,7 @@ import { BehaviorSubject, combineLatest, Observable, of, throwError } from 'rxjs
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { SetService } from './set.service';
 import { MtgCard } from '../../shared/models/card/card';
-import { MtgDeck } from '../../shared/models/deck/deck';
+import { cloneDeck, MtgDeck } from '../../shared/models/deck/deck';
 import { deckCopyLimit } from '../../shared/models/deck/deck.copy-limit';
 import { decks, deckCards } from '../sqlite/sqlite.schema';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
@@ -36,7 +36,8 @@ export class DeckService {
       const originalString = JSON.stringify({
         n: active.name,
         nt: active.notes,
-        t: active.tags,
+        s: active.status,
+        th: active.themes,
         cv: active.coverCardId,
         c: Object.fromEntries(active.cards)
       });
@@ -44,7 +45,8 @@ export class DeckService {
       const currentString = JSON.stringify({
         n: scratch.name,
         nt: scratch.notes,
-        t: scratch.tags,
+        s: scratch.status,
+        th: scratch.themes,
         cv: scratch.coverCardId,
         c: Object.fromEntries(scratch.cards)
       });
@@ -79,8 +81,8 @@ export class DeckService {
   }
 
   public setActiveDeck(deck: MtgDeck): void {
-    this.activeDeckSource.next({ ...deck, tags: [...deck.tags], cards: new Map(deck.cards) });
-    this.scratchpadSource.next({ ...deck, tags: [...deck.tags], cards: new Map(deck.cards) });
+    this.activeDeckSource.next(cloneDeck(deck));
+    this.scratchpadSource.next(cloneDeck(deck));
   }
 
   public clearActiveDeck(): void {
@@ -156,7 +158,8 @@ export class DeckService {
       id: crypto.randomUUID(),
       setId,
       name: name.trim(),
-      tags: [],
+      status: 'concept',
+      themes: [],
       notes: '',
       coverCardId: '',
       cards: new Map()
@@ -208,18 +211,9 @@ export class DeckService {
    * Writes decks row + replaces deck_cards for that deck id.
    */
   private persistDeck(deck: MtgDeck, options: { isNew: boolean }): Observable<MtgDeck> {
-    const parentDeckPayload = {
-      id: deck.id,
-      setId: deck.setId,
-      name: deck.name,
-      notes: deck.notes,
-      tags: [...deck.tags],
-      coverCardId: deck.coverCardId || ''
-    };
-
     const writeParent$ = options.isNew
-      ? this.dataWire.insert(decks, parentDeckPayload)
-      : this.dataWire.update(decks, parentDeckPayload);
+      ? this.dataWire.insert(decks, deck)
+      : this.dataWire.update(decks, deck);
 
     return writeParent$.pipe(
       switchMap(() => this.dataWire.deleteWhere(deckCards, 'deckId', deck.id)),

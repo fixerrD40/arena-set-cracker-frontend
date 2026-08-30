@@ -205,12 +205,21 @@
           "notNull": true,
           "autoincrement": false
         },
-        "tags": {
-          "name": "tags",
+        "themes": {
+          "name": "themes",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'concept'"
         },
         "notes": {
           "name": "notes",

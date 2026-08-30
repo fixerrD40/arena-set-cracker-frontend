@@ -62,6 +62,8 @@ describe('ensureSqliteColumns', () => {
     });
     expect(ensureSqliteColumns(db)).toBe(true);
     expect(db.altered.join(' ')).toContain('cover_card_id');
+    expect(db.altered.join(' ')).toContain('themes');
+    expect(db.altered.join(' ')).toContain('status');
   });
 
   it('still patches decks when cards are already current', () => {
@@ -71,5 +73,14 @@ describe('ensureSqliteColumns', () => {
     });
     expect(ensureCardsColumns(db)).toBe(false);
     expect(ensureDecksColumns(db)).toBe(true);
+  });
+
+  it('drops leftover decks.tags', () => {
+    const db = fakeDb({
+      cards: ['id', 'oracle_text', 'local_illustration_uri'],
+      decks: ['id', 'name', 'cover_card_id', 'themes', 'status', 'tags']
+    });
+    expect(ensureDecksColumns(db)).toBe(true);
+    expect(db.altered.join(' ')).toContain('DROP COLUMN tags');
   });
 });
