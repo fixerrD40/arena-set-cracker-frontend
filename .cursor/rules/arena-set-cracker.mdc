@@ -46,6 +46,18 @@ Fold same-story follow-ups into the unpushed commit. Leave unrelated fixes as th
 
 Only commit when the user asks.
 
+## Comments
+
+Comments record durable why that the code does not show. Put session teaching, warning names, and “not X” rebuttals in the chat.
+
+```javascript
+// BAD — conversation residue
+// Electron's CSP warning is "no policy at all", not "you should load nothing".
+
+// GOOD — why these two tokens exist
+// 'unsafe-inline' styles: Angular/Material. wasm-unsafe-eval: sql.js.
+```
+
 ## Session scope
 
 Treat community sync, art download/Capacitor filesystem, and similar as **in or out of scope only when the user says so** for that session—do not assume they are permanent non-goals.
