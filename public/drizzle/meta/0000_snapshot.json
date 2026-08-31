@@ -28,6 +28,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "collector_number": {
+          "name": "collector_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "scryfall_id": {
           "name": "scryfall_id",
           "type": "text",

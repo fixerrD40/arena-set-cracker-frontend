@@ -24,6 +24,7 @@ export const cards = sqliteTable('cards', {
   id: text('id').primaryKey(),
   setId: text('set_id').notNull().references(() => sets.id, { onDelete: 'cascade' }),
   arenaId: integer('arena_id').notNull(),
+  collectorNumber: text('collector_number').notNull(),
   scryfallId: text('scryfall_id').notNull(),
   name: text('name').notNull(),
   localArtUri: text('local_art_uri').notNull(),

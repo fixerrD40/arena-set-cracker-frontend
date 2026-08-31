@@ -5,6 +5,7 @@ export interface MtgCard {
   id: string;
   setId: string;
   arenaId: number;
+  collectorNumber: string;
   scryfallId: string;
   name: string;
   localArtUri: string;

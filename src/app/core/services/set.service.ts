@@ -177,7 +177,9 @@ export class SetService implements OnDestroy {
 
       switchMap((scryfallCards: ScryfallCard[]) => {
         // Arena-only strip: skip cards without arena_id
-        const arenaOnlyCards = scryfallCards.filter(card => card.arena_id != null);
+        const arenaOnlyCards = scryfallCards.filter(
+          (card) => card.arena_id != null && card.collector_number
+        );
 
         return from(arenaOnlyCards).pipe(
           concatMap((apiCard: ScryfallCard) => {

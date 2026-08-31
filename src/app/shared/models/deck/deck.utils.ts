@@ -1,4 +1,5 @@
 import { MtgCard } from '../card/card';
+import { compareArenaDeckList } from '../card/arena-collection.filter';
 import { ParsedArenaLine } from './deck';
 
 const ARENA_LINE_REGEX = /^(\d+)\s+(.+?)\s+\(([A-Z0-9]+)\)\s+(\d+)$/i;
@@ -82,4 +83,71 @@ export function resolveArenaLinesToCardMap(
 
 function normalizeCardName(name: string): string {
   return name.trim().toLowerCase();
+}
+
+export interface ArenaDeckExportLine {
+  card: MtgCard;
+  quantity: number;
+}
+
+export type ArenaDeckExportResult =
+  | { ok: true; text: string }
+  | { ok: false; error: string };
+
+/**
+ * Serializes assigned deck lines into MTG Arena's paste format.
+ * Arena expects set collector numbers, not Scryfall arena_id.
+ */
+export function formatArenaDeckExport(
+  lines: readonly ArenaDeckExportLine[],
+  setCode: string
+): ArenaDeckExportResult {
+  if (lines.length === 0) {
+    return { ok: false, error: 'Deck has no cards to export.' };
+  }
+
+  const set = setCode.trim().toUpperCase();
+  if (!set) {
+    return { ok: false, error: 'Set code is missing for this deck.' };
+  }
+
+  const missingNumbers = lines
+    .filter((line) => !line.card.collectorNumber?.trim())
+    .map((line) => line.card.name);
+  if (missingNumbers.length > 0) {
+    return {
+      ok: false,
+      error: `Missing Arena export numbers for: ${[...new Set(missingNumbers)].join(', ')}`
+    };
+  }
+
+  const invalidNumbers: string[] = [];
+  const body = [...lines]
+    .sort((a, b) => compareArenaDeckList(a.card, b.card))
+    .map(({ card, quantity }) => {
+      const exportNumber = arenaExportNumber(card.collectorNumber);
+      if (exportNumber === null) {
+        invalidNumbers.push(card.name);
+        return null;
+      }
+      return `${quantity} ${card.name} (${set}) ${exportNumber}`;
+    });
+
+  if (invalidNumbers.length > 0) {
+    return {
+      ok: false,
+      error: `Invalid Arena export numbers for: ${[...new Set(invalidNumbers)].join(', ')}`
+    };
+  }
+
+  return { ok: true, text: ['Deck', ...(body as string[])].join('\n') };
+}
+
+function arenaExportNumber(collectorNumber: string): number | null {
+  const match = /^(\d+)/.exec(collectorNumber.trim());
+  if (!match) {
+    return null;
+  }
+  const parsed = parseInt(match[1], 10);
+  return Number.isFinite(parsed) ? parsed : null;
 }
