@@ -1,4 +1,4 @@
-import { parseArenaText, parseArenaTextToDeckMap, resolveArenaLinesToCardMap } from './deck.utils';
+import { formatArenaDeckExport, parseArenaText, parseArenaTextToDeckMap, resolveArenaLinesToCardMap } from './deck.utils';
 import { MtgCard } from '../card/card';
 
 describe('Deck Domain Engine (Pure Functional)', () => {
@@ -62,6 +62,7 @@ Another Stray Text Line 1234
           id: 'scry-dawn',
           setId: 'set-ltr',
           arenaId: 1,
+          collectorNumber: '5',
           scryfallId: 'scry-dawn',
           name: 'Dawn of a New Age',
           localArtUri: '',
@@ -88,6 +89,7 @@ Another Stray Text Line 1234
         id: 'id-swamp',
         setId: 'set-ltr',
         arenaId: 10,
+        collectorNumber: '266',
         scryfallId: 'id-swamp',
         name: 'Swamp',
         localArtUri: '',
@@ -102,6 +104,7 @@ Another Stray Text Line 1234
         id: 'id-dawn',
         setId: 'set-ltr',
         arenaId: 5,
+        collectorNumber: '5',
         scryfallId: 'id-dawn',
         name: 'Dawn of a New Age',
         localArtUri: '',
@@ -126,6 +129,67 @@ Another Stray Text Line 1234
       expect(cards.get('id-swamp')).toBe(9);
       expect(unmatched.length).toBe(1);
       expect(unmatched[0].name).toBe('Outside Card');
+    });
+  });
+
+  describe('formatArenaDeckExport', () => {
+    const catalog: MtgCard[] = [
+      {
+        id: 'id-swamp',
+        setId: 'set-ltr',
+        arenaId: 87581,
+        collectorNumber: '266',
+        scryfallId: 'id-swamp',
+        name: 'Swamp',
+        localArtUri: '',
+        localIllustrationUri: '',
+        typeLine: 'Basic Land — Swamp',
+        colors: [],
+        rarity: 'common',
+        manaCost: '',
+        oracleText: ''
+      },
+      {
+        id: 'id-dawn',
+        setId: 'set-ltr',
+        arenaId: 84697,
+        collectorNumber: '5',
+        scryfallId: 'id-dawn',
+        name: 'Dawn of a New Age',
+        localArtUri: '',
+        localIllustrationUri: '',
+        typeLine: 'Enchantment',
+        colors: ['W'],
+        rarity: 'rare',
+        manaCost: '{1}{W}',
+        oracleText: ''
+      }
+    ];
+
+    it('writes Arena paste lines with set collector numbers', () => {
+      const result = formatArenaDeckExport(
+        [
+          { card: catalog[1], quantity: 1 },
+          { card: catalog[0], quantity: 9 }
+        ],
+        'ltr'
+      );
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) {
+        return;
+      }
+
+      expect(result.text).toBe(
+        ['Deck', '1 Dawn of a New Age (LTR) 5', '9 Swamp (LTR) 266'].join('\n')
+      );
+      expect(parseArenaText(result.text).length).toBe(2);
+    });
+
+    it('rejects export when collector numbers are missing', () => {
+      const broken: MtgCard = { ...catalog[0], collectorNumber: '' };
+      const result = formatArenaDeckExport([{ card: broken, quantity: 1 }], 'ltr');
+      expect(result.ok).toBe(false);
     });
   });
 

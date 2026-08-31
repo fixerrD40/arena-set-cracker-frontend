@@ -300,10 +300,29 @@
 
 .sidebar-footer {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem;
   flex-shrink: 0;
+}
+
+.sidebar-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.export-feedback {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.export-feedback-ok {
+  color: #9fd68a;
+}
+
+.export-feedback-error {
+  color: #f0a08a;
 }
 
 .ghost-btn,

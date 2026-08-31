@@ -17,6 +17,7 @@ export class ScryfallCard {
   id!: string;
   name!: string;
   arena_id?: number;
+  collector_number?: string;
   type_line?: string;
   rarity?: string;
   mana_cost?: string;

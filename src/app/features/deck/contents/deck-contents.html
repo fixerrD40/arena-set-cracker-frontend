@@ -135,9 +135,17 @@
   }
 
   <div class="sidebar-footer">
-    @if (isDirty$ | async) {
-      <button type="button" class="ghost-btn" (click)="handleCancelChanges()">Discard</button>
+    @if (exportNotice) {
+      <p class="export-feedback export-feedback-ok">{{ exportNotice }}</p>
+    } @else if (exportError) {
+      <p class="export-feedback export-feedback-error">{{ exportError }}</p>
     }
-    <button type="button" class="done-btn" (click)="handleDone()">Done</button>
+    <div class="sidebar-footer-actions">
+      <button type="button" class="ghost-btn" (click)="exportForArena()">Export for Arena</button>
+      @if (isDirty$ | async) {
+        <button type="button" class="ghost-btn" (click)="handleCancelChanges()">Discard</button>
+      }
+      <button type="button" class="done-btn" (click)="handleDone()">Done</button>
+    </div>
   </div>
 }

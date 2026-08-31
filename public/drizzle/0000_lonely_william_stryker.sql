@@ -21,6 +21,7 @@ CREATE TABLE `cards` (
 	`id` text PRIMARY KEY NOT NULL,
 	`set_id` text NOT NULL,
 	`arena_id` integer NOT NULL,
+	`collector_number` text NOT NULL,
 	`scryfall_id` text NOT NULL,
 	`name` text NOT NULL,
 	`local_art_uri` text NOT NULL,

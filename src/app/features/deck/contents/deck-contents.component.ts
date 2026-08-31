@@ -13,6 +13,7 @@ import { compareArenaDeckList } from '../../../shared/models/card/arena-collecti
 import { CONSTRUCTED_DECK_SIZE } from '../../../shared/models/deck/deck.copy-limit';
 import { deckCoverArtUri } from '../../../shared/models/deck/deck.cover';
 import { MtgDeck } from '../../../shared/models/deck/deck';
+import { formatArenaDeckExport } from '../../../shared/models/deck/deck.utils';
 import {
   curveBarHeight,
   curvePeak,
@@ -43,6 +44,8 @@ export class DeckContentsComponent {
   @ViewChild('renameInput') renameInput?: ElementRef<HTMLInputElement>;
 
   public renaming = false;
+  public exportNotice: string | null = null;
+  public exportError: string | null = null;
   public hoveredCard: MtgCard | null = null;
   public previewTop = 0;
   public previewRight = 0;
@@ -183,5 +186,36 @@ export class DeckContentsComponent {
     }
 
     this.deckService.flush().subscribe({ next: leave });
+  }
+
+  public async exportForArena(): Promise<void> {
+    this.exportNotice = null;
+    this.exportError = null;
+
+    const workspace = this.setService.currentWorkspaceSnapshot;
+    const assigned = await firstValueFrom(this.assignedCards$);
+    const setCode = workspace?.setInfo.code;
+
+    if (!setCode) {
+      this.exportError = 'Open an installed set before exporting.';
+      return;
+    }
+
+    const result = formatArenaDeckExport(
+      assigned.map((line) => ({ card: line.card, quantity: line.quantity })),
+      setCode
+    );
+
+    if (!result.ok) {
+      this.exportError = result.error;
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(result.text);
+      this.exportNotice = 'Arena deck copied to clipboard.';
+    } catch {
+      this.exportError = 'Could not copy to the clipboard. Check app permissions and try again.';
+    }
   }
 }
