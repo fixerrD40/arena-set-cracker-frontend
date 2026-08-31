@@ -4,7 +4,6 @@ import { drizzle } from 'drizzle-orm/sql-js';
 import initSqlJs from 'sql.js';
 
 import { OutboxEnvelope, SqliteEngine, SyncQueueItem } from './sqlite.engine';
-import { ensureSqliteColumns } from './sqlite.ensure-columns';
 import { syncQueue } from './sqlite.schema';
 import * as MySchema from './sqlite.schema';
 import { APP_CONFIG } from '../config/config.model';
@@ -54,10 +53,6 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
       }
 
       this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
-
-      if (savedBinary && ensureSqliteColumns(this.rawSqliteClient)) {
-        await this.commitSnapshotToIndexedDb(dbKey);
-      }
 
       if (!savedBinary) {
         await this.generateWebDatabaseSchema(this.rawSqliteClient);

@@ -148,7 +148,6 @@ export class SetService implements OnDestroy {
               );
 
         return cardSource$.pipe(
-          switchMap((loadedCards) => this.ensureCollectorNumbers(setInfo, loadedCards)),
           map((finalCards) => ({
             setInfo,
             cards: finalCards,
@@ -165,50 +164,6 @@ export class SetService implements OnDestroy {
       this.inFlightSetId = null;
       this.inFlightLoad$ = null;
     }
-  }
-
-  /** Backfills collector_number on catalogs installed before export shipped. */
-  private ensureCollectorNumbers(setInfo: MtgSet, cardModels: MtgCard[]): Observable<MtgCard[]> {
-    if (!cardModels.some((card) => !card.collectorNumber?.trim())) {
-      return of(cardModels);
-    }
-
-    return this.scryfallService.getCardsBySet(setInfo.code.toLowerCase()).pipe(
-      switchMap((apiCards) => {
-        const byScryfallId = new Map(
-          apiCards.map((apiCard) => [apiCard.id, apiCard.collector_number ?? ''])
-        );
-
-        const updatedCards = cardModels.map((card) => {
-          const collectorNumber = byScryfallId.get(card.scryfallId) ?? byScryfallId.get(card.id) ?? '';
-          if (!collectorNumber || collectorNumber === card.collectorNumber) {
-            return card;
-          }
-          return { ...card, collectorNumber };
-        });
-
-        const changed = updatedCards.filter(
-          (card, index) => card.collectorNumber !== cardModels[index].collectorNumber
-        );
-        if (changed.length === 0) {
-          return of(updatedCards);
-        }
-
-        return from(changed).pipe(
-          concatMap((card) => this.dataWire.update(cards, card)),
-          toArray(),
-          map(() => updatedCards),
-          catchError((err) => {
-            console.error('[SetService] Failed to persist collector_number backfill:', err);
-            return of(updatedCards);
-          })
-        );
-      }),
-      catchError((err) => {
-        console.error('[SetService] Failed to backfill collector_number from Scryfall:', err);
-        return of(cardModels);
-      })
-    );
   }
 
   /** Installs a set: persist metadata, download Arena-only card art, bulk-insert cards. */
