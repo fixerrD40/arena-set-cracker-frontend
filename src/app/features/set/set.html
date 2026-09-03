@@ -12,38 +12,40 @@
         }
 
         <div class="set-main">
-          <div class="set-main-upper">
-            <div class="set-main-head">
-              @if (!decksSidebarOpen) {
-                <button
-                  type="button"
-                  class="deck-drawer-toggle"
-                  [class.peek-hot]="!decksSidebarOpen && dragState.peekDrawer()"
-                  (click)="toggleDecksSidebar()"
-                  aria-label="Show decks panel"
-                >
-                  <mat-icon>chevron_right</mat-icon>
-                </button>
-              }
-              <app-set-assignment-metrics [metrics]="board.metrics" />
+          <div class="set-main-scroll">
+            <div class="set-main-upper">
+              <div class="set-main-head">
+                @if (!decksSidebarOpen) {
+                  <button
+                    type="button"
+                    class="deck-drawer-toggle"
+                    [class.peek-hot]="!decksSidebarOpen && dragState.peekDrawer()"
+                    (click)="toggleDecksSidebar()"
+                    aria-label="Show decks panel"
+                  >
+                    <mat-icon>chevron_right</mat-icon>
+                  </button>
+                }
+                <app-set-assignment-metrics [metrics]="board.metrics" />
+              </div>
+
+              <app-set-discovery-pool
+                [scoped]="board.scoped"
+                [remaining]="board.remaining"
+                [total]="board.total"
+                [scopedColors]="scopedColors"
+                [drainNeedsWork]="drainNeedsWork"
+                (colorScopeChange)="toggleColorScope($event)"
+                (drainNeedsWorkChange)="onDrainNeedsWorkChange($event)"
+              />
+
+              <app-set-patterns-panel
+                [patternState]="patternState"
+                [selectedTheme]="selectedTheme"
+                [drawerOpen]="decksSidebarOpen"
+                (themeSelect)="toggleThemeSelection($event)"
+              />
             </div>
-
-            <app-set-discovery-pool
-              [scoped]="board.scoped"
-              [remaining]="board.remaining"
-              [total]="board.total"
-              [scopedColors]="scopedColors"
-              [drainNeedsWork]="drainNeedsWork"
-              (colorScopeChange)="toggleColorScope($event)"
-              (drainNeedsWorkChange)="onDrainNeedsWorkChange($event)"
-            />
-
-            <app-set-patterns-panel
-              [patternState]="patternState"
-              [selectedTheme]="selectedTheme"
-              [drawerOpen]="decksSidebarOpen"
-              (themeSelect)="toggleThemeSelection($event)"
-            />
           </div>
 
           <app-set-theme-preview

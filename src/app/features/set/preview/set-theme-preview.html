@@ -8,8 +8,13 @@
             {{ pageView.page + 1 }} / {{ pageView.pageCount }}
           </span>
         }
-        <button type="button" class="theme-preview-clear" (click)="themeClear.emit(pageView.theme)">
-          Clear
+        <button
+          type="button"
+          class="theme-preview-clear"
+          (click)="themeClear.emit(pageView.theme)"
+          aria-label="Clear theme"
+        >
+          ×
         </button>
       </div>
     </div>
@@ -26,7 +31,7 @@
         </button>
         <div
           class="theme-preview-grid"
-          [style.grid-template-columns]="'repeat(' + pageView.columns + ', minmax(0, 1fr))'"
+          [style.grid-template-columns]="'repeat(' + pageView.columns + ', ' + pageView.cardWidthPx + 'px)'"
           [style.grid-template-rows]="'repeat(' + pageView.rows + ', ' + pageView.rowHeightPx + 'px)'"
           [style.column-gap.px]="pageView.colGapPx"
           [style.row-gap.px]="pageView.rowGapPx"
@@ -76,6 +81,4 @@
       <p class="empty-note">No cards in the current pool match this theme.</p>
     }
   </section>
-} @else {
-  <div class="set-main-fill" aria-hidden="true"></div>
 }

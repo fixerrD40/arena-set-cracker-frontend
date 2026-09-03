@@ -18,6 +18,7 @@ import {
   minSignificantThemeCards
 } from '../../shared/models/discovery/theme-match';
 import { DECK_STATUSES, DeckStatus, MtgDeck } from '../../shared/models/deck/deck';
+import { MTG_CARD_ASPECT } from '../../shared/ui/card-hover-preview/card-hover-preview.layout';
 
 export interface SetBoardShell {
   remaining: number;
@@ -38,6 +39,7 @@ export interface ThemePreviewLayout {
   rows: number;
   pageSize: number;
   rowHeightPx: number;
+  cardWidthPx: number;
   rowGapPx: number;
   colGapPx: number;
 }
@@ -61,6 +63,7 @@ export interface ThemePreviewPageView {
   columns: number;
   rows: number;
   rowHeightPx: number;
+  cardWidthPx: number;
   rowGapPx: number;
   colGapPx: number;
   emptyReason: ThemePreviewEmptyReason;
@@ -75,9 +78,10 @@ export interface DeckThemeDragPayload {
 
 export const DEFAULT_THEME_PREVIEW_LAYOUT: ThemePreviewLayout = {
   columns: 4,
-  rows: 2,
-  pageSize: 8,
-  rowHeightPx: 180,
+  rows: 1,
+  pageSize: 4,
+  rowHeightPx: 196,
+  cardWidthPx: Math.round(196 * MTG_CARD_ASPECT),
   rowGapPx: 10.4,
   colGapPx: 13.6
 };
@@ -188,6 +192,7 @@ export function buildThemePreviewPageView(
     columns: layout.columns,
     rows: layout.rows,
     rowHeightPx: layout.rowHeightPx,
+    cardWidthPx: layout.cardWidthPx,
     rowGapPx: layout.rowGapPx,
     colGapPx: layout.colGapPx,
     emptyReason: preview.emptyReason,
@@ -198,38 +203,30 @@ export function buildThemePreviewPageView(
 
 export function computeThemePreviewLayout(stage: HTMLElement): ThemePreviewLayout {
   const navWidth = 64;
-  const gridWidth = Math.max(0, stage.clientWidth - navWidth);
-  const gridHeight = Math.max(0, stage.clientHeight);
-
-  let columns = 4;
-  if (gridWidth < 480) {
-    columns = 2;
-  } else if (gridWidth < 720) {
-    columns = 3;
-  }
-
   const colGapPx = 13.6;
   const rowGapPx = 10.4;
-  const cellWidth = (gridWidth - colGapPx * Math.max(0, columns - 1)) / Math.max(columns, 1);
-  const widthBasedRowHeight = cellWidth * (680 / 488);
-  const twoRowAtFullHeight = widthBasedRowHeight * 2 + rowGapPx;
+  const minCardWidth = 100;
+  const maxCardWidth = 160;
+  const gridWidth = Math.max(0, stage.clientWidth - navWidth);
 
-  let rows = 1;
-  if (gridHeight >= twoRowAtFullHeight * 0.92) {
-    rows = 2;
-  } else if (gridHeight >= widthBasedRowHeight * 1.45 + rowGapPx) {
-    rows = 2;
-  }
-
-  const rowBudget = gridHeight - rowGapPx * Math.max(0, rows - 1);
-  const maxRowHeight = Math.max(72, rowBudget / Math.max(rows, 1));
-  const rowHeightPx = Math.min(widthBasedRowHeight, maxRowHeight);
+  const columns = Math.max(
+    1,
+    Math.floor((gridWidth + colGapPx) / (minCardWidth + colGapPx))
+  );
+  const cardWidthPx = Math.round(
+    Math.min(
+      maxCardWidth,
+      (gridWidth - colGapPx * Math.max(0, columns - 1)) / Math.max(columns, 1)
+    )
+  );
+  const rowHeightPx = Math.round(cardWidthPx / MTG_CARD_ASPECT);
 
   return {
     columns,
-    rows,
-    pageSize: columns * rows,
-    rowHeightPx: Math.round(rowHeightPx),
+    rows: 1,
+    pageSize: columns,
+    rowHeightPx,
+    cardWidthPx,
     rowGapPx,
     colGapPx
   };

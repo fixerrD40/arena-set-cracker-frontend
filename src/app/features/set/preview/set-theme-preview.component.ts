@@ -4,6 +4,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostBinding,
   inject,
   input,
   NgZone,
@@ -58,6 +59,11 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
   public previewTop = 0;
   public previewLeft = 0;
   public previewWidth = 0;
+
+  @HostBinding('class.docked')
+  public get docked(): boolean {
+    return !!this.selectedTheme();
+  }
 
   private readonly themePreviewPage$ = new BehaviorSubject(0);
   private readonly themePreviewLayout$ = new BehaviorSubject<ThemePreviewLayout>(DEFAULT_THEME_PREVIEW_LAYOUT);
