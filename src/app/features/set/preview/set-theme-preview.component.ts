@@ -27,11 +27,17 @@ import {
   ThemePreviewLayout,
   ThemePreviewPageView
 } from '../set.board';
+import { CardHoverPreviewComponent } from '../../../shared/ui/card-hover-preview/card-hover-preview.component';
+import { contentAreaBox } from '../../../shared/ui/layout/content-area';
+import {
+  placeCardHoverPreview,
+  prefersFineHover
+} from '../../../shared/ui/card-hover-preview/card-hover-preview.layout';
 
 @Component({
   selector: 'app-set-theme-preview',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CardHoverPreviewComponent],
   templateUrl: './set-theme-preview.html',
   styleUrls: ['./set-theme-preview.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -48,6 +54,10 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
   public readonly themeClear = output<string>();
 
   public readonly cardArtUri = cardArtUri;
+  public hoveredCard: MtgCard | null = null;
+  public previewTop = 0;
+  public previewLeft = 0;
+  public previewWidth = 0;
 
   private readonly themePreviewPage$ = new BehaviorSubject(0);
   private readonly themePreviewLayout$ = new BehaviorSubject<ThemePreviewLayout>(DEFAULT_THEME_PREVIEW_LAYOUT);
@@ -55,6 +65,7 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
   private previewResizeObserver?: ResizeObserver;
   private previewLayoutRecalc?: () => void;
   private previewWheelGate = false;
+  private themePreviewStageEl?: HTMLElement;
 
   private readonly themePreview$ = combineLatest({
     pool: toObservable(this.pool),
@@ -77,6 +88,7 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
   @ViewChild('themePreviewStage')
   set themePreviewStageRef(ref: ElementRef<HTMLElement> | undefined) {
     this.unbindThemePreviewLayout();
+    this.themePreviewStageEl = ref?.nativeElement;
     if (ref) {
       this.bindThemePreviewLayout(ref.nativeElement);
     }
@@ -87,6 +99,7 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.themePreviewPage$.next(0);
+        this.clearCardPreview();
       });
   }
 
@@ -136,6 +149,7 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
     const view = this.latestPageView;
     if (view && view.page > 0) {
       this.themePreviewPage$.next(view.page - 1);
+      this.clearCardPreview();
       this.cdr.markForCheck();
     }
   }
@@ -144,8 +158,40 @@ export class SetThemePreviewComponent implements OnInit, AfterViewInit, OnDestro
     const view = this.latestPageView;
     if (view && view.page + 1 < view.pageCount) {
       this.themePreviewPage$.next(view.page + 1);
+      this.clearCardPreview();
       this.cdr.markForCheck();
     }
+  }
+
+  public showCardPreview(event: MouseEvent, card: MtgCard): void {
+    if (!prefersFineHover()) return;
+
+    const tile = event.currentTarget as HTMLElement;
+    const shell = contentAreaBox() ?? this.host.nativeElement.getBoundingClientRect();
+    const tileBox = tile.getBoundingClientRect();
+    const inset = 12;
+    const bandX = { left: shell.left + inset, right: shell.right - inset };
+    const bandY = { top: shell.top + inset, bottom: shell.bottom - inset };
+    const box = placeCardHoverPreview({
+      mode: 'band-x',
+      anchor: tileBox,
+      bandX,
+      bandY,
+      clearAnchor: 'above',
+      viewportHeight: window.innerHeight
+    });
+
+    this.hoveredCard = card;
+    this.previewTop = box.top;
+    this.previewLeft = box.left;
+    this.previewWidth = box.width;
+    this.cdr.markForCheck();
+  }
+
+  public clearCardPreview(): void {
+    if (!this.hoveredCard) return;
+    this.hoveredCard = null;
+    this.cdr.markForCheck();
   }
 
   private readonly onPreviewWheelNative = (event: WheelEvent): void => {

@@ -1,0 +1,13 @@
+.card-hover-preview {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.card-hover-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+}

@@ -1,6 +1,6 @@
 .arena-builder {
   display: flex;
-  height: calc(100vh - 64px);
+  height: calc(100vh - var(--app-chrome-height));
   overflow: hidden;
   background: var(--deck-bg);
   color: var(--deck-fg);
@@ -230,6 +230,15 @@
   opacity: 0.35;
 }
 
+.collection-slot {
+  container-type: size;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .page-nav {
   flex-shrink: 0;
   width: 2rem;
@@ -250,9 +259,13 @@
 .collection-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.35rem;
+  width: max-content;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
   min-height: 0;
-  height: 100%;
   padding: 0;
   border: none;
   background: transparent;
@@ -261,25 +274,27 @@
   text-align: left;
 }
 
-.collection-card img {
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  object-fit: contain;
+.collection-card img,
+.collection-card .card-fallback {
+  /* Button chrome matches the MTG frame; slot cq* budgets the cell. */
+  aspect-ratio: 63 / 88;
+  width: min(100cqw, calc((100cqh - 1.2rem) * 63 / 88));
+  height: auto;
+  max-height: calc(100cqh - 1.2rem);
+  object-fit: cover;
   border-radius: 10px;
   display: block;
 }
 
-.card-fallback {
-  flex: 1;
-  min-height: 0;
-  border-radius: 10px;
+.collection-card .card-fallback {
+  box-sizing: border-box;
   background: #2f2c28;
   border: 1px solid var(--deck-line);
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow: hidden;
 }
 
 .owned-row {

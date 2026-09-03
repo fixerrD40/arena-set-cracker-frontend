@@ -3,6 +3,8 @@
 @import './app/shared/styles/auth-shell.css';
 
 :root {
+  /* mat-toolbar / .navbar — page shells size below this chrome. */
+  --app-chrome-height: 64px;
   --asc-surface-low: var(--mat-sys-surface-container-low, #f5f5f5);
   --asc-on-surface: var(--mat-sys-on-surface, #212121);
   --asc-on-surface-variant: var(--mat-sys-on-surface-variant, #666666);

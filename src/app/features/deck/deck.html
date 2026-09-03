@@ -150,40 +150,44 @@
               [cdkDropListAutoScrollDisabled]="true"
             >
               @for (item of pageView.cards; track item.card.id) {
-                <button
-                  type="button"
-                  class="collection-card"
-                  cdkDrag
-                  [cdkDragData]="collectionDrag(item.card)"
-                  (cdkDragStarted)="onCardDragStarted()"
-                  (cdkDragMoved)="onCardDragMoved($event)"
-                  (cdkDragEnded)="onCardDragEnded($event)"
-                  (click)="handleIncrementCard(item.card)"
-                  [attr.aria-label]="'Add ' + item.card.name"
-                >
-                  <ng-template cdkDragPreview>
-                    @if (item.card.localArtUri) {
-                      <img class="drag-card-preview" [src]="item.card.localArtUri" [alt]="item.card.name" />
-                    }
-                  </ng-template>
-                  <div class="owned-row" aria-hidden="true">
-                    @if (showsInfinityCopyMark(item.card)) {
-                      <span class="owned-infinity">∞</span>
-                    } @else {
-                      @for (pip of copyPips; track pip) {
-                        <span class="owned-pip" [class.filled]="item.quantity >= pip"></span>
+                <div class="collection-slot">
+                  <button
+                    type="button"
+                    class="collection-card"
+                    cdkDrag
+                    [cdkDragData]="collectionDrag(item.card)"
+                    (cdkDragStarted)="onCardDragStarted()"
+                    (cdkDragMoved)="onCardDragMoved($event)"
+                    (cdkDragEnded)="onCardDragEnded($event)"
+                    (click)="handleIncrementCard(item.card)"
+                    (mouseenter)="showCollectionPreview($event, item.card)"
+                    (mouseleave)="clearCollectionPreview()"
+                    [attr.aria-label]="'Add ' + item.card.name"
+                  >
+                    <ng-template cdkDragPreview>
+                      @if (item.card.localArtUri) {
+                        <img class="drag-card-preview" [src]="item.card.localArtUri" [alt]="item.card.name" />
                       }
-                    }
-                  </div>
-                  @if (item.card.localArtUri) {
-                    <img [src]="item.card.localArtUri" [alt]="item.card.name" />
-                  } @else {
-                    <div class="card-fallback">
-                      <strong>{{ item.card.name }}</strong>
-                      <span>{{ item.card.typeLine }}</span>
+                    </ng-template>
+                    <div class="owned-row" aria-hidden="true">
+                      @if (showsInfinityCopyMark(item.card)) {
+                        <span class="owned-infinity">∞</span>
+                      } @else {
+                        @for (pip of copyPips; track pip) {
+                          <span class="owned-pip" [class.filled]="item.quantity >= pip"></span>
+                        }
+                      }
                     </div>
-                  }
-                </button>
+                    @if (item.card.localArtUri) {
+                      <img [src]="item.card.localArtUri" [alt]="item.card.name" />
+                    } @else {
+                      <div class="card-fallback">
+                        <strong>{{ item.card.name }}</strong>
+                        <span>{{ item.card.typeLine }}</span>
+                      </div>
+                    }
+                  </button>
+                </div>
               } @empty {
                 <p class="empty-matrix-fallback">No cards in this set match the current filter.</p>
               }
@@ -200,6 +204,15 @@
       </section>
 
       <app-deck-contents (details)="openDetails()" />
+
+      @if (hoveredCard; as preview) {
+        <app-card-hover-preview
+          [card]="preview"
+          [top]="previewTop"
+          [left]="previewLeft"
+          [width]="previewWidth"
+        />
+      }
     </div>
   } @else if (deckSummary$ | async; as summary) {
     <app-deck-details [summary]="summary" (back)="backToBuilder()" />

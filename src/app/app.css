@@ -1,5 +1,5 @@
 mat-sidenav-container {
-  height: calc(100vh - 64px);
+  height: calc(100vh - var(--app-chrome-height));
 }
 
 .spacer {
@@ -10,9 +10,15 @@ mat-sidenav-container {
   display: flex;
   align-items: center;
   padding: 0 16px;
-  height: 64px;
+  height: var(--app-chrome-height);
   box-shadow: 0 2px 4px rgb(0 0 0 / 0.1);
   z-index: 100;
+}
+
+.page-content-wrapper {
+  display: block;
+  position: relative;
+  min-height: calc(100vh - var(--app-chrome-height));
 }
 
 .navbar .logo {

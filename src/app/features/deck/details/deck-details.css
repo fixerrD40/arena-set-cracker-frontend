@@ -1,5 +1,5 @@
 .arena-details {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--app-chrome-height));
   background: var(--deck-bg);
   color: var(--deck-fg);
   padding: 1rem 1.5rem 2rem;

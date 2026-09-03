@@ -1,0 +1,10 @@
+@if (cardArtUri(card(), 'frame'); as art) {
+  <aside
+    class="card-hover-preview"
+    [style.top.px]="top()"
+    [style.left.px]="left()"
+    [style.width.px]="width()"
+  >
+    <img [src]="art" [alt]="card().name" />
+  </aside>
+}
