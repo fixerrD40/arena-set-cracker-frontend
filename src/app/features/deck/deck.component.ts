@@ -25,6 +25,12 @@ import { DeckDetailsComponent } from './details/deck-details.component';
 import { DeckContentsComponent } from './contents/deck-contents.component';
 import { CDK_DRAG_CONFIG, CdkDragEnd, CdkDragMove, DragDropModule } from '@angular/cdk/drag-drop';
 import { DeckBuilderDrag, DeckDragPayload, isDragGesture } from './deck.drag';
+import { CardHoverPreviewComponent } from '../../shared/ui/card-hover-preview/card-hover-preview.component';
+import {
+  CARD_HOVER_GAP_TIGHT,
+  placeCardHoverPreview,
+  prefersFineHover
+} from '../../shared/ui/card-hover-preview/card-hover-preview.layout';
 
 @Component({
   selector: 'app-deck',
@@ -35,7 +41,8 @@ import { DeckBuilderDrag, DeckDragPayload, isDragGesture } from './deck.drag';
     FormsModule,
     DragDropModule,
     DeckDetailsComponent,
-    DeckContentsComponent
+    DeckContentsComponent,
+    CardHoverPreviewComponent
   ],
   providers: [
     DeckBuilderDrag,
@@ -71,6 +78,10 @@ export class DeckComponent implements OnDestroy {
 
   public filter: ArenaCollectionFilter = emptyArenaCollectionFilter();
   public screen: 'builder' | 'details' = 'builder';
+  public hoveredCard: MtgCard | null = null;
+  public previewTop = 0;
+  public previewLeft = 0;
+  public previewWidth = 0;
 
   private readonly collectionFilter$ = new BehaviorSubject<ArenaCollectionFilter>(this.filter);
   private readonly collectionPage$ = new BehaviorSubject(0);
@@ -265,6 +276,36 @@ export class DeckComponent implements OnDestroy {
     return { card, source: 'collection' };
   }
 
+  public showCollectionPreview(event: MouseEvent, card: MtgCard): void {
+    if (this.pointerDrag || !prefersFineHover()) return;
+
+    const tile = event.currentTarget as HTMLElement;
+    const face = tile.querySelector('img, .card-fallback');
+    const stageBox = this.collectionStageEl?.getBoundingClientRect();
+    const anchor = (face instanceof HTMLElement ? face : tile).getBoundingClientRect();
+    const inset = 8;
+    const bandY = stageBox
+      ? { top: stageBox.top, bottom: stageBox.bottom }
+      : { top: inset, bottom: window.innerHeight - inset };
+    const box = placeCardHoverPreview({
+      mode: 'beside',
+      side: 'right',
+      anchor,
+      bandY,
+      gap: CARD_HOVER_GAP_TIGHT,
+      viewportHeight: window.innerHeight
+    });
+
+    this.hoveredCard = card;
+    this.previewTop = box.top;
+    this.previewLeft = box.left;
+    this.previewWidth = box.width;
+  }
+
+  public clearCollectionPreview(): void {
+    this.hoveredCard = null;
+  }
+
   public handleIncrementCard(card: MtgCard): void {
     if (this.pointerDrag) return;
     this.deckService.addCopy(card);
@@ -272,6 +313,7 @@ export class DeckComponent implements OnDestroy {
 
   public onCardDragStarted(): void {
     this.pointerDrag = true;
+    this.hoveredCard = null;
   }
 
   public onCardDragMoved(event: CdkDragMove<DeckDragPayload>): void {

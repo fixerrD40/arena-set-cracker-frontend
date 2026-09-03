@@ -7,7 +7,6 @@ import { firstValueFrom, map } from 'rxjs';
 import { DeckService } from '../../../core/services/deck.service';
 import { SetService } from '../../../core/services/set.service';
 import { manaPipAsset } from '../../../shared/models/card/card.mana';
-import { cardArtUri } from '../../../shared/models/card/card.art';
 import { MtgCard } from '../../../shared/models/card/card';
 import { compareArenaDeckList } from '../../../shared/models/card/arena-collection.filter';
 import { CONSTRUCTED_DECK_SIZE } from '../../../shared/models/deck/deck.copy-limit';
@@ -22,11 +21,16 @@ import {
   deckRowToneStyle,
   summarizeDeck
 } from '../../../shared/models/deck/deck.stats';
+import { CardHoverPreviewComponent } from '../../../shared/ui/card-hover-preview/card-hover-preview.component';
+import {
+  placeCardHoverPreview,
+  prefersFineHover
+} from '../../../shared/ui/card-hover-preview/card-hover-preview.layout';
 
 @Component({
   selector: 'app-deck-contents',
   standalone: true,
-  imports: [CommonModule, DragDropModule],
+  imports: [CommonModule, DragDropModule, CardHoverPreviewComponent],
   templateUrl: './deck-contents.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./deck-contents.css']
@@ -48,7 +52,8 @@ export class DeckContentsComponent {
   public exportError: string | null = null;
   public hoveredCard: MtgCard | null = null;
   public previewTop = 0;
-  public previewRight = 0;
+  public previewLeft = 0;
+  public previewWidth = 0;
   public readonly constructedSize = CONSTRUCTED_DECK_SIZE;
   public readonly manaPipAsset = manaPipAsset;
   public readonly deckRowManaPips = deckRowManaPips;
@@ -56,7 +61,6 @@ export class DeckContentsComponent {
   public readonly deckRowToneStyle = deckRowToneStyle;
   public readonly curveBarHeight = curveBarHeight;
   public readonly curvePeak = curvePeak;
-  public readonly cardArtUri = cardArtUri;
 
   public readonly scratchpadDeck$ = this.deckService.scratchpadDeck$;
   public readonly isDirty$ = this.deckService.isDirty$;
@@ -83,12 +87,37 @@ export class DeckContentsComponent {
   }
 
   public showRowPreview(event: MouseEvent, card: MtgCard): void {
-    if (this.pointerDrag) return;
-    this.hoveredCard = card;
+    if (this.pointerDrag || !prefersFineHover()) return;
+
+    const row = event.currentTarget as HTMLElement;
     const hostBox = this.host.nativeElement.getBoundingClientRect();
-    const rowBox = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    this.previewTop = Math.max(12, Math.min(rowBox.top, window.innerHeight - 360));
-    this.previewRight = window.innerWidth - hostBox.left + 8;
+    const builder = this.host.nativeElement.closest('.arena-builder');
+    const stage = builder?.querySelector('.collection-stage');
+    const stageBox = stage instanceof HTMLElement ? stage.getBoundingClientRect() : null;
+    const rowBox = row.getBoundingClientRect();
+    const bandY = {
+      top: hostBox.top,
+      bottom: stageBox?.bottom ?? hostBox.bottom
+    };
+    const box = placeCardHoverPreview({
+      mode: 'beside',
+      side: 'left',
+      anchor: {
+        top: rowBox.top,
+        left: hostBox.left,
+        right: hostBox.right,
+        bottom: rowBox.bottom,
+        width: hostBox.width,
+        height: rowBox.height
+      },
+      bandY,
+      viewportHeight: window.innerHeight
+    });
+
+    this.hoveredCard = card;
+    this.previewTop = box.top;
+    this.previewLeft = box.left;
+    this.previewWidth = box.width;
   }
 
   public clearRowPreview(): void {

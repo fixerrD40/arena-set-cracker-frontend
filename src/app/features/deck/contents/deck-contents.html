@@ -127,11 +127,12 @@
   </div>
 
   @if (hoveredCard; as preview) {
-    @if (cardArtUri(preview, 'frame'); as art) {
-      <aside class="hover-preview" [style.top.px]="previewTop" [style.right.px]="previewRight">
-        <img [src]="art" [alt]="preview.name" />
-      </aside>
-    }
+    <app-card-hover-preview
+      [card]="preview"
+      [top]="previewTop"
+      [left]="previewLeft"
+      [width]="previewWidth"
+    />
   }
 
   <div class="sidebar-footer">

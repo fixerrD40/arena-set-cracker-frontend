@@ -32,7 +32,11 @@
           [style.row-gap.px]="pageView.rowGapPx"
         >
           @for (card of pageView.cards; track card.id) {
-            <div class="theme-preview-card">
+            <div
+              class="theme-preview-card"
+              (mouseenter)="showCardPreview($event, card)"
+              (mouseleave)="clearCardPreview()"
+            >
               @if (cardArtUri(card, 'frame'); as art) {
                 <img [src]="art" [alt]="card.name" />
               } @else {
@@ -54,6 +58,15 @@
           ›
         </button>
       </div>
+
+      @if (hoveredCard; as preview) {
+        <app-card-hover-preview
+          [card]="preview"
+          [top]="previewTop"
+          [left]="previewLeft"
+          [width]="previewWidth"
+        />
+      }
     } @else if (pageView.emptyReason === 'below-threshold') {
       <p class="empty-note">
         Only {{ pageView.matchCount }} cards in the scoped pool match (minimum
