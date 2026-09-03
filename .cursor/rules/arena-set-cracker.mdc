@@ -35,12 +35,13 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 | Arena parse + name resolve within catalog | `shared/models/deck/deck.utils.ts` |
 | SQLite schema (create only) | `core/sqlite/sqlite.schema.ts`, `public/drizzle/` (`0000` bootstrap) |
 | Shared CSS shell (auth/forms) | `shared/styles/auth-shell.css`, tokens in `styles.css` |
+| App chrome / content-area bounds | `--app-chrome-height`, `[data-app-content]`, `shared/ui/layout/content-area.ts` |
 
 ## Commits
 
 Ask where the user is before committing. First line: `<place> <goal>` (Hideaway is a place-stamp, not a magic title and not assumed).
 
-Body only when the goal needs grains above the diff. Track files (or their owners: mappers, service, features, sqlite artifacts), nested under the domain change. Header-only when the diff is one file and obvious. Do not restate the header, the product story, or work that is not in the diff.
+Body only when the goal needs grains above the diff. Prefer verb-led, natural bullets. Signpost with **one fixed name** per surface (class, selector, owner)—do not invent aliases for the same thing. Prefer a short domain phrase over listing every new symbol when that domain owns them. When the same commit includes a preliminary that enables the goal, list that bullet first. Track files (or their owners) nested under the domain change. Header-only when the diff is one file and obvious. Do not restate the header, the product story, or work that is not in the diff.
 
 Fold same-story follow-ups into the unpushed commit. Leave unrelated fixes as their own commit. Do not rewrite anything already on the remote.
 
@@ -48,16 +49,29 @@ Only commit when the user asks.
 
 ## Comments
 
-Comments record durable why that the code does not show. Put session teaching, warning names, and “not X” rebuttals in the chat.
+Comments record durable why that the code does not show. Put session teaching, warning names, and “not X” rebuttals in the chat. Do not narrate a choice the identifiers already name, or give the same UI thing a second nickname beside its class/selector.
 
 ```javascript
 // BAD — conversation residue
 // Electron's CSP warning is "no policy at all", not "you should load nothing".
 
+// BAD — play-by-play the next reader gets from the bindings
+// Top: whole sidebar. Bottom: lower library row when present.
+
 // GOOD — why these two tokens exist
 // 'unsafe-inline' styles: Angular/Material. wasm-unsafe-eval: sql.js.
 ```
 
+## Tests
+
+Specs are welcome. The Vitest DOM harness (`jsdom` / `happy-dom`) is a **known gap**—see `.cursor/FOLLOWUPS.md` when that file is present. Do not thrash `ng test`, silently add a DOM package, or treat a missing harness as a product blocker. Prefer `ng build` to verify compile until the user asks to land the harness.
+
+## Refactors
+
+Propose preliminary or structural cleanups that would enable the task; wait for assent before expanding into them. Do not take a blank check to retokenize the shell, reshape hit targets, etc. mid-feature.
+
 ## Session scope
 
 Treat community sync, art download/Capacitor filesystem, and similar as **in or out of scope only when the user says so** for that session—do not assume they are permanent non-goals.
+
+When present, read `.cursor/FOLLOWUPS.md` for intentional deferrals and tooling debt (local file; may not be in git).
