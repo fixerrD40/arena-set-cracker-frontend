@@ -41,6 +41,7 @@ export class NativeSqliteEngine extends SqliteEngine {
 
       if (existing) {
         this.rawSqliteClient = new SQL.Database(new Uint8Array(existing));
+        this.rawSqliteClient.run('PRAGMA foreign_keys = ON;');
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
         console.log(`[SqliteEngine] High-speed Drizzle client loaded via desktop bridge: [${this.activeFileName}].`);
@@ -48,6 +49,7 @@ export class NativeSqliteEngine extends SqliteEngine {
         console.log(`[SqliteEngine] Database container file missing. Compiling schema layout...`);
 
         this.rawSqliteClient = new SQL.Database();
+        this.rawSqliteClient.run('PRAGMA foreign_keys = ON;');
         this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
         const ddl = await desktop.drizzleBootstrapSql();

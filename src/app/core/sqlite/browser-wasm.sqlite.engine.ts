@@ -52,6 +52,7 @@ export class BrowserWasmSqliteEngine extends SqliteEngine {
         this.rawSqliteClient = new SQL.Database();
       }
 
+      this.rawSqliteClient.run('PRAGMA foreign_keys = ON;');
       this.cachedDbInstance = drizzle(this.rawSqliteClient, { schema: MySchema });
 
       if (!savedBinary) {

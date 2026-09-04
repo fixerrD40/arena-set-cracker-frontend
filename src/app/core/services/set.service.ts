@@ -221,17 +221,31 @@ export class SetService implements OnDestroy {
     );
   }
 
-  /** Removes a set row and its on-disk art folder; clears workspace if that set was active. */
+  /** Removes a set’s decks, cards, row, and on-disk art; clears workspace if that set was active. */
   public uninstall(set: MtgSet): Observable<void> {
-    return this.dataWire.delete(sets, set.id).pipe(
-      concatMap(() => {
-        const targetArtFolder = this.getSetDirectoryPath(set.code);
-        return this.fileService.deleteDirectory(targetArtFolder);
-      }),
+    // FK CASCADE exists in DDL but SQLite ignores it unless PRAGMA foreign_keys=ON;
+    // purge children explicitly so reinstall does not hit leftover Scryfall card PKs.
+    return this.dataWire.fetchCollection<DeckRow>(decks, set.id).pipe(
+      concatMap((setDecks) => {
+        const clearDeckCards$ =
+          setDecks.length === 0
+            ? of(void 0)
+            : from(setDecks).pipe(
+                concatMap((deck) => this.dataWire.deleteWhere(deckCards, 'deckId', deck.id)),
+                toArray(),
+                map(() => void 0)
+              );
 
+        return clearDeckCards$.pipe(
+          concatMap(() => this.dataWire.deleteWhere(cards, 'setId', set.id)),
+          concatMap(() => this.dataWire.deleteWhere(decks, 'setId', set.id)),
+          concatMap(() => this.dataWire.delete(sets, set.id)),
+          concatMap(() => this.fileService.deleteDirectory(this.getSetDirectoryPath(set.code)))
+        );
+      }),
       tap(() => {
         const currentList = this.installedSetsSubject.getValue();
-        this.installedSetsSubject.next(currentList.filter(s => s.id !== set.id));
+        this.installedSetsSubject.next(currentList.filter((s) => s.id !== set.id));
 
         const currentWorkspace = this.activeContextSubject.getValue();
         if (currentWorkspace?.setInfo.id === set.id) {
