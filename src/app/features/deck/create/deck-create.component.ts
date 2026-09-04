@@ -1,10 +1,16 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  output
+} from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { DeckService } from '../../../core/services/deck.service';
 import { SetService } from '../../../core/services/set.service';
 import { MtgDeck } from '../../../shared/models/deck/deck';
@@ -12,32 +18,36 @@ import { MtgSet } from '../../../shared/models/set/set';
 import { parseArenaText, resolveArenaLinesToCardMap } from '../../../shared/models/deck/deck.utils';
 
 @Component({
-  selector: 'app-deck-add',
+  selector: 'app-deck-create',
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    RouterModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatIconModule
   ],
-  templateUrl: './deck-add.html',
+  templateUrl: './deck-create.html',
   changeDetection: ChangeDetectionStrategy.Eager,
-  styleUrls: ['./deck-add.css']
+  styleUrls: ['./deck-create.css']
 })
-export class DeckAddComponent implements OnInit {
+export class DeckCreateComponent implements OnInit {
   private readonly deckService = inject(DeckService);
   private readonly setService = inject(SetService);
-  private readonly router = inject(Router);
+
+  readonly dismiss = output<void>();
+  readonly completed = output<MtgDeck>();
 
   public activeSet: MtgSet | null = null;
   public errorMessage: string | null = null;
   public strippedNotice: string | null = null;
+  public clipboardHint: string | null = null;
+  public isSaving = false;
 
   public readonly form = new FormGroup({
     name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    arenaDeck: new FormControl<string | null>('')
+    arenaDeck: new FormControl<string>('', { nonNullable: true })
   });
 
   public ngOnInit(): void {
@@ -45,17 +55,37 @@ export class DeckAddComponent implements OnInit {
 
     if (currentWorkspace?.setInfo) {
       this.activeSet = currentWorkspace.setInfo;
-      this.form.patchValue({
-        name: `Custom ${this.activeSet.name} Deck`
-      });
+      void this.scrapeClipboardIfArena();
     } else {
       this.errorMessage =
         'No active set workspace. Open an installed set from the library before creating a deck.';
     }
   }
 
+  public get hasArenaText(): boolean {
+    return this.form.controls.arenaDeck.value.trim().length > 0;
+  }
+
+  public onDismiss(): void {
+    if (this.isSaving) {
+      return;
+    }
+    this.dismiss.emit();
+  }
+
+  public clearArenaDeck(): void {
+    this.form.controls.arenaDeck.setValue('');
+    this.clipboardHint = null;
+    this.strippedNotice = null;
+    this.errorMessage = null;
+  }
+
+  public loadFromClipboard(): void {
+    void this.scrapeClipboardIfArena(true);
+  }
+
   public onSubmit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.isSaving) return;
     this.errorMessage = null;
     this.strippedNotice = null;
 
@@ -108,14 +138,52 @@ export class DeckAddComponent implements OnInit {
       cards
     };
 
+    this.isSaving = true;
     this.deckService.insertNewDeckPayload(freshDomainDeck).subscribe({
       next: () => {
-        this.router.navigate(['/set', this.activeSet!.id, 'deck', freshDomainDeck.id]);
+        this.isSaving = false;
+        this.completed.emit(freshDomainDeck);
       },
       error: (err) => {
-        console.error('[AddDeck] Mutation write block dropped downstream:', err);
+        console.error('[DeckCreate] Mutation write block dropped downstream:', err);
+        this.isSaving = false;
         this.errorMessage = 'An error occurred while saving the deck configuration.';
       }
     });
+  }
+
+  private async scrapeClipboardIfArena(userInitiated = false): Promise<void> {
+    if (this.form.controls.arenaDeck.value.trim()) {
+      return;
+    }
+    if (!navigator.clipboard?.readText) {
+      if (userInitiated) {
+        this.errorMessage = 'Clipboard is not available in this environment.';
+      }
+      return;
+    }
+
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text?.trim() || this.form.controls.arenaDeck.value.trim()) {
+        if (userInitiated) {
+          this.errorMessage = 'Clipboard is empty.';
+        }
+        return;
+      }
+      if (parseArenaText(text).length === 0) {
+        if (userInitiated) {
+          this.errorMessage = 'Clipboard does not look like an MTG Arena deck export.';
+        }
+        return;
+      }
+      this.errorMessage = null;
+      this.form.controls.arenaDeck.setValue(text);
+      this.clipboardHint = 'Loaded from clipboard';
+    } catch {
+      if (userInitiated) {
+        this.errorMessage = 'Could not read the clipboard. Check app permissions and try again.';
+      }
+    }
   }
 }

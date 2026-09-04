@@ -64,14 +64,26 @@ export const deckWorkspaceGuard: CanActivateFn = (
   return true;
 };
 
-/** Old flat `/add-deck` → current set's add-deck, or library if nothing is focused. */
+/** Old flat `/add-deck` → focused set with create overlay, or library if nothing is focused. */
 export const legacyAddDeckRedirectGuard: CanActivateFn = (): UrlTree => {
   const setService = inject(SetService);
   const router = inject(Router);
   const setId = setService.currentWorkspaceSnapshot?.setInfo.id;
   return setId
-    ? router.createUrlTree(['/set', setId, 'add-deck'])
+    ? router.createUrlTree(['/set', setId], { queryParams: { createDeck: '1' } })
     : router.createUrlTree(['/library']);
+};
+
+/** Nested `/set/:id/add-deck` → set board with create overlay open. */
+export const createDeckOverlayRedirectGuard: CanActivateFn = (
+  route: ActivatedRouteSnapshot
+): UrlTree => {
+  const router = inject(Router);
+  const setId = route.parent?.paramMap.get('id');
+  if (!setId) {
+    return router.createUrlTree(['/library']);
+  }
+  return router.createUrlTree(['/set', setId], { queryParams: { createDeck: '1' } });
 };
 
 /** Old flat `/deck/:id` → `/set/:setId/deck/:id`. */

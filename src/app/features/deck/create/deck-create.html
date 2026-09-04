@@ -1,0 +1,80 @@
+<mat-card class="create-deck-card">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="create-deck-form">
+    <div class="create-deck-header">
+      <h2 class="card-title">Create / Import Deck</h2>
+      <button
+        type="button"
+        class="create-dismiss"
+        (click)="onDismiss()"
+        [disabled]="isSaving"
+        aria-label="Close"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <p class="description-text">
+      Name a blank deck and optionally import its contents from Arena.
+    </p>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Deck name</mat-label>
+      <input matInput formControlName="name" placeholder="Enter deck name" required />
+
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <mat-error>Name is required</mat-error>
+      }
+    </mat-form-field>
+
+    <input type="hidden" formControlName="arenaDeck" />
+
+    @if (hasArenaText) {
+      <div class="arena-loaded" role="status">
+        <span class="arena-loaded-label">{{ clipboardHint || 'Arena export loaded' }}</span>
+        <button
+          type="button"
+          class="arena-clear"
+          (click)="clearArenaDeck()"
+          aria-label="Clear Arena export"
+        >
+          <mat-icon>close</mat-icon>
+          Clear
+        </button>
+      </div>
+    } @else {
+      <button
+        type="button"
+        class="arena-paste"
+        (click)="loadFromClipboard()"
+        [disabled]="isSaving"
+      >
+        Import Deck
+      </button>
+    }
+
+    @if (strippedNotice) {
+      <div class="stripped-notice">{{ strippedNotice }}</div>
+    }
+
+    @if (errorMessage) {
+      <div class="error-banner">{{ errorMessage }}</div>
+    }
+
+    <div class="actions-panel">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || !activeSet || isSaving"
+      >
+        @if (isSaving) {
+          Saving…
+        } @else if (hasArenaText) {
+          Import Deck
+        } @else {
+          Create Deck
+        }
+      </button>
+    </div>
+  </form>
+</mat-card>

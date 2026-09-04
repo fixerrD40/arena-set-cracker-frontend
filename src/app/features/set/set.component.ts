@@ -10,6 +10,7 @@ import {
   effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, combineLatest, map } from 'rxjs';
 import { distinctUntilChanged, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
@@ -19,6 +20,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { SetService } from '../../core/services/set.service';
 import { ManaColor } from '../../shared/models/card/arena-collection.filter';
+import { MtgDeck } from '../../shared/models/deck/deck';
 import { remainingPoolCards, remainingPoolSignature } from '../../shared/models/discovery/remaining-pool';
 import { buildBoardShell, discoverPatterns } from './set.board';
 import { SetBoardDrag } from './set-board-drag';
@@ -27,6 +29,7 @@ import { SetAssignmentMetricsComponent } from './metrics/set-assignment-metrics.
 import { SetDiscoveryPoolComponent } from './discovery/set-discovery-pool.component';
 import { SetPatternsPanelComponent } from './patterns/set-patterns-panel.component';
 import { SetThemePreviewComponent } from './preview/set-theme-preview.component';
+import { DeckCreateComponent } from '../deck/create/deck-create.component';
 
 @Component({
   selector: 'app-set-component',
@@ -39,7 +42,8 @@ import { SetThemePreviewComponent } from './preview/set-theme-preview.component'
     SetAssignmentMetricsComponent,
     SetDiscoveryPoolComponent,
     SetPatternsPanelComponent,
-    SetThemePreviewComponent
+    SetThemePreviewComponent,
+    DeckCreateComponent
   ],
   templateUrl: './set.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +55,8 @@ import { SetThemePreviewComponent } from './preview/set-theme-preview.component'
 })
 export class SetComponent implements OnInit, OnDestroy {
   private readonly setService = inject(SetService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly drag = inject(SetBoardDrag);
@@ -59,6 +65,7 @@ export class SetComponent implements OnInit, OnDestroy {
   public readonly dragState = this.drag;
 
   public decksSidebarOpen = true;
+  public showCreateDeck = false;
   public drainNeedsWork = false;
   public scopedColors: readonly ManaColor[] = [];
   public selectedTheme: string | null = null;
@@ -113,6 +120,10 @@ export class SetComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('createDeck') === '1') {
+      this.showCreateDeck = true;
+    }
+
     this.colorScope$.pipe(takeUntil(this.destroy$)).subscribe((colors) => {
       this.scopedColors = colors;
       this.cdr.markForCheck();
@@ -132,6 +143,31 @@ export class SetComponent implements OnInit, OnDestroy {
   public ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  public openCreateDeck(): void {
+    this.showCreateDeck = true;
+    this.cdr.markForCheck();
+  }
+
+  public onCreateDeckDismiss(): void {
+    this.showCreateDeck = false;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { createDeck: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    this.cdr.markForCheck();
+  }
+
+  public onCreateDeckCompleted(deck: MtgDeck): void {
+    this.showCreateDeck = false;
+    const setId = this.setService.currentWorkspaceSnapshot?.setInfo.id;
+    if (!setId) {
+      return;
+    }
+    this.router.navigate(['/set', setId, 'deck', deck.id]);
   }
 
   public toggleDecksSidebar(): void {

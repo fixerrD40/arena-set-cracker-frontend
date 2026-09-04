@@ -8,6 +8,7 @@
             [selectedTheme]="selectedTheme"
             (closeSidebar)="toggleDecksSidebar()"
             (themeSelect)="toggleThemeSelection($event)"
+            (createDeck)="openCreateDeck()"
           />
         }
 
@@ -57,5 +58,22 @@
         </div>
       </div>
     }
+  }
+
+  @if (showCreateDeck) {
+    <div class="create-deck-overlay" role="dialog" aria-modal="true" aria-label="Create or import deck">
+      <button
+        type="button"
+        class="create-deck-overlay-backdrop"
+        (click)="onCreateDeckDismiss()"
+        aria-label="Close create deck"
+      ></button>
+      <div class="create-deck-overlay-panel">
+        <app-deck-create
+          (dismiss)="onCreateDeckDismiss()"
+          (completed)="onCreateDeckCompleted($event)"
+        />
+      </div>
+    </div>
   }
 </div>

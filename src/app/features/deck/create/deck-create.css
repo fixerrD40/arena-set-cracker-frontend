@@ -1,0 +1,197 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+}
+
+.create-deck-card {
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--deck-panel);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-line);
+  box-shadow: 0 8px 28px var(--chrome-shadow);
+  --mat-card-elevated-container-color: var(--deck-panel);
+}
+
+.create-deck-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.create-deck-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.create-deck-header .card-title {
+  margin: 0;
+  text-align: left;
+  flex: 1;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--deck-gold);
+}
+
+.create-dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.25rem -0.35rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+
+.create-dismiss:hover:not(:disabled) {
+  color: var(--deck-gold);
+  background: var(--chrome-hover);
+}
+
+.create-dismiss:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.create-dismiss mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.description-text {
+  margin: 0;
+  color: var(--deck-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.create-deck-form .full-width {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.create-deck-form mat-form-field {
+  --mdc-outlined-text-field-label-text-color: var(--deck-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-focus-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-input-text-color: var(--deck-fg);
+  --mdc-outlined-text-field-caret-color: var(--deck-gold);
+  --mdc-outlined-text-field-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-hover-outline-color: var(--deck-muted);
+  --mdc-outlined-text-field-focus-outline-color: var(--deck-gold);
+  --mdc-outlined-text-field-disabled-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-disabled-input-text-color: var(--deck-dim);
+  --mdc-outlined-text-field-error-outline-color: var(--asc-error);
+  --mdc-outlined-text-field-error-label-text-color: var(--asc-error);
+  --mat-form-field-error-text-color: var(--asc-error);
+}
+
+.arena-loaded {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--deck-line);
+  border-radius: 8px;
+  background: var(--deck-panel-deep);
+}
+
+.arena-loaded-label {
+  font-size: 0.9rem;
+  color: var(--deck-gold);
+}
+
+.arena-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  padding: 0.25rem 0.45rem;
+  background: transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.arena-clear:hover {
+  color: var(--deck-gold);
+  background: var(--chrome-hover);
+}
+
+.arena-clear mat-icon {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+.arena-paste {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--deck-gold);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.arena-paste:hover:not(:disabled) {
+  color: var(--lava-amber);
+  text-decoration: underline;
+}
+
+.arena-paste:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actions-panel {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.create-deck-form .mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: var(--deck-gold-deep);
+  --mdc-protected-button-label-text-color: var(--app-bg);
+  --mdc-protected-button-disabled-container-color: var(--deck-line);
+  --mdc-protected-button-disabled-label-text-color: var(--deck-dim);
+  background-color: var(--deck-gold-deep);
+  color: var(--app-bg);
+}
+
+.error-banner {
+  background-color: var(--asc-error-container);
+  color: var(--asc-error);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.stripped-notice {
+  color: var(--deck-muted);
+  background: var(--deck-panel-deep);
+  border: 1px solid var(--deck-line);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+}

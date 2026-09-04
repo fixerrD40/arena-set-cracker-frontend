@@ -5,6 +5,7 @@ import {
   deckWorkspaceGuard,
   legacyAddDeckRedirectGuard,
   legacyDeckRedirectGuard,
+  createDeckOverlayRedirectGuard,
   setWorkspaceGuard
 } from './core/guards/workspace.guard';
 
@@ -71,7 +72,8 @@ export const routes: Routes = [
       },
       {
         path: 'add-deck',
-        loadComponent: () => import('./features/deck/add/deck-add.component').then(m => m.DeckAddComponent)
+        canActivate: [createDeckOverlayRedirectGuard],
+        children: []
       },
       {
         path: 'deck/:deckId',

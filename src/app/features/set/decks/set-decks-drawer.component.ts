@@ -59,6 +59,7 @@ export class SetDecksDrawerComponent implements OnDestroy {
 
   public readonly closeSidebar = output<void>();
   public readonly themeSelect = output<string>();
+  public readonly createDeck = output<void>();
 
   public readonly deckStatuses = DECK_STATUSES;
   public readonly deckStatusDropIds = DECK_STATUSES.map((status) => `deck-status-${status}`);
@@ -131,11 +132,7 @@ export class SetDecksDrawerComponent implements OnDestroy {
   }
 
   public goToAddDeck(): void {
-    const setId = this.setService.currentWorkspaceSnapshot?.setInfo.id;
-    if (!setId) {
-      return;
-    }
-    this.router.navigate(['/set', setId, 'add-deck']);
+    this.createDeck.emit();
   }
 
   public openDeck(deckId: string): void {
