@@ -14,7 +14,6 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { DeckService } from '../../../core/services/deck.service';
-import { isDragGesture } from '../../deck/deck.drag';
 import { PatternState } from '../set.board';
 import { SetBoardDrag } from '../set-board-drag';
 
@@ -54,7 +53,7 @@ export class SetPatternsPanelComponent implements OnDestroy {
   }
 
   public onThemeDragStarted(): void {
-    this.drag.pointerDrag.set(true);
+    this.drag.started();
   }
 
   public onThemeDragMoved(event: CdkDragMove<string>): void {
@@ -62,14 +61,10 @@ export class SetPatternsPanelComponent implements OnDestroy {
   }
 
   public onThemeDragEnded(event: CdkDragEnd<string>): void {
-    const deckId = this.drag.themeDropDeckId();
-    this.drag.clearPatternAttachHover();
-    window.setTimeout(() => {
-      this.drag.pointerDrag.set(false);
-      this.cdr.markForCheck();
-    }, 0);
-
-    if (!isDragGesture(event.distance)) {
+    const { gesture, deckId } = this.drag.endPatternAttach(event.distance, () =>
+      this.cdr.markForCheck()
+    );
+    if (!gesture) {
       return;
     }
 

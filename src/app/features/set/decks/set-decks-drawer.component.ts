@@ -24,7 +24,6 @@ import { takeUntil } from 'rxjs/operators';
 
 import { DeckService } from '../../../core/services/deck.service';
 import { SetService } from '../../../core/services/set.service';
-import { isDragGesture } from '../../deck/deck.drag';
 import {
   DECK_STATUSES,
   DECK_STATUS_LABELS,
@@ -105,7 +104,7 @@ export class SetDecksDrawerComponent implements OnDestroy {
   }
 
   public onDeckThemeDragStarted(): void {
-    this.drag.pointerDrag.set(true);
+    this.drag.started();
   }
 
   public onDeckThemeDragMoved(event: CdkDragMove<DeckThemeDragPayload>): void {
@@ -113,14 +112,10 @@ export class SetDecksDrawerComponent implements OnDestroy {
   }
 
   public onDeckThemeDragEnded(event: CdkDragEnd<DeckThemeDragPayload>): void {
-    const returnHot = this.drag.themeReturnHot();
-    this.drag.clearThemeReturn();
-    window.setTimeout(() => {
-      this.drag.pointerDrag.set(false);
-      this.cdr.markForCheck();
-    }, 0);
-
-    if (!isDragGesture(event.distance)) {
+    const { gesture, returnHot } = this.drag.endThemeReturn(event.distance, () =>
+      this.cdr.markForCheck()
+    );
+    if (!gesture) {
       return;
     }
 

@@ -232,14 +232,6 @@ export function computeThemePreviewLayout(stage: HTMLElement): ThemePreviewLayou
   };
 }
 
-export function dragClientPoint(event: MouseEvent | TouchEvent): { x: number; y: number } {
-  if ('clientX' in event) {
-    return { x: event.clientX, y: event.clientY };
-  }
-  const touch = event.touches[0] || event.changedTouches[0];
-  return { x: touch.clientX, y: touch.clientY };
-}
-
 export function discoverPatterns(pool: readonly MtgCard[], ngZone: NgZone): Observable<PatternState> {
   if (pool.length === 0) {
     return of({ patterns: [], loading: false });
