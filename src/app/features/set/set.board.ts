@@ -238,15 +238,33 @@ export function discoverPatterns(pool: readonly MtgCard[], ngZone: NgZone): Obse
   }
 
   return new Observable<PatternState>((subscriber) => {
+    let cancelled = false;
     subscriber.next({ patterns: [], loading: true });
 
     ngZone.runOutsideAngular(() => {
-      void scheduleConcentrate(pool).then((patterns) => {
-        ngZone.run(() => {
-          subscriber.next({ patterns, loading: false });
-          subscriber.complete();
+      void scheduleConcentrate(pool)
+        .then((patterns) => {
+          if (cancelled) {
+            return;
+          }
+          ngZone.run(() => {
+            subscriber.next({ patterns, loading: false });
+            subscriber.complete();
+          });
+        })
+        .catch(() => {
+          if (cancelled) {
+            return;
+          }
+          ngZone.run(() => {
+            subscriber.next({ patterns: [], loading: false });
+            subscriber.complete();
+          });
         });
-      });
     });
+
+    return () => {
+      cancelled = true;
+    };
   });
 }

@@ -448,9 +448,73 @@ function isWeakFragment(tokens: readonly string[]): boolean {
   return tokens[0] === 'of' || tokens[1] === 'of';
 }
 
-/** Yield to the browser before running concentration so set board shell can paint first. */
+/** Yield so the set board can paint loading, then concentrate off the UI thread. */
 export function scheduleConcentrate(cards: readonly MtgCard[]): Promise<ConcentratedPattern[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(concentrate(cards)), 0);
+  const worker = ensureConcentrateWorker();
+  if (!worker) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(concentrate(cards)), 0);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const id = ++concentrateJobId;
+    concentrateJobs.set(id, { resolve, reject });
+    worker.postMessage({ id, cards: [...cards] } satisfies ConcentrateJob);
   });
+}
+
+interface ConcentrateJob {
+  id: number;
+  cards: MtgCard[];
+}
+
+interface ConcentrateResult {
+  id: number;
+  patterns: ConcentratedPattern[];
+}
+
+let concentrateWorker: Worker | null = null;
+let concentrateJobId = 0;
+const concentrateJobs = new Map<
+  number,
+  {
+    resolve: (patterns: ConcentratedPattern[]) => void;
+    reject: (error: unknown) => void;
+  }
+>();
+
+function ensureConcentrateWorker(): Worker | null {
+  if (typeof Worker === 'undefined') {
+    return null;
+  }
+  if (concentrateWorker) {
+    return concentrateWorker;
+  }
+
+  try {
+    // Path string must stay a build-time literal for the Angular application builder.
+    const worker = new Worker(new URL('./concentration.worker', import.meta.url));
+    worker.onmessage = (event: MessageEvent<ConcentrateResult>) => {
+      const job = concentrateJobs.get(event.data.id);
+      if (!job) {
+        return;
+      }
+      concentrateJobs.delete(event.data.id);
+      job.resolve(event.data.patterns);
+    };
+    worker.onerror = (event) => {
+      const error = new Error(event.message || 'concentration worker failed');
+      for (const job of concentrateJobs.values()) {
+        job.reject(error);
+      }
+      concentrateJobs.clear();
+      worker.terminate();
+      concentrateWorker = null;
+    };
+    concentrateWorker = worker;
+    return worker;
+  } catch {
+    return null;
+  }
 }
