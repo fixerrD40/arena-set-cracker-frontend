@@ -269,24 +269,32 @@
   padding: 0;
   border: none;
   background: transparent;
-  cursor: grab;
+  cursor: pointer;
   color: inherit;
   text-align: left;
 }
 
-.collection-card img,
-.collection-card .card-fallback {
-  /* Button chrome matches the MTG frame; slot cq* budgets the cell. */
+.collection-face {
+  /* Slot cq* budgets the cell; face is the cdkDrag root (default preview clones it 1:1). */
   aspect-ratio: 63 / 88;
   width: min(100cqw, calc((100cqh - 1.2rem) * 63 / 88));
   height: auto;
   max-height: calc(100cqh - 1.2rem);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.collection-face img,
+.collection-face .card-fallback {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 10px;
   display: block;
 }
 
-.collection-card .card-fallback {
+.collection-face .card-fallback {
   box-sizing: border-box;
   background: #2f2c28;
   border: 1px solid var(--deck-line);

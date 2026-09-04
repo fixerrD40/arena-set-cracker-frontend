@@ -89,7 +89,6 @@ export class DeckComponent implements OnDestroy {
   private collectionPageIndex = 0;
   private collectionPageCount = 1;
   private wheelGate = false;
-  private pointerDrag = false;
 
   public readonly scratchpadDeck$ = this.deckService.scratchpadDeck$;
   public readonly workspace$ = this.setService.activeContext$;
@@ -277,7 +276,7 @@ export class DeckComponent implements OnDestroy {
   }
 
   public showCollectionPreview(event: MouseEvent, card: MtgCard): void {
-    if (this.pointerDrag || !prefersFineHover()) return;
+    if (this.drag.pointerDrag() || !prefersFineHover()) return;
 
     const tile = event.currentTarget as HTMLElement;
     const face = tile.querySelector('img, .card-fallback');
@@ -307,12 +306,12 @@ export class DeckComponent implements OnDestroy {
   }
 
   public handleIncrementCard(card: MtgCard): void {
-    if (this.pointerDrag) return;
+    if (this.drag.pointerDrag()) return;
     this.deckService.addCopy(card);
   }
 
   public onCardDragStarted(): void {
-    this.pointerDrag = true;
+    this.drag.started();
     this.hoveredCard = null;
   }
 
@@ -323,9 +322,7 @@ export class DeckComponent implements OnDestroy {
   public onCardDragEnded(event: CdkDragEnd<DeckDragPayload>): void {
     const zone = this.drag.zone();
     this.drag.clear();
-    window.setTimeout(() => {
-      this.pointerDrag = false;
-    }, 0);
+    this.drag.ended();
 
     if (!isDragGesture(event.distance)) return;
 

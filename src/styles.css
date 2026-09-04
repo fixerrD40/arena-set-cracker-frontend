@@ -29,13 +29,6 @@
   --deck-gold: #e8d48b;
 }
 
-.drag-card-preview {
-  width: 160px;
-  display: block;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
-}
-
 .cdk-drag-preview {
   box-sizing: border-box;
   background: transparent;
@@ -44,119 +37,12 @@
   z-index: 4000;
 }
 
-.drag-row-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: 280px;
-  --row-edge: #8e8a84;
-  --row-shell: #cfcbc4;
-  --row-fill: #f6f4ef;
+.cdk-drag-preview.collection-face {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
-.drag-row-preview.tone-w { --row-edge: #8e8a84; --row-shell: #cfcbc4; --row-fill: #f6f4ef; }
-.drag-row-preview.tone-u { --row-edge: #2f6eb4; --row-shell: #3a7ec8; --row-fill: #8eb6d6; }
-.drag-row-preview.tone-b { --row-edge: #4a4550; --row-shell: #5a5560; --row-fill: #8e8894; }
-.drag-row-preview.tone-r { --row-edge: #a83a28; --row-shell: #c44a32; --row-fill: #c47c68; }
-.drag-row-preview.tone-g { --row-edge: #2f7034; --row-shell: #3d8a42; --row-fill: #7eae74; }
-.drag-row-preview.tone-colorless { --row-edge: #6d737a; --row-shell: #9aa3ab; --row-fill: #c5ccd3; }
-.drag-row-preview.tone-multi,
-.drag-row-preview.tone-dual { --row-edge: #d4b45a; --row-shell: #c9a44a; --row-fill: #c9b17a; }
-
-.drag-row-strip {
-  display: flex;
-  align-items: stretch;
-  gap: 0.22rem;
-}
-
-.drag-row-qty {
-  align-self: center;
-  min-width: 1.85rem;
-  height: 1.55rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #f3efe6;
-  background: #14110f;
-  border: 1px solid #5a534c;
-  border-radius: 999px;
-  padding: 0 0.3rem;
-}
-
-.drag-row-shell {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 3px;
-  background: var(--row-shell);
-  border: 2px solid var(--row-edge);
-  box-shadow: 0 0 0 2px #fff, 0 0 12px 2px rgba(255, 255, 255, 0.8);
-}
-
-.drag-row-preview.tone-dual .drag-row-shell {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(#161310, #161310) padding-box,
-    linear-gradient(180deg, var(--tone-a), var(--tone-b)) border-box;
-}
-
-.drag-row-pill {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  border-radius: 999px;
-  padding: 0.12rem 0.4rem 0.12rem 0.55rem;
-  color: #111;
-  background: var(--row-fill);
-}
-
-.drag-row-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 700;
-  font-size: 0.78rem;
-}
-
-.drag-row-cost {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.drag-row-preview .mana-pip-img {
-  width: 1.05rem;
-  height: 1.05rem;
-  object-fit: contain;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1.2px #111;
-}
-
-.drag-row-preview .mana-pip-img[alt='W'] {
-  background: #fff;
-}
-
-.drag-row-preview .mana-pip-generic {
-  min-width: 1.05rem;
-  height: 1.05rem;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.62rem;
-  font-weight: 700;
-  background: #e4dfd6;
-  color: #222;
-  box-shadow: 0 0 0 1px #222;
+.cdk-drag-preview.sidebar-row {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
 }
 
 html,

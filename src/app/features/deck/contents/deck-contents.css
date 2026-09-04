@@ -147,10 +147,21 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 0.65rem 0.5rem;
+  /* 0.75rem matches .deck-header-box side margins */
+  padding: 0 0.75rem 0.5rem;
+}
+
+.sidebar-list-stack {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  border-radius: 8px;
+}
+
+.sidebar-list.list-drop-hot .sidebar-list-stack {
+  box-shadow:
+    inset 0 0 52px 14px rgba(232, 140, 50, 0.16),
+    0 0 28px 8px rgba(232, 140, 50, 0.1);
 }
 
 .sidebar-row {

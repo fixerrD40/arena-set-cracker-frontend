@@ -15,6 +15,11 @@ export { isDragGesture } from '../../shared/drag/drag.utils';
 @Injectable()
 export class DeckBuilderDrag {
   readonly zone = signal<DeckDropZone>(null);
+  readonly pointerDrag = signal(false);
+
+  started(): void {
+    this.pointerDrag.set(true);
+  }
 
   hover(event: MouseEvent | TouchEvent): void {
     const raw = hitClosest(event, '[data-deck-drop]')?.getAttribute('data-deck-drop');
@@ -23,5 +28,10 @@ export class DeckBuilderDrag {
 
   clear(): void {
     this.zone.set(null);
+  }
+
+  /** Deferred so the originating click does not fire after drop. */
+  ended(): void {
+    window.setTimeout(() => this.pointerDrag.set(false), 0);
   }
 }

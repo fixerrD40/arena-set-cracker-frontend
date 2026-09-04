@@ -50,83 +50,61 @@
   <div
     class="sidebar-list"
     data-deck-drop="list"
+    [class.list-drop-hot]="drag.zone() === 'list'"
     cdkDropList
     cdkDropListSortingDisabled
     [cdkDropListAutoScrollDisabled]="true"
     (mouseleave)="clearRowPreview()"
   >
-    @for (item of assignedCards$ | async; track item.card.id) {
-      <div
-        class="sidebar-row tone-{{ deckRowTone(item.card) }}"
-        [style.--tone-a]="deckRowToneStyle(item.card)['--tone-a']"
-        [style.--tone-b]="deckRowToneStyle(item.card)['--tone-b']"
-        cdkDrag
-        [cdkDragData]="contentsDrag(item.card)"
-        (cdkDragStarted)="onDragStarted()"
-        (cdkDragMoved)="onDragMoved($event)"
-        (cdkDragEnded)="onDragEnded($event)"
-        role="button"
-        tabindex="0"
-        (click)="removeCopy(item.card.id)"
-        (keydown.enter)="removeCopy(item.card.id)"
-        (mouseenter)="showRowPreview($event, item.card)"
-        [attr.aria-label]="'Remove ' + item.card.name"
-      >
-        <ng-template cdkDragPreview>
-          <div
-            class="drag-row-preview tone-{{ deckRowTone(item.card) }}"
-            [style.--tone-a]="deckRowToneStyle(item.card)['--tone-a']"
-            [style.--tone-b]="deckRowToneStyle(item.card)['--tone-b']"
+    <div class="sidebar-list-stack">
+      @for (item of assignedCards$ | async; track item.card.id) {
+        <div
+          class="sidebar-row tone-{{ deckRowTone(item.card) }}"
+          [style.--tone-a]="deckRowToneStyle(item.card)['--tone-a']"
+          [style.--tone-b]="deckRowToneStyle(item.card)['--tone-b']"
+          cdkDrag
+          [cdkDragData]="contentsDrag(item.card)"
+          (cdkDragStarted)="onDragStarted()"
+          (cdkDragMoved)="onDragMoved($event)"
+          (cdkDragEnded)="onDragEnded($event)"
+          role="button"
+          tabindex="0"
+          (click)="removeCopy(item.card.id)"
+          (keydown.enter)="removeCopy(item.card.id)"
+          (mouseenter)="showRowPreview($event, item.card)"
+          [attr.aria-label]="'Remove ' + item.card.name"
+        >
+          <button
+            type="button"
+            class="row-qty"
+            (click)="addCopyFromRow($event, item.card)"
+            [attr.aria-label]="'Add ' + item.card.name"
           >
-            <div class="drag-row-strip">
-              <span class="drag-row-qty">{{ item.quantity }}x</span>
-              <div class="drag-row-shell">
-                <div class="drag-row-pill">
-                  <span class="drag-row-name">{{ item.card.name }}</span>
-                  <span class="drag-row-cost">
-                    @for (pip of deckRowManaPips(item.card); track $index) {
-                      @if (manaPipAsset(pip); as src) {
-                        <img class="mana-pip-img" [src]="src" [alt]="pip" />
-                      } @else {
-                        <span class="mana-pip-generic">{{ pip }}</span>
-                      }
-                    }
-                  </span>
-                </div>
-              </div>
+            <span class="qty-count">{{ item.quantity }}x</span>
+            <span class="qty-add" aria-hidden="true">+</span>
+          </button>
+          <div class="row-shell" cdkDragHandle>
+            <div class="row-name-pill">
+              <span class="row-name">{{ item.card.name }}</span>
+              <span class="row-cost">
+                @for (pip of deckRowManaPips(item.card); track $index) {
+                  @if (manaPipAsset(pip); as src) {
+                    <img class="mana-pip-img" [src]="src" [alt]="pip" />
+                  } @else {
+                    <span class="mana-pip-generic">{{ pip }}</span>
+                  }
+                }
+              </span>
             </div>
           </div>
-        </ng-template>
-        <button
-          type="button"
-          class="row-qty"
-          (click)="addCopyFromRow($event, item.card)"
-          [attr.aria-label]="'Add ' + item.card.name"
-        >
-          <span class="qty-count">{{ item.quantity }}x</span>
-          <span class="qty-add" aria-hidden="true">+</span>
-        </button>
-        <div class="row-shell" cdkDragHandle>
-          <div class="row-name-pill">
-            <span class="row-name">{{ item.card.name }}</span>
-            <span class="row-cost">
-              @for (pip of deckRowManaPips(item.card); track $index) {
-                @if (manaPipAsset(pip); as src) {
-                  <img class="mana-pip-img" [src]="src" [alt]="pip" />
-                } @else {
-                  <span class="mana-pip-generic">{{ pip }}</span>
-                }
-              }
-            </span>
-          </div>
         </div>
-      </div>
-    } @empty {
-      <p class="sidebar-empty">Click a card in the set to add it.</p>
-    }
+      } @empty {
+        <p class="sidebar-empty">Click a card in the set to add it.</p>
+      }
+    </div>
   </div>
 
-  @if (hoveredCard; as preview) {
+  @if (!drag.pointerDrag() && hoveredCard; as preview) {
     <app-card-hover-preview
       [card]="preview"
       [top]="previewTop"

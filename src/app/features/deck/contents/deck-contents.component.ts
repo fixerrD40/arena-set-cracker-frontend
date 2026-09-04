@@ -75,8 +75,6 @@ export class DeckContentsComponent {
 
   public readonly deckSummary$ = this.assignedCards$.pipe(map(summarizeDeck));
 
-  private pointerDrag = false;
-
   public coverArtUri(deck: MtgDeck, assigned: { card: MtgCard }[]): string {
     const catalog = this.setService.currentWorkspaceSnapshot?.cards ?? assigned.map((line) => line.card);
     return deckCoverArtUri(
@@ -87,7 +85,7 @@ export class DeckContentsComponent {
   }
 
   public showRowPreview(event: MouseEvent, card: MtgCard): void {
-    if (this.pointerDrag || !prefersFineHover()) return;
+    if (this.drag.pointerDrag() || !prefersFineHover()) return;
 
     const row = event.currentTarget as HTMLElement;
     const hostBox = this.host.nativeElement.getBoundingClientRect();
@@ -129,7 +127,7 @@ export class DeckContentsComponent {
   }
 
   public onDragStarted(): void {
-    this.pointerDrag = true;
+    this.drag.started();
     this.hoveredCard = null;
   }
 
@@ -140,9 +138,7 @@ export class DeckContentsComponent {
   public onDragEnded(event: CdkDragEnd<DeckDragPayload>): void {
     const zone = this.drag.zone();
     this.drag.clear();
-    window.setTimeout(() => {
-      this.pointerDrag = false;
-    }, 0);
+    this.drag.ended();
 
     if (!isDragGesture(event.distance)) return;
 
@@ -179,7 +175,7 @@ export class DeckContentsComponent {
   }
 
   public openDetails(): void {
-    if (this.renaming || this.pointerDrag) return;
+    if (this.renaming || this.drag.pointerDrag()) return;
     this.details.emit();
   }
 
@@ -190,7 +186,7 @@ export class DeckContentsComponent {
   }
 
   public removeCopy(cardId: string): void {
-    if (this.pointerDrag) return;
+    if (this.drag.pointerDrag()) return;
     this.deckService.removeCopy(cardId);
   }
 
