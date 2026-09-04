@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SetService } from '../../core/services/set.service';
 import { MtgSet } from '../../shared/models/set/set';
 import { Observable, switchMap, of, map, forkJoin } from 'rxjs';
+import { SetInstallComponent } from '../set/install/set-install.component';
 
 /** Set row plus a platform-resolved cover art URI for the template. */
 export interface UIMtgSet extends MtgSet {
@@ -19,7 +20,8 @@ export interface UIMtgSet extends MtgSet {
     CommonModule,
     RouterModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    SetInstallComponent
   ],
   templateUrl: './library.html',
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -28,12 +30,18 @@ export interface UIMtgSet extends MtgSet {
 export class LibraryComponent implements OnInit {
   protected readonly setService = inject(SetService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   public uiInstalledSets$: Observable<UIMtgSet[]> | null = null;
   public isProcessing = false;
+  public showInstall = false;
 
   ngOnInit(): void {
     this.setService.syncInstalledCache();
+
+    if (this.route.snapshot.queryParamMap.get('install') === '1') {
+      this.showInstall = true;
+    }
 
     this.uiInstalledSets$ = this.setService.installedSets$.pipe(
       switchMap((setsArray: MtgSet[]) => {
@@ -56,7 +64,26 @@ export class LibraryComponent implements OnInit {
   }
 
   public onInstallClick(): void {
-    this.router.navigate(['/add-set']);
+    this.showInstall = true;
+  }
+
+  public onInstallDismiss(): void {
+    if (this.setService.hasActiveInstall()) {
+      return;
+    }
+    this.showInstall = false;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { install: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  public onInstallCompleted(set: MtgSet): void {
+    this.showInstall = false;
+    this.setService.loadSetWorkspace(set.id);
+    this.router.navigate(['/set', set.id]);
   }
 
   public onSelectSet(set: UIMtgSet): void {

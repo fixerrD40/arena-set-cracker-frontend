@@ -1,6 +1,6 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, from, Observable, of, Subscription, throwError, forkJoin } from 'rxjs';
-import { catchError, concatMap, map, shareReplay, switchMap, tap, toArray } from 'rxjs/operators';
+import { BehaviorSubject, from, Observable, of, Subject, Subscription, throwError, forkJoin } from 'rxjs';
+import { catchError, concatMap, map, shareReplay, switchMap, takeUntil, tap, toArray } from 'rxjs/operators';
 import { DATA_WIRE_TOKEN } from './data-wire/data-wire.contract';
 
 import { MtgSet } from '../../shared/models/set/set';
@@ -16,6 +16,15 @@ import { ScryfallService } from './api/scryfall/scryfall.service';
 import { FileSystemService } from './file-system.service';
 import { mapScryfallToDomainSet } from '../../shared/models/set/set.mappers';
 import { mapRowToDeck } from '../../shared/models/deck/deck.mappers';
+
+/** Live install progress for the install-set screen (card-count downloading). */
+export interface SetInstallProgress {
+  setName: string;
+  setCode: string;
+  done: number;
+  total: number;
+  phase: 'catalog' | 'downloading' | 'saving' | 'done';
+}
 
 /** Active set metadata plus its cards and decks for the current view. */
 export interface WorkspaceState {
@@ -40,6 +49,13 @@ export class SetService implements OnDestroy {
 
   private readonly installedSetsSubject = new BehaviorSubject<MtgSet[]>([]);
   public readonly installedSets$: Observable<MtgSet[]> = this.installedSetsSubject.asObservable();
+
+  private readonly installProgressSubject = new BehaviorSubject<SetInstallProgress | null>(null);
+  public readonly installProgress$: Observable<SetInstallProgress | null> =
+    this.installProgressSubject.asObservable();
+
+  private readonly installAbortSubject = new Subject<void>();
+  private activeInstallSet: MtgSet | null = null;
 
   private readonly activeContextSubject = new BehaviorSubject<WorkspaceState | null>(null);
   public readonly activeContext$: Observable<WorkspaceState | null> = this.activeContextSubject.asObservable();
@@ -169,8 +185,17 @@ export class SetService implements OnDestroy {
   /** Installs a set: persist metadata, download Arena-only card art, bulk-insert cards. */
   public install(scryfallSet: ScryfallSet): Observable<MtgSet> {
     const cleanCode = scryfallSet.code.toLowerCase();
+    const setName = scryfallSet.name;
+    const setCode = cleanCode;
 
     const domainSet: MtgSet = mapScryfallToDomainSet(scryfallSet);
+    this.activeInstallSet = domainSet;
+
+    const emitProgress = (partial: Omit<SetInstallProgress, 'setName' | 'setCode'>): void => {
+      this.installProgressSubject.next({ setName, setCode, ...partial });
+    };
+
+    emitProgress({ phase: 'catalog', done: 0, total: 0 });
 
     return this.dataWire.insert<MtgSet, MtgSet>(sets, domainSet).pipe(
       switchMap(() => this.scryfallService.getCardsBySet(cleanCode)),
@@ -180,6 +205,10 @@ export class SetService implements OnDestroy {
         const arenaOnlyCards = scryfallCards.filter(
           (card) => card.arena_id != null && card.collector_number
         );
+        const total = arenaOnlyCards.length;
+        let done = 0;
+
+        emitProgress({ phase: 'downloading', done: 0, total });
 
         return from(arenaOnlyCards).pipe(
           concatMap((apiCard: ScryfallCard) => {
@@ -187,15 +216,21 @@ export class SetService implements OnDestroy {
             const cropUrl = apiCard.illustrationArtworkUrl;
             const arenaId = apiCard.arena_id!;
 
-            if (!frameUrl && !cropUrl) {
-              return of(mapScryfallToCard(apiCard, domainSet.id, '', ''));
-            }
+            const afterCard$ =
+              !frameUrl && !cropUrl
+                ? of(mapScryfallToCard(apiCard, domainSet.id, '', ''))
+                : forkJoin({
+                    frame: this.downloadCardAsset(frameUrl, this.getCardArtPath(cleanCode, arenaId)),
+                    crop: this.downloadCardAsset(cropUrl, this.getCardIllustrationPath(cleanCode, arenaId))
+                  }).pipe(
+                    map(({ frame, crop }) => mapScryfallToCard(apiCard, domainSet.id, frame, crop))
+                  );
 
-            return forkJoin({
-              frame: this.downloadCardAsset(frameUrl, this.getCardArtPath(cleanCode, arenaId)),
-              crop: this.downloadCardAsset(cropUrl, this.getCardIllustrationPath(cleanCode, arenaId))
-            }).pipe(
-              map(({ frame, crop }) => mapScryfallToCard(apiCard, domainSet.id, frame, crop))
+            return afterCard$.pipe(
+              tap(() => {
+                done += 1;
+                emitProgress({ phase: 'downloading', done, total });
+              })
             );
           }),
           toArray()
@@ -203,6 +238,11 @@ export class SetService implements OnDestroy {
       }),
 
       switchMap((domainCards: MtgCard[]) => {
+        emitProgress({
+          phase: 'saving',
+          done: domainCards.length,
+          total: domainCards.length
+        });
         return this.dataWire.insertBulk<MtgCard, MtgCard>(cards, domainCards);
       }),
 
@@ -212,10 +252,43 @@ export class SetService implements OnDestroy {
           this.installedSetsSubject.next([...currentList, domainSet]);
         }
         this.loadSetWorkspace(domainSet.id);
+        this.activeInstallSet = null;
+        emitProgress({
+          phase: 'done',
+          done: this.installProgressSubject.getValue()?.total ?? 0,
+          total: this.installProgressSubject.getValue()?.total ?? 0
+        });
       }),
       map(() => domainSet),
+      takeUntil(this.installAbortSubject),
       catchError((err) => {
         console.error(`[SetService] Atomic install pipeline aborted for set ${scryfallSet.code}:`, err?.message || err);
+        this.activeInstallSet = null;
+        this.installProgressSubject.next(null);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /** True while an install pipeline is running (before success or cancel cleanup). */
+  public hasActiveInstall(): boolean {
+    return this.activeInstallSet != null;
+  }
+
+  /** Stops an in-flight install and purges any partial set row / art. */
+  public cancelInstall(): Observable<void> {
+    const partial = this.activeInstallSet;
+    this.installAbortSubject.next();
+    this.installProgressSubject.next(null);
+    if (!partial) {
+      return of(void 0);
+    }
+    return this.uninstall(partial).pipe(
+      tap(() => {
+        this.activeInstallSet = null;
+      }),
+      catchError((err) => {
+        this.activeInstallSet = null;
         return throwError(() => err);
       })
     );

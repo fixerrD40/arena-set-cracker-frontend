@@ -14,7 +14,7 @@
         type="button"
         class="set-tile-card install-tile"
         (click)="onInstallClick()"
-        [disabled]="isProcessing"
+        [disabled]="isProcessing || showInstall"
         aria-label="Install New Set"
       >
         <div class="tile-body install-body">
@@ -49,6 +49,23 @@
         </div>
       }
 
+    </div>
+  }
+
+  @if (showInstall) {
+    <div class="install-overlay" role="dialog" aria-modal="true" aria-label="Install a set">
+      <button
+        type="button"
+        class="install-overlay-backdrop"
+        (click)="onInstallDismiss()"
+        aria-label="Close install"
+      ></button>
+      <div class="install-overlay-panel">
+        <app-set-install
+          (dismiss)="onInstallDismiss()"
+          (completed)="onInstallCompleted($event)"
+        />
+      </div>
     </div>
   }
 </div>

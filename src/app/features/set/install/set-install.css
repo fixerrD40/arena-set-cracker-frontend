@@ -1,0 +1,182 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+}
+
+.install-set-card {
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--deck-panel);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-line);
+  box-shadow: 0 8px 28px var(--chrome-shadow);
+  --mat-card-elevated-container-color: var(--deck-panel);
+}
+
+.install-set-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.install-set-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.install-set-header .card-title {
+  margin: 0;
+  text-align: left;
+  flex: 1;
+}
+
+.install-dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.25rem -0.35rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--deck-muted);
+  cursor: pointer;
+}
+
+.install-dismiss:hover {
+  color: var(--deck-gold);
+  background: var(--chrome-hover);
+}
+
+.install-dismiss mat-icon {
+  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.install-set-form .full-width {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+.install-set-form .description-text {
+  margin: 0;
+  color: var(--deck-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.install-set-form .actions-panel {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.install-set-form button[type='submit'],
+.install-cancel-btn {
+  align-self: auto;
+}
+
+.install-cancel-btn {
+  --mdc-protected-button-container-color: var(--deck-panel-deep);
+  --mdc-protected-button-label-text-color: var(--deck-gold);
+  background-color: var(--deck-panel-deep);
+  color: var(--deck-gold);
+  border: 1px solid var(--deck-line);
+}
+
+.install-set-form mat-form-field {
+  --mdc-outlined-text-field-label-text-color: var(--deck-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-focus-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-input-text-color: var(--deck-fg);
+  --mdc-outlined-text-field-caret-color: var(--deck-gold);
+  --mdc-outlined-text-field-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-hover-outline-color: var(--deck-muted);
+  --mdc-outlined-text-field-focus-outline-color: var(--deck-gold);
+  --mdc-outlined-text-field-disabled-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-disabled-input-text-color: var(--deck-dim);
+}
+
+.install-set-form .mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: var(--deck-gold-deep);
+  --mdc-protected-button-label-text-color: var(--app-bg);
+  --mdc-protected-button-disabled-container-color: var(--deck-line);
+  --mdc-protected-button-disabled-label-text-color: var(--deck-dim);
+  background-color: var(--deck-gold-deep);
+  color: var(--app-bg);
+}
+
+.install-set-form .mat-mdc-progress-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--lava-orange);
+}
+
+.install-set-form .error-banner {
+  background-color: var(--asc-error-container);
+  color: var(--asc-error);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.install-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.install-status {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--deck-gold);
+}
+
+.install-count {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--deck-muted);
+}
+
+.lava-progress-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--deck-panel-deep);
+  border: 1px solid var(--deck-line);
+}
+
+.lava-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: var(--lava-fill);
+  box-shadow: var(--glow-lava);
+  transition: width 0.15s ease-out;
+}
+
+.lava-progress-track.indeterminate .lava-progress-fill {
+  width: 40%;
+  animation: lava-progress-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes lava-progress-pulse {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}

@@ -174,3 +174,30 @@
 .loading-overlay mat-spinner {
   --mdc-circular-progress-active-indicator-color: var(--lava-orange);
 }
+
+.install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  box-sizing: border-box;
+}
+
+.install-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgb(18 16 12 / 0.72);
+  cursor: pointer;
+}
+
+.install-overlay-panel {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+}

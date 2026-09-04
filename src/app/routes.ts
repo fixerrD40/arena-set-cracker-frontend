@@ -51,9 +51,14 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'install-set',
+    redirectTo: '/library?install=1',
+    pathMatch: 'full'
+  },
+  {
     path: 'add-set',
-    canActivate: [welcomeGuard],
-    loadComponent: () => import('./features/set/add/set-add.component').then(m => m.SetAddComponent)
+    redirectTo: '/library?install=1',
+    pathMatch: 'full'
   },
   {
     path: 'set/:id',
