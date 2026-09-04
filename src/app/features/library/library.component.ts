@@ -1,8 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SetService } from '../../core/services/set.service';
@@ -20,8 +18,6 @@ export interface UIMtgSet extends MtgSet {
   imports: [
     CommonModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule
   ],

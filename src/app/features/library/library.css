@@ -3,27 +3,6 @@
   color: var(--deck-fg);
 }
 
-.library-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--deck-line);
-  padding-bottom: 1rem;
-}
-
-.library-header h2 {
-  margin: 0;
-  color: var(--deck-gold);
-}
-
-.library-header .mat-mdc-raised-button.mat-primary {
-  --mdc-protected-button-container-color: var(--deck-gold-deep);
-  --mdc-protected-button-label-text-color: var(--app-bg);
-  --mdc-protected-button-disabled-container-color: var(--deck-line);
-  --mdc-protected-button-disabled-label-text-color: var(--deck-dim);
-}
-
 .sets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -33,14 +12,19 @@
 .set-tile-card {
   position: relative;
   height: 160px;
+  border: 1px solid var(--deck-line);
   border-radius: 8px;
   background-size: cover;
   background-position: center;
   background-color: var(--deck-panel);
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s, border-color 0.2s;
   box-shadow: 0 4px 6px var(--chrome-shadow);
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
 
 .set-tile-card:hover {
@@ -53,13 +37,36 @@
 }
 
 .set-tile-card.active {
+  border-color: var(--lava-orange);
   box-shadow: var(--ring-lava);
+}
+
+.install-tile {
+  background: var(--deck-panel-wash);
+  border-style: dashed;
+  border-color: var(--deck-line);
+}
+
+.install-tile:hover:not(:disabled) {
+  border-color: var(--lava-orange);
+  border-style: solid;
+}
+
+.install-tile:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 6px var(--chrome-shadow);
 }
 
 .tile-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(15deg, rgb(0 0 0 / 0.85) 30%, rgb(0 0 0 / 0.2) 100%);
+  background: linear-gradient(
+    15deg,
+    rgb(26 21 17 / 0.92) 28%,
+    rgb(18 16 12 / 0.35) 100%
+  );
   z-index: 1;
 }
 
@@ -68,8 +75,8 @@
   top: 8px;
   right: 8px;
   z-index: 3;
-  background: rgb(0 0 0 / 0.6);
-  border: none;
+  background: var(--deck-panel-deep);
+  border: 1px solid var(--deck-line);
   color: var(--asc-error);
   border-radius: 50%;
   width: 28px;
@@ -79,11 +86,12 @@
   justify-content: center;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s, background-color 0.1s;
+  transition: opacity 0.15s, background-color 0.1s, border-color 0.1s;
 }
 
 .delete-btn:hover {
-  background: rgb(255 255 255 / 0.2);
+  background: var(--deck-panel);
+  border-color: var(--asc-error);
 }
 
 .tile-body {
@@ -96,10 +104,41 @@
   gap: 1rem;
 }
 
+.install-body {
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 0.65rem;
+}
+
+.install-icon {
+  font-size: 2rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--lava-orange);
+  filter: drop-shadow(0 0 8px rgb(232 90 24 / 0.45));
+}
+
 .set-icon-vector {
   width: 36px;
   height: 36px;
-  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.8)) brightness(0) invert(1);
+  flex-shrink: 0;
+  /* Emblem → lava (was white invert). */
+  filter:
+    brightness(0) saturate(100%)
+    invert(48%) sepia(98%) saturate(2000%) hue-rotate(350deg) brightness(1.05)
+    drop-shadow(0 0 6px rgb(240 180 41 / 0.55))
+    drop-shadow(0 0 14px rgb(232 90 24 / 0.4));
+}
+
+.set-tile-card:hover .set-icon-vector,
+.set-tile-card.active .set-icon-vector {
+  filter:
+    brightness(0) saturate(100%)
+    invert(72%) sepia(70%) saturate(900%) hue-rotate(350deg) brightness(1.1)
+    drop-shadow(0 0 8px rgb(240 180 41 / 0.7))
+    drop-shadow(0 0 18px rgb(232 90 24 / 0.5));
 }
 
 .set-details h3 {
@@ -107,19 +146,22 @@
   font-size: 1.15rem;
   font-weight: 600;
   color: var(--deck-gold);
-  text-shadow: 0 2px 4px rgb(0 0 0 / 0.8);
+  text-shadow: 0 2px 4px rgb(0 0 0 / 0.55);
+}
+
+.install-body .set-details h3 {
+  text-shadow: none;
 }
 
 .set-details .badge {
   font-size: 0.75rem;
-  background: rgb(201 166 90 / 0.2);
+  background: rgb(201 166 90 / 0.16);
   padding: 2px 6px;
   border-radius: 4px;
   color: var(--deck-muted);
 }
 
-.loading-overlay,
-.empty-state {
+.loading-overlay {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -127,4 +169,8 @@
   padding: 3rem;
   text-align: center;
   color: var(--deck-muted);
+}
+
+.loading-overlay mat-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--lava-orange);
 }

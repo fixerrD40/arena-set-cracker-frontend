@@ -1,13 +1,5 @@
 <div class="library-container">
 
-  <header class="library-header">
-    <h2>Expansion Library</h2>
-    <button mat-raised-button color="primary" (click)="onInstallClick()" [disabled]="isProcessing">
-      <mat-icon>add</mat-icon>
-      Install New Set
-    </button>
-  </header>
-
   @if (isProcessing) {
     <div class="loading-overlay">
       <mat-spinner diameter="40"></mat-spinner>
@@ -17,6 +9,22 @@
 
   @if (uiInstalledSets$ | async; as installedSets) {
     <div class="sets-grid">
+
+      <button
+        type="button"
+        class="set-tile-card install-tile"
+        (click)="onInstallClick()"
+        [disabled]="isProcessing"
+        aria-label="Install New Set"
+      >
+        <div class="tile-body install-body">
+          <mat-icon class="install-icon">add</mat-icon>
+          <div class="set-details">
+            <h3>Install New Set</h3>
+            <span class="badge">Add expansion</span>
+          </div>
+        </div>
+      </button>
 
       @for (set of installedSets; track set.id) {
         <div
@@ -32,16 +40,12 @@
           </button>
 
           <div class="tile-body">
-            <img [src]="set.iconSvgUri" class="set-icon-vector" alt="Set Emblem" />
+            <img [src]="set.iconSvgUri" class="set-icon-vector" alt="" />
             <div class="set-details">
               <h3>{{ set.name }}</h3>
               <span class="badge">{{ set.code.toUpperCase() }}</span>
             </div>
           </div>
-        </div>
-      } @empty {
-        <div class="empty-state">
-          <p>No expansions installed yet. Click the button above to add an MTG Arena set repository.</p>
         </div>
       }
 
