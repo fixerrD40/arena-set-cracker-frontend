@@ -8,7 +8,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: linear-gradient(180deg, #2b2118, #1a1511);
+  background: var(--deck-panel-wash);
   border-right: 1px solid var(--deck-line);
   color: var(--deck-fg);
 }
@@ -177,8 +177,8 @@
 }
 
 .theme-chip.selected {
-  border-color: var(--asc-primary, #3f51b5);
-  box-shadow: 0 0 0 1px var(--asc-primary, #3f51b5);
+  border-color: var(--deck-gold);
+  box-shadow: 0 0 0 1px var(--deck-gold);
 }
 
 .theme-chip.cdk-drag-placeholder {

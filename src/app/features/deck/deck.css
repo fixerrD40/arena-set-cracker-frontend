@@ -90,8 +90,8 @@
 }
 
 .chip-round.on {
-  border-color: #7dce6a;
-  box-shadow: 0 0 0 2px rgba(125, 206, 106, 0.35);
+  border-color: var(--lava-orange);
+  box-shadow: var(--ring-lava);
 }
 
 .chip-round img {
@@ -208,9 +208,7 @@
   inset: 0;
   border-radius: 8px;
   pointer-events: none;
-  box-shadow:
-    inset 0 0 52px 14px rgba(232, 140, 50, 0.16),
-    0 0 28px 8px rgba(232, 140, 50, 0.1);
+  box-shadow: var(--glow-lava-inset), var(--glow-lava);
 }
 
 .collection-grid {

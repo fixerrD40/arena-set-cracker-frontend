@@ -1,5 +1,6 @@
 .library-container {
   padding: 2rem;
+  color: var(--deck-fg);
 }
 
 .library-header {
@@ -7,8 +8,20 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  border-bottom: 1px solid var(--asc-border);
+  border-bottom: 1px solid var(--deck-line);
   padding-bottom: 1rem;
+}
+
+.library-header h2 {
+  margin: 0;
+  color: var(--deck-gold);
+}
+
+.library-header .mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: var(--deck-gold-deep);
+  --mdc-protected-button-label-text-color: var(--app-bg);
+  --mdc-protected-button-disabled-container-color: var(--deck-line);
+  --mdc-protected-button-disabled-label-text-color: var(--deck-dim);
 }
 
 .sets-grid {
@@ -23,15 +36,16 @@
   border-radius: 8px;
   background-size: cover;
   background-position: center;
+  background-color: var(--deck-panel);
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px var(--chrome-shadow);
 }
 
 .set-tile-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 16px var(--chrome-shadow), var(--glow-lava);
 }
 
 .set-tile-card:hover .delete-btn {
@@ -39,13 +53,13 @@
 }
 
 .set-tile-card.active {
-  outline: 3px solid var(--asc-primary);
+  box-shadow: var(--ring-lava);
 }
 
 .tile-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(15deg, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.2) 100%);
+  background: linear-gradient(15deg, rgb(0 0 0 / 0.85) 30%, rgb(0 0 0 / 0.2) 100%);
   z-index: 1;
 }
 
@@ -54,9 +68,9 @@
   top: 8px;
   right: 8px;
   z-index: 3;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 0.6);
   border: none;
-  color: #ff5252;
+  color: var(--asc-error);
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -69,7 +83,7 @@
 }
 
 .delete-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 0.2);
 }
 
 .tile-body {
@@ -85,23 +99,23 @@
 .set-icon-vector {
   width: 36px;
   height: 36px;
-  filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.8)) brightness(0) invert(1);
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.8)) brightness(0) invert(1);
 }
 
 .set-details h3 {
   margin: 0 0 0.25rem;
   font-size: 1.15rem;
   font-weight: 600;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  color: var(--deck-gold);
+  text-shadow: 0 2px 4px rgb(0 0 0 / 0.8);
 }
 
 .set-details .badge {
   font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(201 166 90 / 0.2);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #e0e0e0;
+  color: var(--deck-muted);
 }
 
 .loading-overlay,
@@ -112,5 +126,5 @@
   gap: 1rem;
   padding: 3rem;
   text-align: center;
-  color: var(--asc-text-secondary);
+  color: var(--deck-muted);
 }

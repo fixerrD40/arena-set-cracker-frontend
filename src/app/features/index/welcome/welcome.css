@@ -1,19 +1,6 @@
-.welcome-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - var(--app-chrome-height));
-  width: 100%;
-  background-color: var(--asc-surface-low);
-  padding: 16px;
-  box-sizing: border-box;
-}
-
 .welcome-card {
-  width: 100%;
   max-width: 420px;
   padding: 16px;
-  border-radius: 12px;
 }
 
 .welcome-card .full-width {
@@ -29,22 +16,23 @@
 .welcome-footer {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--asc-border);
+  border-top: 1px solid var(--deck-line);
   text-align: center;
 }
 
 .welcome-footer p {
   font-size: 0.85rem;
-  color: var(--asc-text-secondary);
+  color: var(--deck-muted);
   margin: 0;
 }
 
 .restore-link {
-  color: var(--asc-primary);
+  color: var(--deck-gold);
   text-decoration: none;
   font-weight: 500;
 }
 
 .restore-link:hover {
+  color: var(--lava-amber);
   text-decoration: underline;
 }

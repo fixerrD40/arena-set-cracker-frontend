@@ -62,7 +62,7 @@
   width: 2.5rem;
   border: 1px solid var(--deck-line);
   border-radius: 8px;
-  background: linear-gradient(180deg, #2b2118, #1a1511);
+  background: var(--deck-panel-wash);
   color: var(--deck-fg);
   cursor: pointer;
   display: inline-flex;
@@ -79,7 +79,7 @@
 
 .deck-drawer-toggle.peek-hot {
   box-shadow: inset 0 0 0 1px rgba(232, 122, 40, 0.45);
-  background: linear-gradient(180deg, #3a2d22, #241c16);
+  background: linear-gradient(180deg, #3a3632, #2a2724);
 }
 
 .empty-note {

@@ -1,17 +1,16 @@
-mat-sidenav-container {
-  height: calc(100vh - var(--app-chrome-height));
-}
-
 .spacer {
   flex: 1 1 auto;
 }
 
 .navbar {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   padding: 0 16px;
   height: var(--app-chrome-height);
-  box-shadow: 0 2px 4px rgb(0 0 0 / 0.1);
+  background: var(--chrome-bg);
+  color: var(--chrome-fg);
+  box-shadow: 0 2px 8px var(--chrome-shadow);
   z-index: 100;
 }
 
@@ -19,14 +18,76 @@ mat-sidenav-container {
   display: block;
   position: relative;
   min-height: calc(100vh - var(--app-chrome-height));
+  background: var(--app-bg);
+  color: var(--app-fg);
 }
 
 .navbar .logo {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-left: 8px;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
+  color: var(--chrome-fg);
+}
+
+.chrome-tabs {
+  border-bottom: none;
+  margin-left: 24px;
+  flex-grow: 1;
+  /* Angular 22 tab tokens (not --mat-tab-header-*). */
+  --mat-tab-inactive-label-text-color: var(--chrome-muted);
+  --mat-tab-inactive-hover-label-text-color: var(--chrome-fg);
+  --mat-tab-inactive-focus-label-text-color: var(--chrome-fg);
+  --mat-tab-active-label-text-color: var(--deck-gold);
+  --mat-tab-active-hover-label-text-color: var(--deck-gold);
+  --mat-tab-active-focus-label-text-color: var(--deck-gold);
+  --mat-tab-active-indicator-color: var(--deck-gold-deep);
+  --mat-tab-active-hover-indicator-color: var(--deck-gold);
+  --mat-tab-active-focus-indicator-color: var(--deck-gold);
+  --mat-tab-active-ripple-color: var(--deck-gold);
+  --mat-tab-inactive-ripple-color: var(--chrome-fg);
+}
+
+.chrome-tabs .mat-mdc-tab-link .mdc-tab__text-label,
+.chrome-tabs .chrome-tab-icon {
+  color: inherit;
+}
+
+.chrome-tab-icon {
+  margin-right: 6px;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.chrome-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.chrome-actions a,
+.chrome-actions button {
+  color: var(--chrome-fg);
+}
+
+.chrome-actions a.active-link {
+  color: var(--deck-gold);
+}
+
+.sync-cloud-btn {
+  color: var(--deck-gold);
+}
+
+.chrome-action-icon {
+  margin-right: 4px;
+}
+
+mat-sidenav-container {
+  height: calc(100vh - var(--app-chrome-height));
 }
 
 mat-sidenav {
@@ -128,7 +189,7 @@ mat-sidenav {
   max-width: 440px;
   margin: 120px auto 0;
   padding: 0 24px;
-  color: #64748b;
+  color: var(--deck-muted);
   font-size: 0.95rem;
   line-height: 1.6;
 }

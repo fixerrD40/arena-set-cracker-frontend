@@ -43,8 +43,8 @@
 }
 
 .color-chip.on {
-  border-color: #7dce6a;
-  box-shadow: 0 0 0 2px rgba(125, 206, 106, 0.35);
+  border-color: var(--lava-orange);
+  box-shadow: var(--ring-lava);
 }
 
 .color-chip img {
@@ -53,8 +53,54 @@
   object-fit: contain;
 }
 
+/* Off = taupe secondary; on = lava; hover previews the inverse. */
 :host ::ng-deep mat-slide-toggle {
   --mat-slide-toggle-label-text-color: var(--deck-fg);
+  --mat-slide-toggle-track-outline-color: var(--deck-line);
+
+  /* Kill the handle halo (focus/hover/pressed state-layer). */
+  --mat-slide-toggle-selected-focus-state-layer-opacity: 0;
+  --mat-slide-toggle-selected-hover-state-layer-opacity: 0;
+  --mat-slide-toggle-selected-pressed-state-layer-opacity: 0;
+  --mat-slide-toggle-unselected-focus-state-layer-opacity: 0;
+  --mat-slide-toggle-unselected-hover-state-layer-opacity: 0;
+  --mat-slide-toggle-unselected-pressed-state-layer-opacity: 0;
+
+  --mat-slide-toggle-unselected-track-color: var(--deck-panel-deep);
   --mat-slide-toggle-unselected-handle-color: var(--deck-muted);
-  --mat-slide-toggle-unselected-track-color: var(--deck-line);
+  --mat-slide-toggle-unselected-hover-track-color: var(--lava-orange);
+  --mat-slide-toggle-unselected-hover-handle-color: var(--lava-amber);
+  --mat-slide-toggle-unselected-focus-track-color: var(--deck-panel-deep);
+  --mat-slide-toggle-unselected-focus-handle-color: var(--deck-muted);
+  --mat-slide-toggle-unselected-pressed-track-color: var(--lava-orange);
+  --mat-slide-toggle-unselected-pressed-handle-color: var(--lava-amber);
+
+  --mat-slide-toggle-selected-track-color: var(--lava-orange);
+  --mat-slide-toggle-selected-handle-color: var(--lava-amber);
+  --mat-slide-toggle-selected-icon-color: var(--app-bg);
+  --mat-slide-toggle-selected-hover-track-color: var(--deck-panel-deep);
+  --mat-slide-toggle-selected-hover-handle-color: var(--deck-muted);
+  --mat-slide-toggle-selected-focus-track-color: var(--lava-orange);
+  --mat-slide-toggle-selected-focus-handle-color: var(--lava-amber);
+  --mat-slide-toggle-selected-pressed-track-color: var(--deck-panel-deep);
+  --mat-slide-toggle-selected-pressed-handle-color: var(--deck-muted);
+}
+
+/*
+ * Focus stays after click; Material prefers focus tokens over hover while focused.
+ * Remap focus to inverse under :hover so a later hover still previews.
+ */
+:host ::ng-deep mat-slide-toggle:hover:not(.just-toggled) {
+  --mat-slide-toggle-unselected-focus-track-color: var(--lava-orange);
+  --mat-slide-toggle-unselected-focus-handle-color: var(--lava-amber);
+  --mat-slide-toggle-selected-focus-track-color: var(--deck-panel-deep);
+  --mat-slide-toggle-selected-focus-handle-color: var(--deck-muted);
+}
+
+/* After a click, hold resting colors until pointer leaves (avoids inverse flash). */
+:host ::ng-deep mat-slide-toggle.just-toggled {
+  --mat-slide-toggle-unselected-hover-track-color: var(--deck-panel-deep);
+  --mat-slide-toggle-unselected-hover-handle-color: var(--deck-muted);
+  --mat-slide-toggle-selected-hover-track-color: var(--lava-orange);
+  --mat-slide-toggle-selected-hover-handle-color: var(--lava-amber);
 }

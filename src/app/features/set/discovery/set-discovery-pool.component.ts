@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
@@ -24,6 +24,8 @@ export class SetDiscoveryPoolComponent {
   public readonly drainNeedsWorkChange = output<boolean>();
 
   public readonly manaColors = MANA_COLORS;
+  /** Hold resting colors while the pointer is still hovering after a click. */
+  public readonly justToggled = signal(false);
 
   public colorLabel(code: ManaColor): string {
     return ColorDisplayNames[code as Color];
@@ -35,5 +37,14 @@ export class SetDiscoveryPoolComponent {
 
   public toggleColorScope(color: ManaColor): void {
     this.colorScopeChange.emit(color);
+  }
+
+  public onDrainToggle(checked: boolean): void {
+    this.justToggled.set(true);
+    this.drainNeedsWorkChange.emit(checked);
+  }
+
+  public clearJustToggled(): void {
+    this.justToggled.set(false);
   }
 }

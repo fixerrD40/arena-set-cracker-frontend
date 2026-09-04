@@ -4,31 +4,52 @@
   padding: 0 24px;
 }
 
+.landing-page-wrapper .mat-mdc-card {
+  background-color: var(--deck-panel);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-line);
+  box-shadow: 0 8px 28px var(--chrome-shadow);
+  --mat-card-elevated-container-color: var(--deck-panel);
+  --mat-card-subtitle-text-color: var(--deck-muted);
+  --mat-card-title-text-color: var(--deck-gold);
+}
+
+.landing-page-wrapper .mat-mdc-card-title {
+  color: var(--deck-gold);
+}
+
+.landing-page-wrapper .mat-mdc-card-subtitle {
+  color: var(--deck-muted);
+}
+
 mat-card-header {
   margin-bottom: 16px;
 }
 
-mat-icon {
+.landing-page-wrapper mat-icon {
   font-size: 28px;
   width: 28px;
   height: 28px;
   margin-right: 12px;
+  color: var(--deck-gold);
 }
 
 mat-card-title {
   font-size: 24px;
   font-weight: 700;
+  color: var(--deck-gold);
 }
 
 mat-card-subtitle {
   margin-top: 4px;
   font-size: 14px;
+  color: var(--deck-muted);
 }
 
 mat-card-content {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--asc-text-primary);
+  color: var(--deck-fg);
 }
 
 mat-card-content p {
@@ -44,4 +65,11 @@ mat-card-actions {
 mat-card-actions button {
   padding: 0 24px;
   font-weight: 600;
+}
+
+.landing-page-wrapper .mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: var(--deck-gold-deep);
+  --mdc-protected-button-label-text-color: var(--app-bg);
+  background-color: var(--deck-gold-deep);
+  color: var(--app-bg);
 }

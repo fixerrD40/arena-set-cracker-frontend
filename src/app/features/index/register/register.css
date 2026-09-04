@@ -28,15 +28,16 @@
   bottom: 125%;
   right: 0;
   width: 280px;
-  background-color: var(--mat-sys-surface-container-highest, #323232);
-  color: #ffffff;
+  background-color: var(--deck-panel);
+  color: var(--deck-fg);
   text-align: left;
   padding: 10px 12px;
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.4;
   font-weight: 400;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--deck-line);
+  box-shadow: 0 4px 10px var(--chrome-shadow);
   z-index: 10;
   opacity: 0;
   transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -50,7 +51,7 @@
   right: 10px;
   border-width: 5px;
   border-style: solid;
-  border-color: var(--mat-sys-surface-container-highest, #323232) transparent transparent transparent;
+  border-color: var(--deck-panel) transparent transparent transparent;
 }
 
 .tooltip-wrapper-suffix:hover .tooltip-text {

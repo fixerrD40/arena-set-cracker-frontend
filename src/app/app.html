@@ -1,50 +1,42 @@
-<mat-toolbar color="primary" class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px;">
+<mat-toolbar class="navbar">
 
-  <span class="logo" (click)="handleHomeClick()" style="cursor: pointer; font-weight: 700; font-size: 20px; white-space: nowrap;">
+  <span class="logo" (click)="handleHomeClick()">
     Arena Set Cracker
   </span>
 
   @if (profile$ | async) {
     @if (workspace$ | async; as workspace) {
-      <nav mat-tab-nav-bar [tabPanel]="tabPanel" style="border-bottom: none; margin-left: 24px; flex-grow: 1;">
-
-        <a mat-tab-link
-           (click)="navigateToLibraryLayer()"
-           [active]="!workspace.setInfo">
-           <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">apps</mat-icon>
-           Library
-        </a>
-
-        @if (workspace.setInfo) {
-          <a mat-tab-link
-             (click)="navigateToSetLayer(workspace.setInfo.id)"
-             [active]="workspace.setInfo && !isCurrentRouteDeck()">
-             <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">folder</mat-icon>
-             {{ workspace.setInfo.name }}
+      @if (workspace.setInfo) {
+        <nav mat-tab-nav-bar [tabPanel]="tabPanel" class="chrome-tabs">
+          <a
+            mat-tab-link
+            (click)="navigateToSetLayer(workspace.setInfo.id)"
+            [active]="!isCurrentRouteDeck()"
+          >
+            <mat-icon class="chrome-tab-icon">folder</mat-icon>
+            {{ workspace.setInfo.name }}
           </a>
-        }
 
-        @if (isCurrentRouteDeck()) {
-          <a mat-tab-link
-             [active]="true"
-             style="opacity: 1;">
-             <mat-icon style="margin-right: 6px; font-size: 18px; width: 18px; height: 18px;">style</mat-icon>
-             Active Deck Workspace
-          </a>
-        }
-      </nav>
+          @if (isCurrentRouteDeck()) {
+            <a mat-tab-link [active]="true">
+              <mat-icon class="chrome-tab-icon">style</mat-icon>
+              Active Deck Workspace
+            </a>
+          }
+        </nav>
+      }
     }
   }
 
   <span class="spacer"></span>
 
-  <nav style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+  <nav class="chrome-actions">
     <a mat-button routerLink="/about" routerLinkActive="active-link">About</a>
 
     @if (profile$ | async; as profile) {
       @if (!profile.isCloudSynced) {
         <a mat-button routerLink="/register" class="sync-cloud-btn">
-          <mat-icon style="margin-right: 4px;">cloud_upload</mat-icon>
+          <mat-icon class="chrome-action-icon">cloud_upload</mat-icon>
           <span>Sync to Cloud</span>
         </a>
       }

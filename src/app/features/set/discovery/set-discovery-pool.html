@@ -21,7 +21,10 @@
 
     <mat-slide-toggle
       [checked]="drainNeedsWork()"
-      (change)="drainNeedsWorkChange.emit($event.checked)"
+      [class.just-toggled]="justToggled()"
+      (change)="onDrainToggle($event.checked)"
+      (pointerleave)="clearJustToggled()"
+      (blur)="clearJustToggled()"
     >
       Needs work drains pool
     </mat-slide-toggle>

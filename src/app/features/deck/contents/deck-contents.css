@@ -6,8 +6,8 @@
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #2b2118, #1a1511);
-  border-left: 1px solid #3d3228;
+  background: var(--deck-panel-wash);
+  border-left: 1px solid var(--deck-line);
 }
 
 .deck-header-box {
@@ -159,9 +159,7 @@
 }
 
 .sidebar-list.list-drop-hot .sidebar-list-stack {
-  box-shadow:
-    inset 0 0 52px 14px rgba(232, 140, 50, 0.16),
-    0 0 28px 8px rgba(232, 140, 50, 0.1);
+  box-shadow: var(--glow-lava-inset), var(--glow-lava);
 }
 
 .sidebar-row {
@@ -349,6 +347,6 @@
     height: 50vh;
     max-height: 50vh;
     border-left: none;
-    border-top: 1px solid #3d3228;
+    border-top: 1px solid var(--deck-line);
   }
 }

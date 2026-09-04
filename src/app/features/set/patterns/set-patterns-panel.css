@@ -15,8 +15,8 @@
 }
 
 .patterns-panel.theme-return-hot {
-  background: rgba(232, 122, 40, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(232, 122, 40, 0.45);
+  background: rgb(232 90 24 / 0.08);
+  box-shadow: var(--glow-lava-inset);
 }
 
 .patterns-panel h2 {
@@ -45,8 +45,8 @@
 }
 
 .pattern-chip.selected {
-  border-color: var(--asc-primary, #3f51b5);
-  box-shadow: 0 0 0 1px var(--asc-primary, #3f51b5);
+  border-color: var(--deck-gold);
+  box-shadow: 0 0 0 1px var(--deck-gold);
 }
 
 .pattern-chip.cdk-drag-placeholder {

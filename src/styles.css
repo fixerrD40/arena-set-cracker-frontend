@@ -2,31 +2,100 @@
 @import 'tippy.js/themes/light-border.css';
 @import './app/shared/styles/auth-shell.css';
 
+/*
+ * Opinionated dark shell: warm brown ground, dull secondary panels, earthy gold type,
+ * lava for heat/activity. Set/deck speak --deck-*; shell/auth/navbar use --asc-* / --chrome-*.
+ */
 :root {
-  /* mat-toolbar / .navbar — page shells size below this chrome. */
+  color-scheme: dark;
   --app-chrome-height: 64px;
-  --asc-surface-low: var(--mat-sys-surface-container-low, #f5f5f5);
-  --asc-on-surface: var(--mat-sys-on-surface, #212121);
-  --asc-on-surface-variant: var(--mat-sys-on-surface-variant, #666666);
-  --asc-primary: var(--mdc-filled-button-container-color, #3f51b5);
-  --asc-error: var(--mat-sys-error, #d32f2f);
-  --asc-error-container: var(--mat-sys-error-container, #ffebee);
-  --asc-success: var(--mat-sys-on-primary-container, #2e7d32);
-  --asc-success-container: var(--mat-sys-primary-container, #e8f5e9);
-  --asc-border: var(--border-color, rgba(0, 0, 0, 0.12));
-  --asc-text-secondary: var(--text-secondary, #666666);
-  --asc-text-primary: var(--text-primary, #333333);
+
+  /* Ground — warm brown (was charcoal; drawer brown promoted to core) */
+  --app-bg: #1a1511;
+  --chrome-bg: #14100c;
+  --deck-bg: #1a1511;
+  /* Dull secondary lift (was grey-on-black; now taupe-on-brown) */
+  --deck-panel: #2e2b28;
+  --deck-panel-deep: #221f1c;
+  --deck-panel-wash: linear-gradient(180deg, var(--deck-panel), var(--deck-panel-deep));
+  --deck-line: #4a4038;
+  --asc-surface-low: #24211e;
+  --asc-border: rgb(201 166 90 / 0.18);
+  --chrome-hover: rgb(201 166 90 / 0.1);
+  --chrome-shadow: rgb(0 0 0 / 0.35);
+
+  /* Earthy gold — primary type + metal trim */
+  --deck-gold: #c9a65a;
+  --deck-gold-deep: #8f6b28;
+  --app-fg: var(--deck-gold);
+  --chrome-fg: var(--deck-gold);
+  --deck-fg: var(--deck-gold);
+  --deck-muted: #a89060;
+  --deck-dim: #7d6b48;
+  --chrome-muted: var(--deck-muted);
+  --asc-on-surface: var(--deck-gold);
+  --asc-on-surface-variant: var(--deck-muted);
+  --asc-primary: var(--deck-gold);
+  --asc-text-primary: var(--deck-gold);
+  --asc-text-secondary: var(--deck-muted);
+
+  /*
+   * Lava recipe bundle (molten red → amber — not earthy --deck-gold*).
+   * Apply per surface: wash / glow / ring / fill — not one universal class.
+   */
+  --lava-red: #c42818;
+  --lava-orange: #e85a18;
+  --lava-amber: #f0b429;
+  --lava: var(--lava-orange);
+  --lava-hot: var(--lava-red);
+  --lava-fill: linear-gradient(
+    135deg,
+    var(--lava-red) 0%,
+    var(--lava-orange) 48%,
+    var(--lava-amber) 100%
+  );
+  --glow-lava:
+    0 0 12px 2px rgb(240 180 41 / 0.55),
+    0 0 28px 8px rgb(232 90 24 / 0.4),
+    0 0 48px 14px rgb(196 40 24 / 0.22);
+  --glow-lava-inset:
+    inset 0 0 24px 6px rgb(240 180 41 / 0.2),
+    inset 0 0 48px 14px rgb(232 90 24 / 0.18),
+    inset 0 0 64px 20px rgb(196 40 24 / 0.12);
+  --ring-lava:
+    0 0 0 2px var(--lava-amber),
+    0 0 18px 3px rgb(232 90 24 / 0.5);
+
+  --asc-error: #f2b8b5;
+  --asc-error-container: #8c1d18;
+  --asc-success: #a8d5b5;
+  --asc-success-container: #1f4d32;
   --asc-filter-include: #4bc0c0;
   --asc-filter-include-border: #399999;
   --asc-filter-exclude: #e66a6a;
   --asc-filter-exclude-border: #b04141;
-  --deck-bg: #1c1b1a;
-  --deck-fg: #f3efe6;
-  --deck-muted: #c4b8a8;
-  --deck-dim: #9a9186;
-  --deck-panel: #2a2724;
-  --deck-line: #4a433c;
-  --deck-gold: #e8d48b;
+
+  /* Material sys → same brown/gold (prebuilt azure-blue is light-only) */
+  --mat-sys-background: var(--app-bg);
+  --mat-sys-on-background: var(--app-fg);
+  --mat-sys-surface: var(--deck-panel);
+  --mat-sys-surface-container: var(--deck-panel);
+  --mat-sys-surface-container-low: var(--deck-bg);
+  --mat-sys-surface-container-high: #383430;
+  --mat-sys-surface-container-highest: #403c38;
+  --mat-sys-on-surface: var(--deck-fg);
+  --mat-sys-on-surface-variant: var(--deck-muted);
+  --mat-sys-primary: var(--deck-gold);
+  --mat-sys-on-primary: var(--app-bg);
+  --mat-sys-primary-container: var(--deck-gold-deep);
+  --mat-sys-on-primary-container: var(--app-bg);
+  --mat-sys-secondary: var(--lava-orange);
+  --mat-sys-on-secondary: var(--app-bg);
+  --mat-sys-outline: var(--deck-line);
+  --mat-sys-outline-variant: var(--deck-line);
+  --mat-sys-error: var(--asc-error);
+  --mat-sys-on-error: var(--app-bg);
+  --mat-sys-error-container: var(--asc-error-container);
 }
 
 .cdk-drag-preview {
@@ -53,6 +122,24 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background-color: var(--mat-sys-background, #f5f5f5);
-  color: var(--mat-sys-on-background, #000);
+  background-color: var(--app-bg);
+  color: var(--app-fg);
+}
+
+/* Lava recipes — pick wash / glow / ring / fill for the surface */
+.lava-wash {
+  box-shadow: var(--glow-lava-inset), var(--glow-lava);
+}
+
+.lava-glow {
+  box-shadow: var(--glow-lava);
+}
+
+.lava-ring {
+  border-color: var(--lava-orange);
+  box-shadow: var(--ring-lava);
+}
+
+.lava-fill {
+  background: var(--lava-fill);
 }

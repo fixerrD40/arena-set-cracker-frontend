@@ -1,41 +1,119 @@
 /* Shared centered-card shell for auth / about / onboarding-adjacent pages */
 
-.wrapper {
+.wrapper,
+.welcome-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - var(--app-chrome-height));
-  background-color: var(--asc-surface-low);
+  background-color: var(--app-bg);
   padding: 16px;
   box-sizing: border-box;
 }
 
-.wrapper > mat-card,
-.wrapper mat-card {
+.welcome-container {
+  width: 100%;
+}
+
+.wrapper .mat-mdc-card,
+.welcome-card.mat-mdc-card {
   width: 100%;
   max-width: 400px;
   padding: 24px;
   border-radius: 12px;
   text-align: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  background-color: var(--deck-panel);
+  color: var(--deck-fg);
+  border: 1px solid var(--deck-line);
+  box-shadow: 0 8px 28px var(--chrome-shadow);
+  --mat-card-elevated-container-color: var(--deck-panel);
+  --mat-card-outlined-container-color: var(--deck-panel);
+  --mat-card-filled-container-color: var(--deck-panel);
+  --mat-card-subtitle-text-color: var(--deck-muted);
+  --mat-card-title-text-color: var(--deck-gold);
 }
 
-.wrapper mat-card.mat-mdc-card-wide,
-.about-card {
+.wrapper .mat-mdc-card.about-card,
+.wrapper .mat-mdc-card.mat-mdc-card-wide,
+.about-card.mat-mdc-card {
   max-width: 500px;
+}
+
+.wrapper .mat-mdc-card-title,
+.welcome-card .mat-mdc-card-title {
+  color: var(--deck-gold);
+}
+
+.wrapper .mat-mdc-card-subtitle,
+.welcome-card .mat-mdc-card-subtitle {
+  color: var(--deck-muted);
+}
+
+.wrapper .mat-mdc-card-content,
+.welcome-card .mat-mdc-card-content {
+  color: var(--deck-fg);
 }
 
 .card-title {
   margin: 0 0 16px;
   font-size: 24px;
   font-weight: 700;
-  color: var(--asc-on-surface);
+  color: var(--deck-gold);
   text-align: center;
 }
 
 .full-width {
   width: 100%;
   margin-bottom: 16px;
+}
+
+/* Outline fields on charcoal cards */
+.wrapper mat-form-field,
+.welcome-card mat-form-field {
+  --mdc-outlined-text-field-label-text-color: var(--deck-muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-focus-label-text-color: var(--deck-gold);
+  --mdc-outlined-text-field-input-text-color: var(--deck-fg);
+  --mdc-outlined-text-field-caret-color: var(--deck-gold);
+  --mdc-outlined-text-field-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-hover-outline-color: var(--deck-muted);
+  --mdc-outlined-text-field-focus-outline-color: var(--deck-gold);
+  --mdc-outlined-text-field-disabled-outline-color: var(--deck-line);
+  --mdc-outlined-text-field-disabled-input-text-color: var(--deck-dim);
+  --mdc-outlined-text-field-error-outline-color: var(--asc-error);
+  --mdc-outlined-text-field-error-focus-outline-color: var(--asc-error);
+  --mdc-outlined-text-field-error-label-text-color: var(--asc-error);
+  --mat-form-field-focus-select-arrow: var(--deck-gold);
+  --mat-form-field-enabled-select-arrow: var(--deck-muted);
+  --mat-form-field-error-text-color: var(--asc-error);
+}
+
+.wrapper .mat-mdc-form-field-input-control.mat-mdc-form-field-input-control,
+.welcome-card .mat-mdc-form-field-input-control.mat-mdc-form-field-input-control,
+.wrapper .mat-mdc-input-element,
+.welcome-card .mat-mdc-input-element {
+  color: var(--deck-fg);
+}
+
+.wrapper .mat-mdc-raised-button.mat-primary,
+.welcome-card .mat-mdc-raised-button.mat-primary {
+  --mdc-protected-button-container-color: var(--deck-gold-deep);
+  --mdc-protected-button-label-text-color: var(--app-bg);
+  --mdc-protected-button-disabled-container-color: var(--deck-line);
+  --mdc-protected-button-disabled-label-text-color: var(--deck-dim);
+  background-color: var(--deck-gold-deep);
+  color: var(--app-bg);
+}
+
+.wrapper .mat-mdc-button,
+.welcome-card .mat-mdc-button {
+  --mdc-text-button-label-text-color: var(--deck-gold);
+  color: var(--deck-gold);
+}
+
+.wrapper .mat-mdc-progress-spinner,
+.welcome-card .mat-mdc-progress-spinner {
+  --mdc-circular-progress-active-indicator-color: var(--lava-orange);
 }
 
 .error-banner,
@@ -48,7 +126,7 @@
   margin-bottom: 16px;
   font-weight: 500;
   text-align: center;
-  border: 1px solid rgba(211, 47, 47, 0.2);
+  border: 1px solid rgb(242 184 181 / 0.25);
 }
 
 .success-banner {
@@ -60,7 +138,7 @@
   line-height: 1.5;
   font-weight: 500;
   text-align: center;
-  border: 1px solid rgba(46, 125, 50, 0.2);
+  border: 1px solid rgb(168 213 181 / 0.25);
   margin-bottom: 8px;
   box-sizing: border-box;
 }
@@ -95,23 +173,24 @@
   text-align: center;
   font-size: 13px;
   margin: 12px 0 0;
-  color: var(--asc-on-surface-variant);
+  color: var(--deck-muted);
 }
 
 .helper-text a {
-  color: var(--asc-primary);
+  color: var(--deck-gold);
   text-decoration: none;
   font-weight: 500;
 }
 
 .helper-text a:hover {
+  color: var(--lava-amber);
   text-decoration: underline;
 }
 
 .description-text {
   font-size: 14px;
   line-height: 1.5;
-  color: var(--asc-on-surface-variant);
+  color: var(--deck-muted);
   margin-bottom: 20px;
   text-align: center;
 }
