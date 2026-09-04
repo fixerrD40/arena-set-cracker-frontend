@@ -21,7 +21,7 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 
 ## Stack map
 
-- Angular 20 standalone + Material
+- Angular 22 standalone + Material
 - Local DB: Drizzle schema → sql.js (browser IndexedDB / Electron file). Empty vault: `public/drizzle/0000_*.sql`. Existing file loads as-is. No startup ALTER / column-ensure. No in-place upgrades until a client is shipped; layout change means wipe `mtg_vault.db` (and the browser IndexedDB key).
 - Platform wiring: `SQLITE_ENGINE_TOKEN`, `DATA_WIRE_TOKEN` (`CloudDataWire` vs `ElectronDataWire`)
 - Also: Capacitor mobile, optional cloud API via `src/assets/config.json` (`baseUrl`)
@@ -33,6 +33,10 @@ Color identity is not capped at two; do not bake guild/dual as the only shape of
 | Installed sets + active workspace (set, cards, decks) | `SetService` |
 | Active deck scratchpad + flush/persist | `DeckService` |
 | Arena parse + name resolve within catalog | `shared/models/deck/deck.utils.ts` |
+| Remaining pool + pattern concentration | `remaining-pool.ts`, `concentration.ts` (+ `concentration.worker.ts`) |
+| Set board theme-phrase drag | `SetBoardDrag` |
+| Shared drag primitives | `shared/drag/drag.utils.ts` |
+| Deck builder card drag zones | `DeckBuilderDrag` |
 | SQLite schema (create only) | `core/sqlite/sqlite.schema.ts`, `public/drizzle/` (`0000` bootstrap) |
 | Shared CSS shell (auth/forms) | `shared/styles/auth-shell.css`, tokens in `styles.css` |
 | App chrome / content-area bounds | `--app-chrome-height`, `[data-app-content]`, `shared/ui/layout/content-area.ts` |
